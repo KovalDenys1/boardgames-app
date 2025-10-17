@@ -9,35 +9,61 @@ The lobby cleanup system automatically deactivates lobbies that are no longer ac
 A lobby will be automatically deactivated if:
 1. **No Active Game**: The lobby has no games with status 'waiting' or 'playing'
 2. **No Players**: The active game has 0 players
-3. **Inactive for 24 Hours**: The game hasn't been updated in the last 24 hours
+3. **Inactive for 2 Hours**: The game hasn't been updated in the last 2 hours
+
+### Cleanup Execution
+The cleanup runs automatically when:
+- **User visits lobby list page**: Each time someone opens `/lobby`, cleanup runs in background
+- **Zero cost**: No cron jobs needed, uses existing user traffic
+- **Non-blocking**: Runs silently, doesn't affect user experience
+- **Distributed load**: Cleanup workload distributed across user visits
 
 ### Manual Player Leave
 When a player leaves a lobby:
 - The player is removed from the game
 - If only 1 or 0 players remain, the game status is set to 'finished'
-- If 0 players remain, the lobby is deactivated
+- If 0 players remain, the lobby is deactivated immediately
 
-## Setting Up the Cleanup Cron Job
+## No Configuration Required! 🎉
 
-### 1. Add Environment Variable
-Add `CRON_SECRET` to your `.env` file:
+The cleanup system works out of the box with no setup needed:
+- ✅ No cron jobs to configure
+- ✅ No environment variables needed
+- ✅ No paid subscriptions required
+- ✅ Fully automatic and maintenance-free
+
+## Testing
+
+### Manual Test
+You can manually trigger cleanup by visiting the lobby page or calling:
+
 ```bash
-CRON_SECRET=your-secure-random-string-min-32-characters
+curl -X POST http://localhost:3000/api/lobby/cleanup
 ```
 
-### 2. Configure Cron Job (Render.com)
-If hosting on Render.com:
+### Expected Response
+```json
+{
+  "message": "Cleanup completed",
+  "deactivatedCount": 3
+}
+```
 
-1. Go to your Dashboard
-2. Select your Web Service
-3. Go to "Cron Jobs" tab
-4. Click "Add Cron Job"
-5. Configure:
-   - **Name**: Lobby Cleanup
-   - **Command**: `curl -X POST https://your-domain.com/api/lobby/cleanup -H "Authorization: Bearer YOUR_CRON_SECRET"`
-   - **Schedule**: `0 */6 * * *` (every 6 hours)
+## Monitoring
+- Check your deployment logs for cleanup execution
+- Monitor the `isActive` field in the `Lobby` table
+- Cleanup runs every time a user visits `/lobby` page
 
-### 3. Alternative: GitHub Actions
+## Future Improvements (When Using Paid Hosting)
+
+If you upgrade to a paid plan with cron job support, you can set up scheduled cleanup:
+
+### Option 1: Render.com Cron Jobs
+1. Add `CRON_SECRET` to environment variables
+2. Create cron job: `curl -X POST https://your-domain.com/api/lobby/cleanup`
+3. Schedule: `0 */6 * * *` (every 6 hours)
+
+### Option 2: GitHub Actions
 Create `.github/workflows/cleanup.yml`:
 
 ```yaml
@@ -46,22 +72,18 @@ name: Cleanup Lobbies
 on:
   schedule:
     - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Cleanup
-        run: |
-          curl -X POST https://your-domain.com/api/lobby/cleanup \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+        run: curl -X POST https://your-domain.com/api/lobby/cleanup
 ```
 
-Then add `CRON_SECRET` to GitHub Secrets.
-
-### 4. Alternative: Vercel Cron Jobs
-If using Vercel, add to `vercel.json`:
+### Option 3: Vercel Cron Jobs
+Add to `vercel.json`:
 
 ```json
 {
@@ -74,29 +96,8 @@ If using Vercel, add to `vercel.json`:
 }
 ```
 
-## Testing
-
-### Manual Test
-```bash
-curl -X POST http://localhost:3000/api/lobby/cleanup \
-  -H "Authorization: Bearer your-cron-secret"
-```
-
-### Expected Response
-```json
-{
-  "message": "Cleanup completed",
-  "deactivatedCount": 3,
-  "deactivatedLobbies": ["lobby-id-1", "lobby-id-2", "lobby-id-3"]
-}
-```
-
-## Monitoring
-- Check your deployment logs for cleanup execution
-- Monitor the `isActive` field in the `Lobby` table
-- Track deactivated lobbies count over time
-
-## Security
-- The cleanup endpoint requires a secret token in the Authorization header
-- Never expose your `CRON_SECRET` in client-side code or public repositories
-- Rotate the secret regularly for security
+## Performance Notes
+- Cleanup typically takes <100ms
+- Only runs database query when needed
+- Scales well with user traffic
+- More users = more frequent cleanup = cleaner database

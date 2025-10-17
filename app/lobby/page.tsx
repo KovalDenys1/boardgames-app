@@ -31,7 +31,21 @@ export default function LobbyListPage() {
 
   useEffect(() => {
     loadLobbies()
+    // Trigger automatic cleanup of inactive lobbies
+    triggerCleanup()
   }, [])
+
+  const triggerCleanup = async () => {
+    try {
+      // Silently cleanup inactive lobbies in background
+      await fetch('/api/lobby/cleanup', {
+        method: 'POST',
+      })
+    } catch (error) {
+      // Ignore errors - cleanup is not critical for user experience
+      console.log('Background cleanup skipped:', error)
+    }
+  }
 
   const loadLobbies = async () => {
     try {
