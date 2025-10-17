@@ -13,6 +13,11 @@ import {
   isGameFinished,
 } from '@/lib/yahtzee'
 import { saveGameState } from '@/lib/game'
+import { useToast } from '@/contexts/ToastContext'
+import DiceGroup from '@/components/DiceGroup'
+import Scorecard from '@/components/Scorecard'
+import PlayerList from '@/components/PlayerList'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 let socket: Socket
 
@@ -20,6 +25,7 @@ export default function LobbyPage() {
   const router = useRouter()
   const params = useParams()
   const { data: session, status } = useSession()
+  const toast = useToast()
   const code = params.code as string
 
   const [lobby, setLobby] = useState<any>(null)
@@ -171,6 +177,11 @@ export default function LobbyPage() {
       action: 'state-change',
       payload: newState,
     })
+
+    // Show notification on last roll
+    if (newState.rollsLeft === 0) {
+      toast.info('Last roll! Choose a category to score.')
+    }
   }
 
   const handleToggleHold = (index: number) => {
@@ -220,6 +231,23 @@ export default function LobbyPage() {
       action: 'state-change',
       payload: newState,
     })
+
+    // Show notifications
+    const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
+    toast.success(`Scored ${score} points in ${categoryName}!`)
+    
+    if (allFinished) {
+      // Calculate winner
+      const scores = newScores.map(sc => calculateTotalScore(sc))
+      const maxScore = Math.max(...scores)
+      const winnerIndex = scores.indexOf(maxScore)
+      const winnerName = game.players[winnerIndex]?.user?.username || 'Player ' + (winnerIndex + 1)
+      
+      toast.success(`🎉 Game Over! ${winnerName} wins with ${maxScore} points!`)
+    } else if (nextPlayerIndex !== playerIndex) {
+      const nextPlayerName = game.players[nextPlayerIndex]?.user?.username || 'Player ' + (nextPlayerIndex + 1)
+      toast.info(`${nextPlayerName}'s turn!`)
+    }
   }
 
   const handleStartGame = async () => {
@@ -246,6 +274,10 @@ export default function LobbyPage() {
       action: 'state-change',
       payload: initialState,
     })
+
+    // Show notification
+    const firstPlayerName = game.players[0]?.user?.username || 'Player 1'
+    toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
   }
 
   if (loading) {
@@ -315,154 +347,149 @@ export default function LobbyPage() {
           </div>
         ) : (
           <>
-            <div className="card mb-4">
-              <h2 className="text-xl font-bold mb-2">Players</h2>
-              <div className="space-y-2">
-                {game?.players?.map((player: any, i: number) => (
-                  <div key={player.id} className="flex justify-between items-center">
-                    <span className="font-medium">
-                      {i + 1}. {player.user.username}
-                      {gameState && gameState.currentPlayerIndex === i && ' ← Current'}
-                    </span>
-                    {gameState && gameState.scores && (
-                      <span className="font-bold">
-                        {calculateTotalScore(gameState.scores[i] || {})} pts
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Player List */}
+            {game?.players && gameState && (
+              <PlayerList
+                players={game.players.map((p: any) => ({
+                  id: p.id,
+                  userId: p.userId,
+                  user: {
+                    username: p.user.username,
+                    email: p.user.email,
+                  },
+                  score: 0,
+                  position: p.position || game.players.indexOf(p),
+                  isReady: true,
+                }))}
+                currentTurn={gameState.currentPlayerIndex}
+                currentUserId={session?.user?.id}
+              />
+            )}
 
             {!isGameStarted ? (
-              <div className="card text-center">
-                <h2 className="text-2xl font-bold mb-4">Ready to Play?</h2>
-                <p className="text-gray-600 mb-4">
-                  {game?.players?.length || 0} player(s) in lobby
-                </p>
-                <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
-                  Start Yahtzee Game
+              <div className="card text-center animate-scale-in">
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
+                    <span className="text-4xl">🎲</span>
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2">Ready to Play Yahtzee?</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    {game?.players?.length || 0} player(s) in lobby
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500">
+                    Roll the dice, score big, and have fun!
+                  </p>
+                </div>
+                <button 
+                  onClick={handleStartGame} 
+                  className="btn btn-success text-lg px-8 py-3 animate-bounce-in"
+                >
+                  🎮 Start Yahtzee Game
                 </button>
               </div>
             ) : gameState?.finished ? (
-              <div className="card text-center">
-                <h2 className="text-3xl font-bold mb-4">🎉 Game Over!</h2>
-                <div className="space-y-2 mb-4">
-                  {game?.players?.map((player: any, i: number) => (
-                    <div key={player.id} className="text-lg">
-                      {player.user.username}: {calculateTotalScore(gameState.scores[i])} points
-                    </div>
-                  ))}
+              <div className="card text-center animate-scale-in">
+                <h2 className="text-4xl font-bold mb-6">🎉 Game Over!</h2>
+                
+                {/* Winner Podium */}
+                <div className="mb-6">
+                  {game?.players
+                    ?.map((player: any, i: number) => ({
+                      name: player.user.username || `Player ${i + 1}`,
+                      score: calculateTotalScore(gameState.scores[i] || {}),
+                      index: i,
+                    }))
+                    .sort((a: any, b: any) => b.score - a.score)
+                    .map((player: any, rank: number) => (
+                      <div
+                        key={player.index}
+                        className={`
+                          p-4 mb-3 rounded-lg flex items-center justify-between
+                          ${rank === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white scale-105' : ''}
+                          ${rank === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400' : ''}
+                          ${rank === 2 ? 'bg-gradient-to-r from-orange-300 to-orange-400' : ''}
+                          ${rank > 2 ? 'bg-gray-100 dark:bg-gray-700' : ''}
+                          transform transition-all duration-300
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl font-bold">
+                            {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
+                          </span>
+                          <span className="text-xl font-semibold">{player.name}</span>
+                        </div>
+                        <span className="text-2xl font-bold">{player.score} pts</span>
+                      </div>
+                    ))}
                 </div>
-                <button onClick={handleStartGame} className="btn btn-success">
-                  Play Again
+
+                <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
+                  🔄 Play Again
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <YahtzeeGame
-                  gameState={gameState}
-                  onRoll={handleRollDice}
-                  onToggleHold={handleToggleHold}
-                  onScoreSelect={handleScoreSelection}
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Dice Section - Left Column */}
+                <div className="lg:col-span-1">
+                  <DiceGroup
+                    dice={gameState.dice}
+                    held={gameState.held}
+                    onToggleHold={handleToggleHold}
+                    disabled={
+                      gameState.rollsLeft === 3 ||
+                      gameState.currentPlayerIndex !==
+                        game.players.findIndex((p: any) => p.userId === session?.user?.id)
+                    }
+                  />
+                  
+                  {/* Roll Button */}
+                  <div className="card mt-4">
+                    <div className="text-center mb-4">
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        Rolls Left: {gameState.rollsLeft}
+                      </p>
+                      {gameState.rollsLeft === 0 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          Choose a category to score
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleRollDice}
+                      disabled={
+                        gameState.rollsLeft === 0 ||
+                        gameState.currentPlayerIndex !==
+                          game.players.findIndex((p: any) => p.userId === session?.user?.id)
+                      }
+                      className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2"
+                    >
+                      🎲 Roll Dice
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scorecard Section - Right Columns */}
+                <div className="lg:col-span-2">
+                  <Scorecard
+                    scorecard={gameState.scores[gameState.currentPlayerIndex] || {}}
+                    currentDice={gameState.dice}
+                    onSelectCategory={handleScoreSelection}
+                    canSelectCategory={
+                      gameState.rollsLeft < 3 &&
+                      gameState.currentPlayerIndex ===
+                        game.players.findIndex((p: any) => p.userId === session?.user?.id)
+                    }
+                    isCurrentPlayer={
+                      gameState.currentPlayerIndex ===
+                        game.players.findIndex((p: any) => p.userId === session?.user?.id)
+                    }
+                  />
+                </div>
               </div>
             )}
           </>
         )}
       </div>
     </div>
-  )
-}
-
-function YahtzeeGame({
-  gameState,
-  onRoll,
-  onToggleHold,
-  onScoreSelect,
-}: {
-  gameState: YahtzeeGameState
-  onRoll: () => void
-  onToggleHold: (index: number) => void
-  onScoreSelect: (category: YahtzeeCategory) => void
-}) {
-  const categories: { key: YahtzeeCategory; label: string }[] = [
-    { key: 'ones', label: 'Ones' },
-    { key: 'twos', label: 'Twos' },
-    { key: 'threes', label: 'Threes' },
-    { key: 'fours', label: 'Fours' },
-    { key: 'fives', label: 'Fives' },
-    { key: 'sixes', label: 'Sixes' },
-    { key: 'threeOfKind', label: 'Three of a Kind' },
-    { key: 'fourOfKind', label: 'Four of a Kind' },
-    { key: 'fullHouse', label: 'Full House' },
-    { key: 'smallStraight', label: 'Small Straight' },
-    { key: 'largeStraight', label: 'Large Straight' },
-    { key: 'yahtzee', label: 'Yahtzee!' },
-    { key: 'chance', label: 'Chance' },
-  ]
-
-  const currentScore = gameState?.scores?.[gameState.currentPlayerIndex] || {}
-
-  return (
-    <>
-      <div className="card">
-        <h2 className="text-2xl font-bold mb-4">Dice</h2>
-        
-        <div className="flex gap-2 justify-center mb-6">
-          {gameState.dice.map((die, i) => (
-            <button
-              key={i}
-              className={`dice ${gameState.held[i] ? 'held' : ''}`}
-              onClick={() => onToggleHold(i)}
-              disabled={gameState.rollsLeft === 3}
-            >
-              {die}
-            </button>
-          ))}
-        </div>
-
-        <div className="text-center mb-4">
-          <p className="text-lg font-bold">Rolls left: {gameState.rollsLeft}</p>
-        </div>
-
-        <button
-          onClick={onRoll}
-          disabled={gameState.rollsLeft === 0}
-          className="btn btn-primary w-full text-lg"
-        >
-          🎲 Roll Dice
-        </button>
-      </div>
-
-      <div className="card">
-        <h2 className="text-2xl font-bold mb-4">Scorecard</h2>
-        
-        <div className="space-y-1 max-h-96 overflow-y-auto">
-          {categories.map(({ key, label }) => {
-            const isFilled = currentScore[key] !== undefined
-            const potentialScore = calculateScore(gameState.dice, key)
-
-            return (
-              <div
-                key={key}
-                className={`scorecard-row ${isFilled ? 'filled' : ''}`}
-                onClick={() => !isFilled && gameState.rollsLeft < 3 && onScoreSelect(key)}
-              >
-                <span>{label}</span>
-                <span className="font-bold">
-                  {isFilled ? currentScore[key] : `(${potentialScore})`}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-300 flex justify-between items-center font-bold text-lg">
-          <span>Total Score</span>
-          <span>{calculateTotalScore(currentScore)}</span>
-        </div>
-      </div>
-    </>
   )
 }
