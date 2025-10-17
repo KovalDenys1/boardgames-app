@@ -93,11 +93,21 @@ export async function POST(
     let game = lobby.games.find((g: any) => g.status === 'waiting')
 
     if (!game) {
-      // Create new game
+      // Create new game with initial Yahtzee state
+      const initialState = {
+        round: 0,
+        currentPlayerIndex: 0, // Start with first player
+        dice: [1, 1, 1, 1, 1],
+        held: [false, false, false, false, false],
+        rollsLeft: 3,
+        scores: [], // Will be initialized when players join
+        finished: false,
+      }
+      
       game = await prisma.game.create({
         data: {
           lobbyId: lobby.id,
-          state: JSON.stringify({ round: 0 }),
+          state: JSON.stringify(initialState),
           status: 'waiting',
         },
       })
@@ -138,6 +148,25 @@ export async function POST(
         scorecard: JSON.stringify({}),
       },
     })
+
+    // Initialize scores array in game state for this player
+    try {
+      const currentState = JSON.parse(game.state || '{}')
+      if (!currentState.scores) {
+        currentState.scores = []
+      }
+      // Add empty scorecard for new player
+      currentState.scores.push({})
+      
+      await prisma.game.update({
+        where: { id: game.id },
+        data: {
+          state: JSON.stringify(currentState),
+        },
+      })
+    } catch (error) {
+      console.error('Error updating game state with new player scores:', error)
+    }
 
     return NextResponse.json({ game, player })
   } catch (error) {

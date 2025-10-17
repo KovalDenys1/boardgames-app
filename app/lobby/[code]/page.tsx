@@ -166,6 +166,8 @@ export default function LobbyPage() {
         if (activeGame.state) {
           try {
             const parsedState = JSON.parse(activeGame.state)
+            console.log('🎲 Parsed game state:', parsedState)
+            
             // Ensure scores array exists and is properly initialized
             if (!parsedState.scores || !Array.isArray(parsedState.scores)) {
               parsedState.scores = []
@@ -178,6 +180,13 @@ export default function LobbyPage() {
             if (!parsedState.dice || !Array.isArray(parsedState.dice)) {
               parsedState.dice = rollDice()
             }
+            // Ensure currentPlayerIndex exists
+            if (typeof parsedState.currentPlayerIndex !== 'number') {
+              console.warn('⚠️ currentPlayerIndex is missing, setting to 0')
+              parsedState.currentPlayerIndex = 0
+            }
+            
+            console.log('✅ Final game state:', parsedState)
             setGameState(parsedState)
           } catch (parseError) {
             console.error('Failed to parse game state:', parseError)
