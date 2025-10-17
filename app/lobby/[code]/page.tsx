@@ -12,6 +12,7 @@ import {
   calculateTotalScore,
   isGameFinished,
 } from '@/lib/yahtzee'
+import { saveGameState } from '@/lib/game'
 
 let socket: Socket
 
@@ -77,7 +78,12 @@ export default function LobbyPage() {
       if (activeGame) {
         setGame(activeGame)
         if (activeGame.state) {
-          setGameState(JSON.parse(activeGame.state))
+          try {
+            setGameState(JSON.parse(activeGame.state))
+          } catch (parseError) {
+            console.error('Failed to parse game state:', parseError)
+            setError('Game state is corrupted. Please start a new game.')
+          }
         }
       }
     } catch (err: any) {
@@ -115,8 +121,8 @@ export default function LobbyPage() {
     }
   }
 
-  const handleRollDice = () => {
-    if (!gameState) return
+  const handleRollDice = async () => {
+    if (!gameState || !game) return
 
     const newDice = gameState.dice.map((die, i) =>
       gameState.held[i] ? die : Math.floor(Math.random() * 6) + 1
@@ -129,6 +135,11 @@ export default function LobbyPage() {
     }
 
     setGameState(newState)
+    
+    // Save to database
+    await saveGameState(game.id, newState)
+    
+    // Broadcast to other players
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
@@ -146,7 +157,7 @@ export default function LobbyPage() {
     setGameState(newState)
   }
 
-  const handleScoreSelection = (category: YahtzeeCategory) => {
+  const handleScoreSelection = async (category: YahtzeeCategory) => {
     if (!gameState || !game) return
 
     const playerIndex = gameState.currentPlayerIndex
@@ -173,6 +184,11 @@ export default function LobbyPage() {
     }
 
     setGameState(newState)
+    
+    // Save to database (with finished status if game ended)
+    await saveGameState(game.id, newState, allFinished ? 'finished' : 'playing')
+    
+    // Broadcast to other players
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
@@ -180,7 +196,7 @@ export default function LobbyPage() {
     })
   }
 
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
     if (!game) return
 
     const initialState: YahtzeeGameState = {
@@ -194,6 +210,11 @@ export default function LobbyPage() {
     }
 
     setGameState(initialState)
+    
+    // Save to database
+    await saveGameState(game.id, initialState, 'playing')
+    
+    // Broadcast to other players
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
