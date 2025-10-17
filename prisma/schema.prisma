@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  emailVerified DateTime?
+  username      String?   @unique
+  passwordHash  String?
+  image         String?
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  lobbies       Lobby[]   @relation("LobbyCreator")
+  players       Player[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Lobby {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  password  String?
+  maxPlayers Int     @default(4)
+  isActive  Boolean  @default(true)
+  gameType  String   @default("yahtzee")
+  createdAt DateTime @default(now())
+  creatorId String
+  creator   User     @relation("LobbyCreator", fields: [creatorId], references: [id])
+  games     Game[]
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  lobbyId   String
+  lobby     Lobby    @relation(fields: [lobbyId], references: [id])
+  state     String   @db.Text // JSON string with game state
+  status    String   @default("waiting") // waiting, playing, finished
+  currentTurn Int    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  players   Player[]
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  score     Int      @default(0)
+  scorecard String?  @db.Text // JSON string with Yahtzee scorecard
+  position  Int      // Player position in game (0, 1, 2, 3)
+  isReady   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@unique([gameId, userId])
+}
