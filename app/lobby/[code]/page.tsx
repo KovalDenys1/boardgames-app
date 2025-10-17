@@ -48,7 +48,20 @@ export default function LobbyPage() {
       socket.on('game-update', (data) => {
         console.log('Game update:', data)
         if (data.action === 'state-change') {
-          setGameState(data.payload)
+          const updatedState = data.payload
+          // Ensure scores array exists
+          if (!updatedState.scores || !Array.isArray(updatedState.scores)) {
+            updatedState.scores = []
+          }
+          // Ensure held array exists
+          if (!updatedState.held || !Array.isArray(updatedState.held)) {
+            updatedState.held = [false, false, false, false, false]
+          }
+          // Ensure dice array exists
+          if (!updatedState.dice || !Array.isArray(updatedState.dice)) {
+            updatedState.dice = rollDice()
+          }
+          setGameState(updatedState)
         }
       })
     }
@@ -79,7 +92,20 @@ export default function LobbyPage() {
         setGame(activeGame)
         if (activeGame.state) {
           try {
-            setGameState(JSON.parse(activeGame.state))
+            const parsedState = JSON.parse(activeGame.state)
+            // Ensure scores array exists and is properly initialized
+            if (!parsedState.scores || !Array.isArray(parsedState.scores)) {
+              parsedState.scores = []
+            }
+            // Ensure held array exists
+            if (!parsedState.held || !Array.isArray(parsedState.held)) {
+              parsedState.held = [false, false, false, false, false]
+            }
+            // Ensure dice array exists
+            if (!parsedState.dice || !Array.isArray(parsedState.dice)) {
+              parsedState.dice = rollDice()
+            }
+            setGameState(parsedState)
           } catch (parseError) {
             console.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
@@ -298,7 +324,7 @@ export default function LobbyPage() {
                       {i + 1}. {player.user.username}
                       {gameState && gameState.currentPlayerIndex === i && ' ← Current'}
                     </span>
-                    {gameState && (
+                    {gameState && gameState.scores && (
                       <span className="font-bold">
                         {calculateTotalScore(gameState.scores[i] || {})} pts
                       </span>
@@ -376,7 +402,7 @@ function YahtzeeGame({
     { key: 'chance', label: 'Chance' },
   ]
 
-  const currentScore = gameState.scores[gameState.currentPlayerIndex] || {}
+  const currentScore = gameState?.scores?.[gameState.currentPlayerIndex] || {}
 
   return (
     <>

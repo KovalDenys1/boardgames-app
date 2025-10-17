@@ -7,6 +7,9 @@ out
 dist
 build
 
+# TypeScript
+*.tsbuildinfo
+
 # Environment variables
 .env
 .env*.local

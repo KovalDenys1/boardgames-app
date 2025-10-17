@@ -15,6 +15,7 @@ export async function GET(
           select: {
             id: true,
             username: true,
+            email: true,
           },
         },
         games: {
@@ -24,7 +25,9 @@ export async function GET(
               include: {
                 user: {
                   select: {
+                    id: true,
                     username: true,
+                    email: true,
                   },
                 },
               },
@@ -41,7 +44,18 @@ export async function GET(
     return NextResponse.json({ lobby })
   } catch (error) {
     console.error('Get lobby error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Логируем подробности ошибки
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        code: params.code
+      })
+    }
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    }, { status: 500 })
   }
 }
 
@@ -128,6 +142,17 @@ export async function POST(
     return NextResponse.json({ game, player })
   } catch (error) {
     console.error('Join lobby error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Логируем подробности ошибки
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        code: params.code
+      })
+    }
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    }, { status: 500 })
   }
 }

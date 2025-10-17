@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
         creator: {
           select: {
             username: true,
+            email: true,
           },
         },
         games: {
