@@ -81,6 +81,17 @@ export default function RegisterForm() {
     }
   }
 
+  // Auto-suggest username from email
+  const handleEmailChange = (email: string) => {
+    setFormData({ ...formData, email })
+    
+    // Auto-fill username if it's empty or matches previous email suggestion
+    if (!formData.username || formData.username === formData.email.split('@')[0]) {
+      const suggestedUsername = email.split('@')[0]
+      setFormData({ ...formData, email, username: suggestedUsername })
+    }
+  }
+
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
     try {
@@ -125,7 +136,7 @@ export default function RegisterForm() {
               disabled={loading}
               className="input"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="your@email.com"
               autoComplete="email"
             />
@@ -148,6 +159,9 @@ export default function RegisterForm() {
               minLength={3}
               maxLength={20}
             />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Auto-suggested from email. You can change it.
+            </p>
             {fieldErrors.username && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.username}</p>
             )}
