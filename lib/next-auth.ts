@@ -128,9 +128,5 @@ export const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
-}
-
-export function getAuthOptions(): NextAuthOptions {
-  // Return a fresh object in case env or adapter state changes per request
-  return authOptions
+  debug: process.env.NODE_ENV === 'development',
 }

@@ -38,20 +38,8 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
-        redirect: false,
+        callbackUrl: '/',
       })
-
-      if (result?.error) {
-        throw new Error('Invalid credentials')
-      }
-
-      if (result?.ok) {
-        // Wait a bit for session to be set
-        await new Promise(resolve => setTimeout(resolve, 100))
-        window.location.href = '/'
-      } else {
-        throw new Error('Login failed. Please try again.')
-      }
     } catch (err: any) {
       setError(err.message)
     } finally {
