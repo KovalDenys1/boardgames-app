@@ -465,43 +465,97 @@ export default function LobbyPage() {
               </div>
             ) : gameState?.finished ? (
               <div className="card text-center animate-scale-in">
-                <h2 className="text-4xl font-bold mb-6">🎉 Game Over!</h2>
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in">
+                    <span className="text-6xl">🏆</span>
+                  </div>
+                  <h2 className="text-4xl font-bold mb-2">Game Over!</h2>
+                  <p className="text-gray-600 dark:text-gray-400">13 rounds completed</p>
+                </div>
+                
+                {/* Winner Announcement */}
+                {(() => {
+                  const scores = game?.players?.map((player: any, i: number) => ({
+                    name: player.user.username || `Player ${i + 1}`,
+                    score: calculateTotalScore(gameState.scores[i] || {}),
+                    index: i,
+                    scorecard: gameState.scores[i] || {},
+                  })).sort((a: any, b: any) => b.score - a.score)
+                  
+                  const winner = scores[0]
+                  const isWinner = winner.name === session?.user?.name || 
+                                  game?.players[winner.index]?.userId === session?.user?.id
+                  
+                  return (
+                    <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
+                      <p className="text-2xl font-bold mb-2">
+                        {isWinner ? '🎊 You Won! 🎊' : `🏆 ${winner.name} Wins! 🏆`}
+                      </p>
+                      <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
+                        {winner.score} points
+                      </p>
+                    </div>
+                  )
+                })()}
                 
                 {/* Winner Podium */}
                 <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-4">Final Standings</h3>
                   {game?.players
-                    ?.map((player: any, i: number) => ({
-                      name: player.user.username || `Player ${i + 1}`,
-                      score: calculateTotalScore(gameState.scores[i] || {}),
-                      index: i,
-                    }))
+                    ?.map((player: any, i: number) => {
+                      const scorecard = gameState.scores[i] || {}
+                      const upperSection = (scorecard.ones || 0) + (scorecard.twos || 0) + 
+                        (scorecard.threes || 0) + (scorecard.fours || 0) + 
+                        (scorecard.fives || 0) + (scorecard.sixes || 0)
+                      const bonus = upperSection >= 63 ? 35 : 0
+                      
+                      return {
+                        name: player.user.username || `Player ${i + 1}`,
+                        score: calculateTotalScore(scorecard),
+                        index: i,
+                        upperSection,
+                        bonus,
+                      }
+                    })
                     .sort((a: any, b: any) => b.score - a.score)
                     .map((player: any, rank: number) => (
                       <div
                         key={player.index}
                         className={`
-                          p-4 mb-3 rounded-lg flex items-center justify-between
-                          ${rank === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white scale-105' : ''}
-                          ${rank === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400' : ''}
-                          ${rank === 2 ? 'bg-gradient-to-r from-orange-300 to-orange-400' : ''}
+                          p-4 mb-3 rounded-lg transition-all duration-300
+                          ${rank === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white scale-105 shadow-xl' : ''}
+                          ${rank === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400 shadow-lg' : ''}
+                          ${rank === 2 ? 'bg-gradient-to-r from-orange-300 to-orange-400 shadow-lg' : ''}
                           ${rank > 2 ? 'bg-gray-100 dark:bg-gray-700' : ''}
-                          transform transition-all duration-300
+                          transform
                         `}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-3xl font-bold">
-                            {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
-                          </span>
-                          <span className="text-xl font-semibold">{player.name}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-3xl font-bold">
+                              {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
+                            </span>
+                            <div className="text-left">
+                              <p className="text-xl font-semibold">{player.name}</p>
+                              <p className={`text-sm ${rank === 0 ? 'text-yellow-100' : 'text-gray-600 dark:text-gray-400'}`}>
+                                Upper: {player.upperSection} {player.bonus > 0 ? `+${player.bonus} bonus` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-3xl font-bold">{player.score}</span>
                         </div>
-                        <span className="text-2xl font-bold">{player.score} pts</span>
                       </div>
                     ))}
                 </div>
 
-                <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
-                  🔄 Play Again
-                </button>
+                <div className="flex gap-4 justify-center">
+                  <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
+                    🔄 Play Again
+                  </button>
+                  <button onClick={() => router.push('/lobby')} className="btn btn-secondary text-lg px-8 py-3">
+                    🏠 Back to Lobbies
+                  </button>
+                </div>
               </div>
             ) : (
               <>

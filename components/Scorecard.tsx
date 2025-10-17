@@ -1,6 +1,6 @@
 'use client'
 
-import { YahtzeeScorecard, YahtzeeCategory } from '@/lib/yahtzee'
+import { YahtzeeScorecard, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 
 interface ScorecardProps {
   scorecard: YahtzeeScorecard
@@ -62,8 +62,10 @@ export default function Scorecard({
 
   const renderCategory = (category: YahtzeeCategory) => {
     const score = scorecard[category]
-    const isFilled = score !== null
+    const isFilled = score !== undefined
     const canSelect = canSelectCategory && !isFilled && isCurrentPlayer
+    const potentialScore = !isFilled && currentDice.length > 0 ? calculateScore(currentDice, category) : null
+    const isGoodScore = potentialScore !== null && potentialScore >= 20 // Highlight good scores
 
     return (
       <button
@@ -73,7 +75,8 @@ export default function Scorecard({
         className={`
           scorecard-row group relative
           ${isFilled ? 'cursor-default bg-gray-100 dark:bg-gray-800' : ''}
-          ${canSelect ? 'hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer' : ''}
+          ${canSelect && isGoodScore ? 'hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer ring-2 ring-green-400 dark:ring-green-600' : ''}
+          ${canSelect && !isGoodScore ? 'hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer' : ''}
           ${!canSelect && !isFilled ? 'opacity-50' : ''}
         `}
       >
@@ -90,8 +93,18 @@ export default function Scorecard({
             <span className="font-bold text-lg text-green-600 dark:text-green-400">
               {score}
             </span>
+          ) : canSelect && potentialScore !== null ? (
+            <div className="flex items-center gap-1">
+              <span className={`text-lg font-semibold group-hover:scale-110 transition-transform ${
+                isGoodScore ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'
+              }`}>
+                +{potentialScore}
+              </span>
+              {isGoodScore && <span className="text-xl animate-pulse">⭐</span>}
+              {potentialScore === 50 && <span className="text-xl animate-bounce">🎯</span>}
+            </div>
           ) : canSelect ? (
-            <span className="text-sm text-blue-600 dark:text-blue-400 group-hover:font-bold">
+            <span className="text-sm text-blue-600 dark:text-blue-400">
               Click to score
             </span>
           ) : (
