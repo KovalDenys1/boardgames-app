@@ -35,6 +35,36 @@ export default function LobbyPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
+  // Helper: Get current player index based on session user ID
+  const getCurrentPlayerIndex = () => {
+    if (!game?.players || !session?.user?.id) {
+      console.log('❌ No game.players or session.user.id:', { 
+        hasPlayers: !!game?.players, 
+        hasUserId: !!session?.user?.id 
+      })
+      return -1
+    }
+    
+    const index = game.players.findIndex((p: any) => p.userId === session.user.id)
+    console.log('🎮 Current player index:', {
+      sessionUserId: session.user.id,
+      players: game.players.map((p: any) => ({ id: p.userId, name: p.user?.username })),
+      foundIndex: index,
+      currentTurn: gameState?.currentPlayerIndex,
+      isMyTurn: index === gameState?.currentPlayerIndex
+    })
+    return index
+  }
+
+  // Helper: Check if it's current user's turn
+  const isMyTurn = () => {
+    if (!gameState) return false
+    const myIndex = getCurrentPlayerIndex()
+    const result = myIndex !== -1 && myIndex === gameState.currentPlayerIndex
+    console.log(`🔄 Is my turn? ${result} (myIndex: ${myIndex}, currentTurn: ${gameState.currentPlayerIndex})`)
+    return result
+  }
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login')
@@ -46,42 +76,77 @@ export default function LobbyPage() {
   }, [code, status])
 
   useEffect(() => {
-    if (!socket && lobby) {
-      const url = process.env.NEXT_PUBLIC_SOCKET_URL
-      socket = url ? io(url) : io()
-      socket.emit('join-lobby', code)
+    if (!lobby || !code) return
+
+    // Initialize socket connection
+    if (!socket) {
+      const url = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
+      console.log('🔌 Connecting to Socket.IO:', url)
+      
+      socket = io(url, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+      })
+
+      socket.on('connect', () => {
+        console.log('✅ Socket connected:', socket.id)
+        socket.emit('join-lobby', code)
+        toast.info('Connected to game server')
+      })
+
+      socket.on('disconnect', (reason) => {
+        console.log('❌ Socket disconnected:', reason)
+        if (reason === 'io server disconnect') {
+          // Server disconnected, try to reconnect
+          socket.connect()
+        }
+      })
+
+      socket.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error)
+        toast.error('Connection error. Please refresh the page.')
+      })
 
       socket.on('game-update', (data) => {
-        console.log('Game update:', data)
+        console.log('📡 Game update received:', data)
         if (data.action === 'state-change') {
           const updatedState = data.payload
-          // Ensure scores array exists
+          
+          // Validate and fix state
           if (!updatedState.scores || !Array.isArray(updatedState.scores)) {
             updatedState.scores = []
           }
-          // Ensure held array exists
           if (!updatedState.held || !Array.isArray(updatedState.held)) {
             updatedState.held = [false, false, false, false, false]
           }
-          // Ensure dice array exists
           if (!updatedState.dice || !Array.isArray(updatedState.dice)) {
             updatedState.dice = rollDice()
           }
+          
+          console.log('🎲 Setting new game state:', updatedState)
           setGameState(updatedState)
+          
+          // Reload lobby data to get updated player scores
+          loadLobby()
         }
       })
     }
 
     return () => {
-      if (socket) {
+      if (socket && socket.connected) {
+        console.log('🔌 Disconnecting socket')
         socket.emit('leave-lobby', code)
         socket.disconnect()
+        socket = null as any
       }
     }
   }, [lobby, code])
 
   const loadLobby = async () => {
     try {
+      console.log('🔄 Loading lobby:', code)
       const res = await fetch(`/api/lobby/${code}`)
       const data = await res.json()
 
@@ -89,12 +154,14 @@ export default function LobbyPage() {
         throw new Error(data.error || 'Failed to load lobby')
       }
 
+      console.log('✅ Lobby loaded:', data.lobby)
       setLobby(data.lobby)
       
       const activeGame = data.lobby.games.find((g: any) =>
         ['waiting', 'playing'].includes(g.status)
       )
       if (activeGame) {
+        console.log('🎮 Active game found:', activeGame)
         setGame(activeGame)
         if (activeGame.state) {
           try {
@@ -435,20 +502,33 @@ export default function LobbyPage() {
                     dice={gameState.dice}
                     held={gameState.held}
                     onToggleHold={handleToggleHold}
-                    disabled={
-                      gameState.rollsLeft === 3 ||
-                      gameState.currentPlayerIndex !==
-                        game.players.findIndex((p: any) => p.userId === session?.user?.id)
-                    }
+                    disabled={gameState.rollsLeft === 3 || !isMyTurn()}
                   />
                   
                   {/* Roll Button */}
                   <div className="card mt-4">
+                    {/* Turn Indicator */}
+                    <div className={`text-center mb-4 p-3 rounded-lg ${
+                      isMyTurn() 
+                        ? 'bg-green-100 dark:bg-green-900 border-2 border-green-500' 
+                        : 'bg-gray-100 dark:bg-gray-700'
+                    }`}>
+                      {isMyTurn() ? (
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                          🎯 YOUR TURN!
+                        </p>
+                      ) : (
+                        <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                          ⏳ Waiting for {game.players[gameState.currentPlayerIndex]?.user?.username || 'player'}...
+                        </p>
+                      )}
+                    </div>
+                    
                     <div className="text-center mb-4">
                       <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         Rolls Left: {gameState.rollsLeft}
                       </p>
-                      {gameState.rollsLeft === 0 && (
+                      {gameState.rollsLeft === 0 && isMyTurn() && (
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Choose a category to score
                         </p>
@@ -456,11 +536,7 @@ export default function LobbyPage() {
                     </div>
                     <button
                       onClick={handleRollDice}
-                      disabled={
-                        gameState.rollsLeft === 0 ||
-                        gameState.currentPlayerIndex !==
-                          game.players.findIndex((p: any) => p.userId === session?.user?.id)
-                      }
+                      disabled={gameState.rollsLeft === 0 || !isMyTurn()}
                       className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2"
                     >
                       🎲 Roll Dice
@@ -474,15 +550,8 @@ export default function LobbyPage() {
                     scorecard={gameState.scores[gameState.currentPlayerIndex] || {}}
                     currentDice={gameState.dice}
                     onSelectCategory={handleScoreSelection}
-                    canSelectCategory={
-                      gameState.rollsLeft < 3 &&
-                      gameState.currentPlayerIndex ===
-                        game.players.findIndex((p: any) => p.userId === session?.user?.id)
-                    }
-                    isCurrentPlayer={
-                      gameState.currentPlayerIndex ===
-                        game.players.findIndex((p: any) => p.userId === session?.user?.id)
-                    }
+                    canSelectCategory={gameState.rollsLeft < 3 && isMyTurn()}
+                    isCurrentPlayer={isMyTurn()}
                   />
                 </div>
               </div>
