@@ -176,6 +176,16 @@ export default function LobbyPage() {
           
           // Reload lobby data to get updated player scores
           loadLobby()
+        } else if (data.action === 'player-left') {
+          toast.info(`${data.payload.username || 'A player'} left the lobby`)
+          
+          if (data.payload.gameEnded) {
+            toast.warning('⚠️ Game ended! Not enough players remaining.')
+            setGameState(null)
+          }
+          
+          // Reload lobby to update player list
+          loadLobby()
         }
       })
     }
@@ -431,6 +441,52 @@ export default function LobbyPage() {
     toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
   }
 
+  const handleLeaveLobby = async () => {
+    if (!confirm('Are you sure you want to leave this lobby? The game will end if only one player remains.')) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/lobby/${code}/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to leave lobby')
+      }
+
+      // Notify other players via socket
+      if (socket) {
+        socket.emit('game-action', {
+          lobbyCode: code,
+          action: 'player-left',
+          payload: {
+            userId: session?.user?.id,
+            username: session?.user?.name,
+            gameEnded: data.gameEnded,
+          },
+        })
+      }
+
+      // Show success message
+      if (data.gameEnded) {
+        toast.success('You left the lobby. The game has ended.')
+      } else {
+        toast.success('You left the lobby.')
+      }
+
+      // Redirect to lobby list
+      router.push('/lobby')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to leave lobby')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -467,7 +523,7 @@ export default function LobbyPage() {
                 Code: <span className="font-mono font-bold text-lg">{lobby.code}</span>
               </p>
             </div>
-            <button onClick={() => router.push('/lobby')} className="btn btn-secondary">
+            <button onClick={handleLeaveLobby} className="btn btn-secondary">
               Leave
             </button>
           </div>

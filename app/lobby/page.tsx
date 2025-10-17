@@ -14,7 +14,13 @@ interface Lobby {
     username: string | null
     email: string | null
   }
-  games: any[]
+  games: {
+    id: string
+    status: string
+    _count: {
+      players: number
+    }
+  }[]
 }
 
 export default function LobbyListPage() {
@@ -161,14 +167,18 @@ export default function LobbyListPage() {
                       </div>
                     </div>
                     <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                      lobby.games.length > 0
+                      lobby.games.length > 0 && lobby.games[0].status === 'playing'
                         ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                         : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
                     }`}>
                       <div className={`w-2 h-2 rounded-full ${
-                        lobby.games.length > 0 ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+                        lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
                       }`}></div>
-                      {lobby.games.length > 0 ? 'Playing' : 'Waiting'}
+                      {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
+                        `Playing (${lobby.games[0]._count.players})`
+                      ) : (
+                        'Waiting'
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm">

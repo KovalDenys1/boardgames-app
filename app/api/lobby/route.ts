@@ -124,7 +124,15 @@ export async function GET(request: NextRequest) {
         },
         games: {
           where: { status: 'playing' },
-          select: { id: true },
+          select: { 
+            id: true,
+            status: true,
+            _count: {
+              select: {
+                players: true
+              }
+            }
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
