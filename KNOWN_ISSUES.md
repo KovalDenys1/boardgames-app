@@ -22,6 +22,21 @@
 **Issue:** Corrupted JSON in game state would crash the app  
 **Fix:** Added try-catch with user-friendly error message
 
+### 5. ✅ Lobby State Management
+**Status:** Fixed (December 2024)  
+**Issue:** App incorrectly showed game interface when just entering lobby  
+**Fix:** Added proper state distinction (isInGame, isGameStarted, isWaitingInLobby)
+
+### 6. ✅ Leave Lobby Confirmation
+**Status:** Fixed (December 2024)  
+**Issue:** Always asked confirmation even when game not started  
+**Fix:** Confirmation only required for active games, different logic for waiting vs playing
+
+### 7. ✅ Prerender Errors
+**Status:** Fixed (December 2024)  
+**Issue:** useSearchParams() in client component during SSR caused build failures  
+**Fix:** Split pages into Suspense wrapper + form component
+
 ---
 
 ## ⚠️ Current Limitations
@@ -81,16 +96,13 @@ socket.on('reconnect', async (lobbyCode) => {
 })
 ```
 
-### 4. No Game State Persistence
-**Impact:** High  
-**Description:** Game state is only stored in client memory and Socket.IO. If all players disconnect, the game is lost.
+### 4. No Complete Game State Persistence
+**Impact:** Medium  
+**Description:** Game state is stored in database but could benefit from more frequent updates.
 
-**Recommended Fix:**
-- Save game state to database after every action
-- Update `handleRollDice()` and `handleScoreSelection()` to call API
-- Load state from database on page load
+**Current State:** Game state is saved on game start and when players leave. Additional persistence on every turn would improve reliability.
 
-**Example:**
+**Recommended Enhancement:**
 ```typescript
 const handleScoreSelection = async (category: YahtzeeCategory) => {
   const res = await fetch(`/api/game/${game.id}/move`, {
@@ -104,21 +116,11 @@ const handleScoreSelection = async (category: YahtzeeCategory) => {
 }
 ```
 
-### 5. No Turn Validation
-**Impact:** High  
-**Description:** Any player can roll dice or score at any time, even if it's not their turn.
+### 5. Turn Validation
+**Impact:** Medium  
+**Description:** Turn validation is primarily client-side. Server-side validation would prevent cheating.
 
-**Recommended Fix:**
-```typescript
-const handleRollDice = () => {
-  const currentPlayer = game.players[gameState.currentPlayerIndex]
-  if (currentPlayer.userId !== session?.user?.id) {
-    alert("It's not your turn!")
-    return
-  }
-  // ... rest of logic
-}
-```
+**Current State:** Clients check if it's their turn before allowing actions. Additional server-side validation recommended for production.
 
 ---
 

@@ -1,6 +1,6 @@
 # 🎮 Boardgames App - Development Roadmap
 
-## ✅ Done (MVP - Minimum Viable Product)
+## ✅ Completed Features
 
 ### Infrastructure
 - [x] Next.js 14 (App Router) configured
@@ -9,81 +9,95 @@
 - [x] WebSocket server (Socket.IO) for real-time interactions
 - [x] TypeScript configuration
 - [x] Tailwind CSS for styling
+- [x] Deployed to production on Render.com
 
 ### Authentication
 - [x] NextAuth.js integration
 - [x] Credential-based login (email + password)
-- [x] OAuth providers configured (Google, GitHub) - require credentials
+- [x] OAuth providers (Google, GitHub)
 - [x] JWT tokens for API
 - [x] Protected API routes
+- [x] User profile management with username editing
 
-### Core functionality
+### Core Functionality
 - [x] User registration and login
 - [x] Create lobbies with settings (name, password, max players)
-- [x] List active lobbies
-- [x] Join a lobby
+- [x] List active lobbies with real-time status
+- [x] Join lobbies with password protection
+- [x] Lobby cleanup system (2-hour inactive threshold)
+- [x] Invite links with copy functionality
+- [x] Owner-only game start (minimum 2 players)
+- [x] Leave lobby with proper game ending logic
+- [x] Player list with real-time updates
 - [x] Yahtzee game engine (dice rolls, scoring)
-- [x] Basic game UI
+- [x] 60-second turn timer with visual warnings
+- [x] Game state management (waiting/playing/finished)
+- [x] Real-time multiplayer with Socket.IO
 
 ---
 
-## 🚀 Next development steps
+## 🚀 Future Enhancements
 
-### Phase 1: Finalize OAuth and testing (1-2 days)
+### Phase 1: Polish & UX Improvements
+- [ ] Add player ready/not ready status in waiting lobby
+- [ ] Add animations for state transitions
+- [ ] Show reconnection status for disconnected players
+- [ ] Add sound effects for dice rolls and turn changes
+- [ ] Mobile responsive improvements
 
-#### Critical tasks
-- [ ] **Obtain OAuth credentials**
-  - Create a project in [Google Cloud Console](https://console.cloud.google.com/)
-  - Create a GitHub OAuth App in [Developer Settings](https://github.com/settings/developers)
-  - Add credentials to `.env.local`
-  - Set callback URLs: `http://localhost:3000/api/auth/callback/google` and `/github`
+### Phase 2: Additional Games
+- [ ] Add other board games (e.g., Ludo, Monopoly)
+- [ ] Game selection in lobby creation
+- [ ] Game-specific settings and rules
 
-- [ ] **Test all authentication methods**
-  - Registration via email/password
-  - Login via Google
-  - Login via GitHub
-  - Verify Account records created in DB
+### Phase 3: Social Features
+- [ ] Friend system
+- [ ] Private messages
+- [ ] Game history and statistics
+- [ ] Leaderboards
+- [ ] Achievements
 
-- [ ] **Improve error handling**
-  - Show clear user-facing messages
-  - Log server-side errors
-  - Add form validation (Zod schemas)
+### Phase 4: Advanced Features
+- [ ] Spectator mode
+- [ ] Replay saved games
+- [ ] AI opponents
+- [ ] Tournament mode
+
+---
+
+## 📝 Technical Debt & Improvements
+
+### Security
+- [ ] Add Socket.IO authentication with JWT tokens
+- [ ] Implement rate limiting for API endpoints
+- [ ] Add CSRF protection for form submissions
+
+### Performance
+- [ ] Optimize database queries with proper indexes
+- [ ] Add caching for lobby list
+- [ ] Implement pagination for large lobby lists
+
+### Code Quality
+- [ ] Add unit tests for game logic
+- [ ] Add integration tests for API routes
+- [ ] Add E2E tests for critical user flows
+- [ ] Improve error handling and logging
 
 ---
 
-### Phase 2: Yahtzee gameplay improvements (3-5 days)
+## 🎯 Recently Completed
 
-#### UI/UX improvements
-- [ ] **Gameplay animations**
-  - Dice roll animations (CSS or Framer Motion)
-  - Smooth transitions between rounds
-  - Visual feedback on selecting/holding dice
-
-- [ ] **Improved scorecard**
-  - Color coding for possible scores
-  - Highlight best choices
-  - Round history
-  - Game progress bar
-
-- [ ] **Turns and timers system**
-  - Per-turn timer (optional)
-  - "Your turn" notification
-  - Auto-skip on AFK
-
-#### Multiplayer features
-- [ ] **Real-time sync**
-  - Sync game state via Socket.IO
-  - Show active player
-  - Notify on others' actions
-  - Reconnection logic on disconnect
-
-- [ ] **Lobby features**
-  - Lobby chat
-  - Ready check
-  - Kick players (host only)
-  - Game settings (round count, rule variants)
-
----
+### December 2024
+- ✅ Owner-only game start with minimum 2 players requirement
+- ✅ 60-second turn timer with visual warnings (yellow at 30s, red at 10s)
+- ✅ User profile page with username editing
+- ✅ Invite link functionality with copy button
+- ✅ Lobby cleanup system (client-triggered, 2-hour inactive threshold)
+- ✅ Real-time game status display (Playing/Waiting with player count)
+- ✅ Fixed lobby state management (waiting vs playing distinction)
+- ✅ Leave lobby API with proper game ending logic
+- ✅ Fixed Next.js prerender errors with Suspense boundaries
+- ✅ Code cleanup: removed unused components and incomplete features
 
 ### Phase 3: Additional games (1-2 weeks)
 
@@ -164,110 +178,9 @@
   - React Query for client caching
   - Next.js ISR for static pages
 
-- [ ] **Database optimization**
-  - Indexes on hot paths
-  - Database pooling (PgBouncer)
-  - Prisma Accelerate (optional)
-
-- [ ] **Code splitting**
-  - Dynamic imports for games
-  - Component lazy loading
-  - Bundle size optimization
-
-#### Monitoring
-- [ ] Error tracking (Sentry)
-- [ ] Analytics (Vercel Analytics or Google Analytics)
-- [ ] Logging (Winston or Pino)
-- [ ] Health check endpoints
-- [ ] Uptime monitoring (UptimeRobot)
-
-#### Deployment
-- [ ] **Production environment**
-  - Vercel or Railway for hosting
-  - Render or Supabase for DB
-  - Environment variables management
-  
-- [ ] **CI/CD**
-  - GitHub Actions for tests
-  - Auto-deploy on push to main
-  - Staging environment
-
-- [ ] **Database migrations**
-  - Migrations strategy (`prisma migrate deploy`)
-  - Backup strategy
-  - Rollback plan
-
 ---
 
-### Phase 6: Monetization and growth (optional)
-
-- [ ] **Premium features**
-  - Unlimited private lobbies
-  - Custom themes/avatars
-  - Ad-free experience
-  - Exclusive games
-
-- [ ] **Ads**
-  - Google AdSense integration
-  - Banners between games
-  - Respecting user experience
-
-- [ ] **Mobile app**
-  - React Native
-  - Push notifications
-  - App Store / Google Play
-
----
-
-## 🛠 Technical improvements
-
-### Testing
-- [ ] Unit tests (Jest + React Testing Library)
-- [ ] E2E tests (Playwright)
-- [ ] API tests (Supertest)
-- [ ] Coverage > 80%
-
-### Documentation
-- [ ] API documentation (Swagger/OpenAPI)
-- [ ] Component Storybook
-- [ ] Contribution guidelines
-- [ ] Deployment guide
-
-### Developer Experience
-- [ ] Husky git hooks
-- [ ] ESLint + Prettier config
-- [ ] Commit linting (Conventional Commits)
-- [ ] GitHub issue templates
-
----
-
-## 📊 Success metrics
-
-### Technical
-- Page load < 2s
-- Time to interactive < 3s
-- 99.9% uptime
-- < 100ms API response time
-
-### Business
-- 100+ active users in the first month
-- 1000+ games played
-- < 5% churn rate
-- Average session > 15 minutes
-
----
-
-## 🎯 Weekly priorities (this week)
-
-1. **[CRITICAL]** Obtain and configure Google/GitHub OAuth credentials
-2. **[HIGH]** Test full registration/login flows
-3. **[HIGH]** Finish Yahtzee real-time with Socket.IO
-4. **[MEDIUM]** Add visual polish (dice animations)
-5. **[MEDIUM]** Lobby chat system
-
----
-
-## 📝 Useful commands
+## � Useful Commands
 
 ```bash
 # Development
@@ -283,7 +196,6 @@ npm start                # Start production server
 npx prisma migrate dev --name <name>   # Create migration
 npx prisma migrate deploy              # Apply migrations (prod)
 npx prisma generate                    # Regenerate Prisma Client
-npx prisma db seed                     # Seed database (if configured)
 ```
 
 ---

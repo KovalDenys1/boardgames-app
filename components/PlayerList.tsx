@@ -26,7 +26,7 @@ export default function PlayerList({ players, currentTurn, currentUserId }: Play
   const [animatingScores, setAnimatingScores] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    // Проверяем, изменились ли счета
+    // Check if scores have changed
     const newAnimating: Record<string, boolean> = {}
     players.forEach(player => {
       if (prevScores[player.id] !== undefined && prevScores[player.id] !== player.score) {
