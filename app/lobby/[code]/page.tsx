@@ -35,6 +35,8 @@ export default function LobbyPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [viewingPlayerIndex, setViewingPlayerIndex] = useState<number>(0) // Чью карточку смотрим
+  const [timeLeft, setTimeLeft] = useState<number>(60) // Таймер на ход (60 секунд)
+  const [timerActive, setTimerActive] = useState<boolean>(false)
 
   // Helper: Get current player index based on session user ID
   const getCurrentPlayerIndex = () => {
@@ -85,6 +87,38 @@ export default function LobbyPage() {
       }
     }
   }, [game?.players, session?.user?.id])
+
+  // Таймер на ход
+  useEffect(() => {
+    if (!gameState || gameState.finished || !timerActive) return
+
+    // Сбрасываем таймер при смене хода
+    if (isMyTurn()) {
+      setTimeLeft(60)
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1 && isMyTurn()) {
+          // Время вышло - автоматически выбираем первую доступную категорию с 0 очков
+          handleTimeOut()
+          return 60
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [gameState?.currentPlayerIndex, timerActive, gameState?.finished])
+
+  // Активируем таймер когда игра начинается
+  useEffect(() => {
+    if (gameState && !gameState.finished && game?.players?.length >= 2) {
+      setTimerActive(true)
+    } else {
+      setTimerActive(false)
+    }
+  }, [gameState, game?.players?.length])
 
   useEffect(() => {
     if (!lobby || !code) return
@@ -281,6 +315,28 @@ export default function LobbyPage() {
     setGameState(newState)
   }
 
+  const handleTimeOut = async () => {
+    if (!gameState || !game) return
+
+    // Находим первую незаполненную категорию и ставим 0
+    const categories: YahtzeeCategory[] = [
+      'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
+      'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
+      'largeStraight', 'yahtzee', 'chance'
+    ]
+
+    const playerIndex = gameState.currentPlayerIndex
+    const currentScorecard = gameState.scores[playerIndex] || {}
+    
+    // Находим первую доступную категорию
+    const availableCategory = categories.find(cat => currentScorecard[cat] === undefined)
+    
+    if (availableCategory) {
+      toast.error('⏰ Time is up! First available category filled with 0 points.')
+      await handleScoreSelection(availableCategory)
+    }
+  }
+
   const handleScoreSelection = async (category: YahtzeeCategory) => {
     if (!gameState || !game) return
 
@@ -324,6 +380,9 @@ export default function LobbyPage() {
     toast.success(`Scored ${score} points in ${categoryName}!`)
     
     if (allFinished) {
+      // Остановить таймер, когда игра заканчивается
+      setTimerActive(false)
+      
       // Calculate winner
       const scores = newScores.map(sc => calculateTotalScore(sc))
       const maxScore = Math.max(...scores)
@@ -351,6 +410,10 @@ export default function LobbyPage() {
     }
 
     setGameState(initialState)
+    
+    // Активировать таймер
+    setTimerActive(true)
+    setTimeLeft(60)
     
     // Save to database
     await saveGameState(game.id, initialState, 'playing')
@@ -463,16 +526,39 @@ export default function LobbyPage() {
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
                     {game?.players?.length || 0} player(s) in lobby
                   </p>
+                  {game?.players?.length < 2 ? (
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
+                      ⏳ Waiting for more players to join... (minimum 2 players)
+                    </p>
+                  ) : (
+                    <p className="text-sm text-green-600 dark:text-green-400 mb-4">
+                      ✅ Ready to start!
+                    </p>
+                  )}
                   <p className="text-sm text-gray-500 dark:text-gray-500">
                     Roll the dice, score big, and have fun!
                   </p>
                 </div>
-                <button 
-                  onClick={handleStartGame} 
-                  className="btn btn-success text-lg px-8 py-3 animate-bounce-in"
-                >
-                  🎮 Start Yahtzee Game
-                </button>
+                
+                {/* Only lobby creator can start the game */}
+                {lobby?.creatorId === session?.user?.id ? (
+                  <button 
+                    onClick={handleStartGame}
+                    disabled={game?.players?.length < 2}
+                    className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    🎮 Start Yahtzee Game
+                  </button>
+                ) : (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
+                    <p className="text-blue-700 dark:text-blue-300 font-semibold">
+                      ⏳ Waiting for host to start the game...
+                    </p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                      Host: {lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : gameState?.finished ? (
               <div className="card text-center animate-scale-in">
@@ -572,7 +658,7 @@ export default function LobbyPage() {
               <>
                 {/* Game Status Bar */}
                 <div className="card mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="grid grid-cols-4 gap-4 text-center">
                     <div>
                       <p className="text-sm opacity-90">Round</p>
                       <p className="text-3xl font-bold">{Math.floor(gameState.round / (game?.players?.length || 1)) + 1} / 13</p>
@@ -588,6 +674,20 @@ export default function LobbyPage() {
                       <p className="text-3xl font-bold">
                         {calculateTotalScore(gameState.scores[getCurrentPlayerIndex()] || {})}
                       </p>
+                    </div>
+                    <div>
+                      <p className="text-sm opacity-90">Time Left</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className={`text-3xl font-bold ${
+                          timeLeft <= 10 ? 'text-red-300 animate-pulse' : 
+                          timeLeft <= 30 ? 'text-yellow-300' : ''
+                        }`}>
+                          {timeLeft}s
+                        </div>
+                        {timeLeft <= 10 && (
+                          <span className="text-2xl animate-bounce">⏰</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -605,15 +705,37 @@ export default function LobbyPage() {
                   {/* Roll Button */}
                   <div className="card mt-4">
                     {/* Turn Indicator */}
-                    <div className={`text-center mb-4 p-3 rounded-lg ${
+                    <div className={`text-center mb-4 p-4 rounded-lg transition-all ${
                       isMyTurn() 
-                        ? 'bg-green-100 dark:bg-green-900 border-2 border-green-500' 
+                        ? timeLeft <= 10 
+                          ? 'bg-red-100 dark:bg-red-900 border-2 border-red-500 animate-pulse' 
+                          : timeLeft <= 30
+                            ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
+                            : 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
                         : 'bg-gray-100 dark:bg-gray-700'
                     }`}>
                       {isMyTurn() ? (
-                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                          🎯 YOUR TURN!
-                        </p>
+                        <div className="space-y-2">
+                          <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                            🎯 YOUR TURN!
+                          </p>
+                          <div className={`text-3xl font-extrabold ${
+                            timeLeft <= 10 
+                              ? 'text-red-600 dark:text-red-400' 
+                              : timeLeft <= 30
+                                ? 'text-yellow-600 dark:text-yellow-400'
+                                : 'text-gray-700 dark:text-gray-300'
+                          }`}>
+                            <span className={timeLeft <= 10 ? 'animate-bounce inline-block' : ''}>
+                              {timeLeft <= 10 ? '⏰' : '⏱️'}
+                            </span> {timeLeft}s
+                          </div>
+                          {timeLeft <= 10 && (
+                            <p className="text-sm text-red-600 dark:text-red-400 font-semibold">
+                              ⚠️ Hurry up! Time is running out!
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
                           ⏳ Waiting for {game.players[gameState.currentPlayerIndex]?.user?.username || 'player'}...
