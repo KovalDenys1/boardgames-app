@@ -1,20 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function HomePage() {
   const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-
-  // Check if user is logged in
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token')
-    if (token && !isLoggedIn) {
-      setIsLoggedIn(true)
-    }
-  }
+  const { data: session, status } = useSession()
+  const isLoggedIn = status === 'authenticated'
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
@@ -41,10 +34,7 @@ export default function HomePage() {
               Create New Lobby
             </button>
             <button
-              onClick={() => {
-                localStorage.removeItem('token')
-                setIsLoggedIn(false)
-              }}
+              onClick={() => signOut({ callbackUrl: '/' })}
               className="btn btn-secondary w-full"
             >
               Logout
