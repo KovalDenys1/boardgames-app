@@ -7,8 +7,6 @@ import { prisma } from './db'
 import { comparePassword } from './auth'
 
 export const authOptions: NextAuthOptions = {
-  // Use adapter in production to save OAuth users to database
-  adapter: PrismaAdapter(prisma),
   providers: [
     // Include providers only when configured to avoid build-time errors
     ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
@@ -67,26 +65,53 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/login',
   },
-  cookies: {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-      },
-    },
-  },
+  useSecureCookies: true,
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      // Handle OAuth sign-ins (Google, GitHub)
+      if (account?.provider && account.provider !== 'credentials') {
+        try {
+          // Check if user already exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+          })
+
+          if (!existingUser) {
+            // Create new user from OAuth profile
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+                username: user.email!.split('@')[0],
+                emailVerified: new Date(),
+              },
+            })
+          }
+        } catch (error) {
+          console.error('Error saving OAuth user:', error)
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
+        // For credentials login, user.id is already set
         token.id = user.id
+      } else if (account?.provider && token.email) {
+        // For OAuth, fetch user from database
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+        })
+        if (dbUser) {
+          token.id = dbUser.id
+        }
       }
       return token
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         session.user.id = token.id as string
       }
       return session
