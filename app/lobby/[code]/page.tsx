@@ -35,11 +35,10 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [viewingPlayerIndex, setViewingPlayerIndex] = useState<number>(0) // Чью карточку смотрим
-  const [timeLeft, setTimeLeft] = useState<number>(60) // Таймер на ход (60 секунд)
+  const [viewingPlayerIndex, setViewingPlayerIndex] = useState<number>(0)
+  const [timeLeft, setTimeLeft] = useState<number>(60)
   const [timerActive, setTimerActive] = useState<boolean>(false)
 
-  // Helper: Get current player index based on session user ID
   const getCurrentPlayerIndex = () => {
     if (!game?.players || !session?.user?.id) {
       console.log('❌ No game.players or session.user.id:', { 
@@ -60,7 +59,6 @@ export default function LobbyPage() {
     return index
   }
 
-  // Helper: Check if it's current user's turn
   const isMyTurn = () => {
     if (!gameState) return false
     const myIndex = getCurrentPlayerIndex()
@@ -79,7 +77,6 @@ export default function LobbyPage() {
     }
   }, [code, status])
 
-  // Автоматически показываем карточку текущего пользователя при загрузке
   useEffect(() => {
     if (game?.players && session?.user?.id) {
       const myIndex = getCurrentPlayerIndex()
@@ -89,19 +86,16 @@ export default function LobbyPage() {
     }
   }, [game?.players, session?.user?.id])
 
-  // Таймер на ход
   useEffect(() => {
     if (!gameState || gameState.finished || !timerActive) return
 
-    // Сбрасываем таймер при смене хода
-    if (isMyTurn()) {
-      setTimeLeft(60)
-    }
+    setTimeLeft(60)
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1 && isMyTurn()) {
-          // Время вышло - автоматически выбираем первую доступную категорию с 0 очков
+        if (!isMyTurn()) return prev
+        
+        if (prev <= 1) {
           handleTimeOut()
           return 60
         }
@@ -112,7 +106,6 @@ export default function LobbyPage() {
     return () => clearInterval(timer)
   }, [gameState?.currentPlayerIndex, timerActive, gameState?.finished])
 
-  // Активируем таймер когда игра начинается
   useEffect(() => {
     if (gameState && !gameState.finished && game?.players?.length >= 2) {
       setTimerActive(true)
@@ -124,7 +117,6 @@ export default function LobbyPage() {
   useEffect(() => {
     if (!lobby || !code) return
 
-    // Initialize socket connection
     if (!socket) {
       const url = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
       console.log('🔌 Connecting to Socket.IO:', url)
@@ -145,14 +137,18 @@ export default function LobbyPage() {
       socket.on('disconnect', (reason) => {
         console.log('❌ Socket disconnected:', reason)
         if (reason === 'io server disconnect') {
-          // Server disconnected, try to reconnect
           socket.connect()
         }
       })
 
       socket.on('connect_error', (error) => {
         console.error('❌ Socket connection error:', error)
-        toast.error('Connection error. Please refresh the page.')
+        toast.error('Connection error. Trying to reconnect...')
+        setTimeout(() => {
+          if (!socket.connected) {
+            socket.connect()
+          }
+        }, 2000)
       })
 
       socket.on('game-update', (data) => {
@@ -160,7 +156,6 @@ export default function LobbyPage() {
         if (data.action === 'state-change') {
           const updatedState = data.payload
           
-          // Validate and fix state
           if (!updatedState.scores || !Array.isArray(updatedState.scores)) {
             updatedState.scores = []
           }
@@ -173,8 +168,6 @@ export default function LobbyPage() {
           
           console.log('🎲 Setting new game state:', updatedState)
           setGameState(updatedState)
-          
-          // Reload lobby data to get updated player scores
           loadLobby()
         } else if (data.action === 'player-left') {
           toast.info(`${data.payload.username || 'A player'} left the lobby`)
@@ -183,8 +176,6 @@ export default function LobbyPage() {
             toast.warning('⚠️ Game ended! Not enough players remaining.')
             setGameState(null)
           }
-          
-          // Reload lobby to update player list
           loadLobby()
         }
       })
@@ -224,19 +215,15 @@ export default function LobbyPage() {
             const parsedState = JSON.parse(activeGame.state)
             console.log('🎲 Parsed game state:', parsedState)
             
-            // Ensure scores array exists and is properly initialized
             if (!parsedState.scores || !Array.isArray(parsedState.scores)) {
               parsedState.scores = []
             }
-            // Ensure held array exists
             if (!parsedState.held || !Array.isArray(parsedState.held)) {
               parsedState.held = [false, false, false, false, false]
             }
-            // Ensure dice array exists
             if (!parsedState.dice || !Array.isArray(parsedState.dice)) {
               parsedState.dice = rollDice()
             }
-            // Ensure currentPlayerIndex exists
             if (typeof parsedState.currentPlayerIndex !== 'number') {
               console.warn('⚠️ currentPlayerIndex is missing, setting to 0')
               parsedState.currentPlayerIndex = 0
@@ -299,11 +286,8 @@ export default function LobbyPage() {
     }
 
     setGameState(newState)
-    
-    // Save to database
     await saveGameState(game.id, newState)
     
-    // Broadcast to other players
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
@@ -329,7 +313,6 @@ export default function LobbyPage() {
   const handleTimeOut = async () => {
     if (!gameState || !game) return
 
-    // Находим первую незаполненную категорию и ставим 0
     const categories: YahtzeeCategory[] = [
       'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
       'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
@@ -338,8 +321,6 @@ export default function LobbyPage() {
 
     const playerIndex = gameState.currentPlayerIndex
     const currentScorecard = gameState.scores[playerIndex] || {}
-    
-    // Находим первую доступную категорию
     const availableCategory = categories.find(cat => currentScorecard[cat] === undefined)
     
     if (availableCategory) {
@@ -375,26 +356,20 @@ export default function LobbyPage() {
     }
 
     setGameState(newState)
-    
-    // Save to database (with finished status if game ended)
     await saveGameState(game.id, newState, allFinished ? 'finished' : 'playing')
     
-    // Broadcast to other players
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
       payload: newState,
     })
 
-    // Show notifications
     const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
     toast.success(`Scored ${score} points in ${categoryName}!`)
     
     if (allFinished) {
-      // Остановить таймер, когда игра заканчивается
       setTimerActive(false)
       
-      // Calculate winner
       const scores = newScores.map(sc => calculateTotalScore(sc))
       const maxScore = Math.max(...scores)
       const winnerIndex = scores.indexOf(maxScore)
@@ -421,28 +396,22 @@ export default function LobbyPage() {
     }
 
     setGameState(initialState)
-    
-    // Активировать таймер
     setTimerActive(true)
     setTimeLeft(60)
     
-    // Save to database
     await saveGameState(game.id, initialState, 'playing')
     
-    // Broadcast to other players
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
       payload: initialState,
     })
 
-    // Show notification
     const firstPlayerName = game.players[0]?.user?.username || 'Player 1'
     toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
   }
 
   const handleLeaveLobby = async () => {
-    // Только спрашиваем подтверждение если игра уже началась
     if (isGameStarted && !confirm('Are you sure you want to leave this game? The game will end if only one player remains.')) {
       return
     }
@@ -461,7 +430,6 @@ export default function LobbyPage() {
         throw new Error(data.error || 'Failed to leave lobby')
       }
 
-      // Notify other players via socket
       if (socket) {
         socket.emit('game-action', {
           lobbyCode: code,
@@ -632,7 +600,6 @@ export default function LobbyPage() {
                   </p>
                 </div>
                 
-                {/* Only lobby creator can start the game */}
                 {lobby?.creatorId === session?.user?.id ? (
                   <button 
                     onClick={handleStartGame}
@@ -662,7 +629,6 @@ export default function LobbyPage() {
                   <p className="text-gray-600 dark:text-gray-400">13 rounds completed</p>
                 </div>
                 
-                {/* Winner Announcement */}
                 {(() => {
                   const scores = game?.players?.map((player: any, i: number) => ({
                     name: player.user.username || `Player ${i + 1}`,
