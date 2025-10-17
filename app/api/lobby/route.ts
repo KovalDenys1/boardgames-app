@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { verifyToken } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/next-auth'
 import { generateLobbyCode } from '@/lib/lobby'
 
 const createLobbySchema = z.object({
@@ -12,16 +13,10 @@ const createLobbySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Verify authentication with NextAuth
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -44,7 +39,7 @@ export async function POST(request: NextRequest) {
         name,
         password,
         maxPlayers,
-        creatorId: payload.userId,
+        creatorId: session.user.id,
       },
     })
 
