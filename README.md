@@ -1,354 +1,219 @@
-# 🎮 BoardGames App# BoardGames - Multiplayer Board Games Platform
+# 🎮 BoardGames - Multiplayer Platform
 
+A real-time multiplayer board games platform built with Next.js, Socket.IO, and PostgreSQL. Currently features Yahtzee with support for multiple simultaneous games.
 
+## ✨ Features
 
-A real-time multiplayer board games platform built with Next.js, Socket.IO, and PostgreSQL. Currently features Yahtzee with support for multiple simultaneous games.A full-stack app for playing board games online with friends. First game: **Yahtzee**.
+- 🎲 **Real-time Yahtzee** - Play with friends in real-time
+- 👥 **Multiplayer Lobbies** - Create or join game rooms with unique codes
+- 🔐 **Authentication** - Secure login with email/password or OAuth (Google, GitHub)
+- 🎯 **Live Game State** - Synchronized game state across all players
+- ⏱️ **Turn Timer** - 60-second timer per turn with visual warnings
+- 🏆 **Score Tracking** - Automatic score calculation and winner determination
+- 🔗 **Invite Links** - Share lobby links with friends
+- 👤 **User Profiles** - Customizable username and profile settings
+- 📱 **Responsive Design** - Works on desktop and mobile devices
 
+## 🛠 Tech Stack
 
-
-## ✨ Features## 🎯 Features
-
-
-
-- 🎲 **Real-time Yahtzee** - Play with friends in real-time- ✅ User registration and authentication (JWT + bcrypt)
-
-- 👥 **Multiplayer Lobbies** - Create or join game rooms with unique codes- ✅ Create lobbies with unique codes
-
-- 🔐 **Authentication** - Secure login with email/password or OAuth (Google, GitHub)- ✅ Password-protected lobbies
-
-- 🎯 **Live Game State** - Synchronized game state across all players- ✅ Share invite links with friends
-
-- 🏆 **Score Tracking** - Automatic score calculation and winner determination- ✅ Real-time multiplayer with Socket.IO
-
-- 📱 **Responsive Design** - Works on desktop and mobile devices- ✅ Full Yahtzee gameplay with scoring
-
-
-
-## 🚀 Tech Stack## 🛠 Tech Stack
-
-
-
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS
-
-- **Backend**: Custom Node.js server with Next.js integration- **Backend**: Next.js API Routes, Socket.IO
-
-- **Real-time**: Socket.IO for WebSocket communication- **Database**: PostgreSQL (Prisma ORM)
-
-- **Database**: PostgreSQL with Prisma ORM- **Auth**: JWT + bcrypt (+ NextAuth for OAuth)
-
-- **Auth**: NextAuth.js with JWT strategy- **Real-time**: Socket.IO
-
-- **Deployment**: Render.com (or any Node.js hosting)
-
-## � Quick Start
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Custom Node.js server
+- **Real-time**: Socket.IO for WebSocket communication
+- **Database**: PostgreSQL with Prisma ORM
+- **Auth**: NextAuth.js with JWT strategy
+- **Deployment**: Render.com
 
 ## 📋 Prerequisites
 
-### 1. Clone and install
+- Node.js 18+
+- PostgreSQL database
+- npm or yarn
 
-- Node.js 18+ 
+## 🚀 Quick Start
 
-- PostgreSQL database```bash
-
-- npm or yarngit clone <your-repo-url>
-
-cd boardgames-app
-
-## 🛠️ Installationnpm install
-
-```
-
-1. **Clone the repository**
-
-   ```bash### 2. Configure environment
-
-   git clone https://github.com/yourusername/boardgames-app.git
-
-   cd boardgames-appCopy `.env.example` to `.env.local` and fill in your values:
-
-   ```
+### 1. Clone and Install
 
 ```bash
+git clone https://github.com/KovalDenys1/boardgames-app.git
+cd boardgames-app
+npm install
+```
 
-2. **Install dependencies**cp .env.example .env.local
+### 2. Configure Environment
 
-   ```bash```
+Copy `.env.example` to `.env.local` and fill in your values:
 
-   npm install
+```bash
+cp .env.example .env.local
+```
 
-   ```Required variables:
-
+Required variables:
 - `DATABASE_URL` - PostgreSQL connection string
+- `NEXTAUTH_SECRET` - Random string (min 32 chars)
+- `NEXTAUTH_URL` - Your app URL (http://localhost:3000 for dev)
 
-3. **Set up environment variables**- `JWT_SECRET` - Random string (min 32 chars)
+Optional OAuth:
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
 
-   - `NEXTAUTH_SECRET` - Random string (min 32 chars)
-
-   Create a `.env` file in the root directory:- `NEXTAUTH_URL` - Your app URL (http://localhost:3000 for dev)
-
-   ```env
-
-   # DatabaseOptional OAuth (see [docs/OAUTH.md](docs/OAUTH.md) for setup):
-
-   DATABASE_URL="postgresql://user:password@localhost:5432/boardgames"- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-
-- `GITHUB_ID` / `GITHUB_SECRET`
-
-   # Authentication (generate random 32-byte hex strings)
-
-   JWT_SECRET="your-jwt-secret-here"### 3. Setup database
-
-   NEXTAUTH_SECRET="your-nextauth-secret-here"
-
-   NEXTAUTH_URL="http://localhost:3000"```bash
-
-npm run db:push
-
-   # Optional: OAuth providers```
-
-   GOOGLE_CLIENT_ID="your-google-client-id"
-
-   GOOGLE_CLIENT_SECRET="your-google-client-secret"### 4. Start development server
-
-   GITHUB_ID="your-github-client-id"
-
-   GITHUB_SECRET="your-github-client-secret"```bash
-
-   ```npm run dev
-
+Generate secure secrets:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-   To generate secure secrets:
+### 3. Setup Database
 
-   ```bashApp will be available at `http://localhost:3000`
+```bash
+npx prisma db push
+```
 
-   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+### 4. Start Development Server
 
-   ```## 🔐 OAuth Setup
+```bash
+npm run dev
+```
 
+App will be available at `http://localhost:3000`
 
+## 🎮 How to Play
 
-4. **Set up the database**This app supports optional OAuth authentication via:
-
-   ```bash- ✅ Google
-
-   npx prisma db push- ✅ GitHub
-
-   ```
-
-For detailed OAuth setup instructions, see [docs/OAUTH.md](docs/OAUTH.md)
-
-5. **Run the development server**
-
-   ```bash## 🎮 How to play
-
-   npm run dev
-
-   ```1. **Register** at `/auth/register`
-
-2. **Create a lobby** via "Create New Lobby" and set options
-
-6. **Open your browser**3. **Invite friends** by sharing the lobby code or link
-
-   4. **Play**: when everyone has joined, click "Start Yahtzee Game"
-
-   Navigate to [http://localhost:3000](http://localhost:3000)5. **Yahtzee** basics:
-
+1. **Register** at `/auth/register`
+2. **Create a Lobby** - Set name, password (optional), max players
+3. **Invite Friends** - Share the lobby code or copy the invite link
+4. **Start Game** - Owner starts when 2+ players are ready
+5. **Play Yahtzee**:
    - Roll dice (3 rolls per turn)
-
-## 🎮 How to Play   - Hold dice by clicking them
-
+   - Click dice to hold/unhold them
    - Choose a scoring category
+   - 60 seconds per turn
+   - Game ends when all categories are filled
 
-1. **Register/Login** - Create an account or sign in   - Game ends when all categories are filled
+## 🔐 OAuth Setup
 
-2. **Create a Lobby** - Set up a new game room with a unique code
+This app supports optional OAuth authentication:
 
-3. **Share the Code** - Invite friends with the lobby code## 📁 Project structure
+**Google OAuth Setup:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+6. Copy Client ID and Secret to `.env.local`
 
-4. **Start Playing** - Once everyone joins, start the game!
+**GitHub OAuth Setup:**
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Create new OAuth App
+3. Set callback URL: `http://localhost:3000/api/auth/callback/github`
+4. Copy Client ID and Secret to `.env.local`
 
-5. **Roll & Score** - Take turns rolling dice and marking scores```
-
-boardgames-app/
-
-## 🏗️ Project Structure├── app/                      # Next.js App Router
-
-│   ├── api/                  # API Routes
-
-```│   │   ├── auth/             # Register/Login
-
-boardgames-app/│   │   └── lobby/            # Create/Join lobbies
-
-├── app/                    # Next.js App Router│   ├── auth/                 # Auth pages
-
-│   ├── api/               # API routes│   ├── lobby/                # Lobby and game pages
-
-│   ├── auth/              # Authentication pages│   ├── globals.css           # Global styles
-
-│   ├── lobby/             # Lobby pages│   ├── layout.tsx            # Root layout
-
-│   ├── layout.tsx         # Root layout│   └── page.tsx              # Landing page
-
-│   └── page.tsx           # Home page├── lib/                      # Utilities
-
-├── lib/                   # Utility functions│   ├── auth.ts               # JWT/bcrypt helpers
-
-│   ├── auth.ts           # Authentication helpers│   ├── db.ts                 # Prisma client
-
-│   ├── db.ts             # Prisma client│   ├── lobby.ts              # Lobby code generation
-
-│   ├── lobby.ts          # Lobby management│   └── yahtzee.ts            # Yahtzee game logic
-
-│   └── yahtzee.ts        # Game logic├── prisma/
-
-├── prisma/               # Database schema│   └── schema.prisma         # Database schema
-
-│   └── schema.prisma     # Prisma schema├── server.ts                 # Custom server with Socket.IO
-
-├── types/                # TypeScript types├── package.json
-
-├── server.ts             # Custom server (Next.js + Socket.IO)└── .env.local                # Environment variables (not committed)
-
-└── socket-server.ts      # Standalone Socket.IO server (optional)```
+## 📁 Project Structure
 
 ```
-
-## 🎲 Yahtzee rules (short)
+boardgames-app/
+├── app/                      # Next.js App Router
+│   ├── api/                  # API Routes
+│   │   ├── auth/             # Authentication endpoints
+│   │   ├── lobby/            # Lobby management
+│   │   ├── game/             # Game state management
+│   │   └── user/             # User profile
+│   ├── auth/                 # Auth pages (login, register)
+│   ├── lobby/                # Lobby and game pages
+│   ├── profile/              # User profile page
+│   └── page.tsx              # Landing page
+├── components/               # React components
+│   ├── Dice.tsx              # Dice component
+│   ├── DiceGroup.tsx         # Dice group with roll logic
+│   ├── Scorecard.tsx         # Yahtzee scorecard
+│   ├── PlayerList.tsx        # Player list with scores
+│   └── Header.tsx            # App header
+├── lib/                      # Utility functions
+│   ├── auth.ts               # Authentication helpers
+│   ├── db.ts                 # Prisma client
+│   ├── game.ts               # Game state management
+│   ├── lobby.ts              # Lobby utilities
+│   ├── yahtzee.ts            # Yahtzee game logic
+│   └── next-auth.ts          # NextAuth configuration
+├── prisma/
+│   └── schema.prisma         # Database schema
+├── server.ts                 # Custom server (Next.js + Socket.IO)
+├── socket-server.ts          # Socket.IO server
+└── package.json
+```
 
 ## 🚀 Deployment
 
-- 5 dice, 3 rolls per turn
+### Deploy to Render.com
 
-### Environment Variables- 13 categories to fill
-
-- Bonus +35 if upper section total ≥63
-
-Set these on your hosting platform:- Winner: highest final score
-
-
-
-```env## 🔐 API Endpoints
-
-DATABASE_URL=              # PostgreSQL connection string
-
-JWT_SECRET=                # Random 32-byte hex string### Auth
-
-NEXTAUTH_SECRET=           # Random 32-byte hex string- `POST /api/auth/register` - Register
-
-NEXTAUTH_URL=              # Your production URL- `POST /api/auth/login` - Login
-
-NODE_ENV=production        # Production mode
-
-```### Lobby
-
-- `GET /api/lobby` - List active lobbies
-
-### Build Commands- `POST /api/lobby` - Create lobby
-
-- `GET /api/lobby/[code]` - Lobby info
-
-```bash- `POST /api/lobby/[code]` - Join lobby
-
-npm install               # Install dependencies
-
-npm run build            # Build Next.js app## 🚀 Deployment
-
-npm start                # Start production server
-
-```**Ready to deploy?** See **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** for step-by-step instructions!
-
-
-
-### Deploy to Render.com### Quick Overview
-
-
-
-1. Create new Web ServiceThis app is optimized for **Render.com** (free tier available):
-
-2. Connect your GitHub repository- ✅ Custom Node.js server with Socket.IO support
-
-3. Set build command: `npm install && npm run build`- ✅ Free PostgreSQL database (90 days)
-
-4. Set start command: `npm start`- ✅ Automatic SSL certificates
-
-5. Add environment variables- ✅ Simple GitHub integration
-
+1. Create new Web Service
+2. Connect your GitHub repository
+3. Set build command: `npm install && npm run build`
+4. Set start command: `npm start`
+5. Add environment variables (see `.env.example`)
 6. Deploy!
 
-**Deployment time:** ~30 minutes
+**Important**: Set `DATABASE_URL` to your PostgreSQL connection string on Render.
+
+## 📚 API Endpoints
+
+### Auth
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET/POST /api/auth/[...nextauth]` - NextAuth endpoints
+
+### Lobby
+- `GET /api/lobby` - List active lobbies
+- `POST /api/lobby` - Create new lobby
+- `GET /api/lobby/[code]` - Get lobby details
+- `POST /api/lobby/[code]` - Join lobby
+- `POST /api/lobby/[code]/leave` - Leave lobby
+- `POST /api/lobby/cleanup` - Cleanup inactive lobbies
+
+### User
+- `GET /api/user/profile` - Get user profile
+- `PATCH /api/user/profile` - Update username
+
+### Game
+- `GET /api/game/[gameId]/state` - Get game state
 
 ## 🎯 Roadmap
 
-For detailed instructions, see:
+See [ROADMAP.md](ROADMAP.md) for detailed development plans.
 
-- [ ] Add more games (Chess, Checkers, Uno)- **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** - Quick start guide
-
-- [ ] Player rankings and statistics- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Complete documentation
-
-- [ ] In-game chat
-
-- [ ] Spectator mode## �️ Roadmap
-
-- [ ] Game replays
-
-- [ ] Mobile appSee [ROADMAP.md](ROADMAP.md) for detailed development plans.
-
-
-
-See [ROADMAP.md](ROADMAP.md) for detailed plans.Next features:
-
+**Next Features:**
 - [ ] More games (Chess, Uno, Checkers)
+- [ ] Player rankings and statistics
+- [ ] In-game chat
+- [ ] Spectator mode
+- [ ] Mobile app
 
-## 🤝 Contributing- [ ] Player rankings and stats
+## 🤝 Contributing
 
-- [ ] Lobby chat
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.- [ ] Dice roll animations
-
-- [ ] Mobile responsiveness improvements
-
-## 📄 License- [ ] Dark/Light theme toggle
-
-
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.## 🤝 Contributing
-
-
-
-## 🙏 AcknowledgmentsContributions are welcome! Please feel free to submit a Pull Request.
-
-
-
-- Built with [Next.js](https://nextjs.org/)1. Fork the project
-
-- Real-time powered by [Socket.IO](https://socket.io/)2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-
-- Styled with [Tailwind CSS](https://tailwindcss.com/)3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-
-- Database with [Prisma](https://www.prisma.io/)4. Push to the branch (`git push origin feature/AmazingFeature`)
-
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
-## 📧 Contact
 
 ## 📄 License
 
-For questions or support, please open an issue on GitHub.
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## 👨‍💻 Author
 
-Made with ❤️ and ☕
+**Denys Koval**
 
 Built with ❤️ and GitHub Copilot
 
-## 📚 Documentation
+## 🙏 Acknowledgments
 
-- **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** - Production deployment quick start
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Complete deployment guide
-- **[docs/OAUTH.md](docs/OAUTH.md)** - Google & GitHub authentication setup
-- **[ROADMAP.md](ROADMAP.md)** - Future features and improvements
+- [Next.js](https://nextjs.org/) - React framework
+- [Socket.IO](https://socket.io/) - Real-time engine
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Prisma](https://www.prisma.io/) - Database ORM
+- [NextAuth.js](https://next-auth.js.org/) - Authentication
+
+---
+
+⭐ Star this repo if you find it useful!
