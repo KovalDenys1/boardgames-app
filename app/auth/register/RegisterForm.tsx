@@ -168,7 +168,6 @@ export default function RegisterForm() {
           </div>
 
           <div>
-            <label className="label">Password</label>
             <PasswordInput
               value={formData.password}
               onChange={(value) => setFormData({ ...formData, password: value })}

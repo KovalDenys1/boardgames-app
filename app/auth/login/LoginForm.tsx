@@ -118,7 +118,6 @@ export default function LoginForm() {
           </div>
 
           <div>
-            <label className="label">Password</label>
             <PasswordInput
               value={formData.password}
               onChange={(value) => setFormData({ ...formData, password: value })}

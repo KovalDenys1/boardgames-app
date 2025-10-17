@@ -58,7 +58,7 @@ export async function POST(
     }
 
     // Find player in the game
-    const player = activeGame.players.find(p => p.userId === session.user.id)
+    const player = activeGame.players.find((p: any) => p.userId === session.user.id)
 
     if (!player) {
       return NextResponse.json(
