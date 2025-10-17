@@ -74,8 +74,9 @@ export default function RegisterForm() {
         toast.error('Registration successful but login failed. Please login manually.')
         router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`)
       } else {
-        toast.success('Account created! Please check your email to verify your account.')
-        router.push('/auth/verify-email')
+        toast.success('Account created successfully! Welcome aboard! 🎉')
+        router.push(returnUrl)
+        router.refresh()
       }
     } catch (err: any) {
       setError(err.message)
@@ -183,12 +184,12 @@ export default function RegisterForm() {
           </div>
 
           <div>
-            <label className="label">Confirm Password</label>
             <PasswordInput
               value={formData.confirmPassword}
               onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
               placeholder="Confirm your password"
               autoComplete="new-password"
+              label="Confirm Password"
             />
             {fieldErrors.confirmPassword && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>

@@ -77,10 +77,6 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    if (!user.emailVerified) {
-      return NextResponse.json({ error: 'Please verify your email before joining a game' }, { status: 403 })
-    }
-
     const lobby = await prisma.lobby.findUnique({
       where: { code: params.code },
       include: {
