@@ -121,11 +121,23 @@ export default function Scorecard({
   const total = upperTotal + bonus + lowerTotal
 
   return (
-    <div className="card animate-fade-in">
-      <h2 className="text-2xl font-bold mb-4 text-center">
-        📊 Score Card
-        {!isCurrentPlayer && <span className="text-sm text-gray-500 ml-2">(Viewing)</span>}
-      </h2>
+    <div className={`card animate-fade-in ${
+      !isCurrentPlayer ? 'opacity-90' : ''
+    }`}>
+      {/* Viewing Overlay for Other Players */}
+      {!isCurrentPlayer && (
+        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">👀</span>
+            <div>
+              <p className="font-bold text-yellow-700 dark:text-yellow-300">View Only Mode</p>
+              <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                You are viewing another player's scorecard. Switch to yours to make selections.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upper Section */}
       <div className="mb-4">

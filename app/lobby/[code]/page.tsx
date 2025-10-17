@@ -34,6 +34,7 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [viewingPlayerIndex, setViewingPlayerIndex] = useState<number>(0) // Чью карточку смотрим
 
   // Helper: Get current player index based on session user ID
   const getCurrentPlayerIndex = () => {
@@ -74,6 +75,16 @@ export default function LobbyPage() {
       loadLobby()
     }
   }, [code, status])
+
+  // Автоматически показываем карточку текущего пользователя при загрузке
+  useEffect(() => {
+    if (game?.players && session?.user?.id) {
+      const myIndex = getCurrentPlayerIndex()
+      if (myIndex !== -1) {
+        setViewingPlayerIndex(myIndex)
+      }
+    }
+  }, [game?.players, session?.user?.id])
 
   useEffect(() => {
     if (!lobby || !code) return
@@ -426,14 +437,14 @@ export default function LobbyPage() {
             {/* Player List */}
             {game?.players && gameState && (
               <PlayerList
-                players={game.players.map((p: any) => ({
+                players={game.players.map((p: any, index: number) => ({
                   id: p.id,
                   userId: p.userId,
                   user: {
                     username: p.user.username,
                     email: p.user.email,
                   },
-                  score: 0,
+                  score: calculateTotalScore(gameState.scores[index] || {}), // Показываем актуальный счёт
                   position: p.position || game.players.indexOf(p),
                   isReady: true,
                 }))}
@@ -632,12 +643,90 @@ export default function LobbyPage() {
 
                 {/* Scorecard Section - Right Columns */}
                 <div className="lg:col-span-2">
+                  {/* Player Selector */}
+                  <div className="card mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        View Player's Scorecard
+                      </h3>
+                      <div className="flex gap-2">
+                        {game?.players?.map((player: any, index: number) => {
+                          const isMe = player.userId === session?.user?.id
+                          const isViewing = viewingPlayerIndex === index
+                          const isCurrentTurn = gameState.currentPlayerIndex === index
+                          
+                          return (
+                            <button
+                              key={player.id}
+                              onClick={() => setViewingPlayerIndex(index)}
+                              className={`
+                                px-4 py-2 rounded-lg font-semibold transition-all relative
+                                ${isViewing 
+                                  ? 'bg-blue-600 text-white shadow-lg scale-105' 
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }
+                              `}
+                            >
+                              {isMe ? '👤 You' : player.user?.username || `Player ${index + 1}`}
+                              {isCurrentTurn && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Current Viewing Info */}
+                    <div className={`p-3 rounded-lg ${
+                      viewingPlayerIndex === getCurrentPlayerIndex()
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600'
+                        : 'bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {viewingPlayerIndex === getCurrentPlayerIndex() ? (
+                            <>
+                              <span className="text-2xl">📊</span>
+                              <div>
+                                <p className="font-bold text-blue-700 dark:text-blue-300">Your Scorecard</p>
+                                <p className="text-sm text-blue-600 dark:text-blue-400">
+                                  {isMyTurn() ? "It's your turn!" : "Waiting for your turn..."}
+                                </p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-2xl">👀</span>
+                              <div>
+                                <p className="font-bold text-yellow-700 dark:text-yellow-300">
+                                  Viewing: {game?.players[viewingPlayerIndex]?.user?.username || `Player ${viewingPlayerIndex + 1}`}
+                                </p>
+                                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                                  {gameState.currentPlayerIndex === viewingPlayerIndex 
+                                    ? "Currently playing..." 
+                                    : "Waiting for turn"}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {calculateTotalScore(gameState.scores[viewingPlayerIndex] || {})}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Total Score</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <Scorecard
-                    scorecard={gameState.scores[gameState.currentPlayerIndex] || {}}
+                    scorecard={gameState.scores[viewingPlayerIndex] || {}}
                     currentDice={gameState.dice}
                     onSelectCategory={handleScoreSelection}
-                    canSelectCategory={gameState.rollsLeft < 3 && isMyTurn()}
-                    isCurrentPlayer={isMyTurn()}
+                    canSelectCategory={gameState.rollsLeft < 3 && isMyTurn() && viewingPlayerIndex === getCurrentPlayerIndex()}
+                    isCurrentPlayer={viewingPlayerIndex === getCurrentPlayerIndex()}
                   />
                 </div>
               </div>

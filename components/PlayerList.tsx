@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 interface Player {
   id: string
   userId: string
@@ -20,6 +22,32 @@ interface PlayerListProps {
 
 export default function PlayerList({ players, currentTurn, currentUserId }: PlayerListProps) {
   const sortedPlayers = [...players].sort((a, b) => a.position - b.position)
+  const [prevScores, setPrevScores] = useState<Record<string, number>>({})
+  const [animatingScores, setAnimatingScores] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    // Проверяем, изменились ли счета
+    const newAnimating: Record<string, boolean> = {}
+    players.forEach(player => {
+      if (prevScores[player.id] !== undefined && prevScores[player.id] !== player.score) {
+        newAnimating[player.id] = true
+        setTimeout(() => {
+          setAnimatingScores(prev => ({ ...prev, [player.id]: false }))
+        }, 1000)
+      }
+    })
+    
+    if (Object.keys(newAnimating).length > 0) {
+      setAnimatingScores(newAnimating)
+    }
+
+    // Обновляем предыдущие счета
+    const newPrevScores: Record<string, number> = {}
+    players.forEach(player => {
+      newPrevScores[player.id] = player.score
+    })
+    setPrevScores(newPrevScores)
+  }, [players.map(p => p.score).join(',')]) // Следим за изменениями счёта
 
   return (
     <div className="card animate-fade-in">
@@ -73,7 +101,16 @@ export default function PlayerList({ players, currentTurn, currentUserId }: Play
                       )}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Score: <span className="font-bold">{player.score}</span>
+                      Score: <span className={`font-bold text-lg ${
+                        animatingScores[player.id] 
+                          ? 'text-green-600 dark:text-green-400 animate-pulse scale-110 inline-block' 
+                          : ''
+                      }`}>
+                        {player.score}
+                        {animatingScores[player.id] && (
+                          <span className="ml-1 text-green-500 animate-bounce-in">✨</span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
