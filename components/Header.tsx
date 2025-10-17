@@ -85,9 +85,13 @@ export default function Header() {
                     {session.user?.email}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold hover:scale-110 transition-transform"
+                  title="Go to Profile"
+                >
                   {session.user?.name?.[0]?.toUpperCase() || session.user?.email?.[0]?.toUpperCase() || '?'}
-                </div>
+                </button>
                 <button
                   onClick={handleSignOut}
                   className="px-4 py-2 rounded-lg font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -187,6 +191,15 @@ export default function Header() {
                         </p>
                       </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        router.push('/profile')
+                        setMobileMenuOpen(false)
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors mt-2"
+                    >
+                      👤 Profile Settings
+                    </button>
                     <button
                       onClick={() => {
                         handleSignOut()

@@ -14,6 +14,7 @@ import {
 } from '@/lib/yahtzee'
 import { saveGameState } from '@/lib/game'
 import { useToast } from '@/contexts/ToastContext'
+import toast from 'react-hot-toast'
 import DiceGroup from '@/components/DiceGroup'
 import Scorecard from '@/components/Scorecard'
 import PlayerList from '@/components/PlayerList'
@@ -459,16 +460,49 @@ export default function LobbyPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="max-w-6xl mx-auto">
         <div className="card mb-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold">{lobby.name}</h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 Code: <span className="font-mono font-bold text-lg">{lobby.code}</span>
               </p>
             </div>
             <button onClick={() => router.push('/lobby')} className="btn btn-secondary">
               Leave
             </button>
+          </div>
+          
+          {/* Invite Link */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
+                  🔗 Invite Friends
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/lobby/join/${lobby.code}` : ''}
+                    className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-600 rounded-lg font-mono text-sm"
+                  />
+                  <button
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        navigator.clipboard.writeText(`${window.location.origin}/lobby/join/${lobby.code}`)
+                        toast.success('📋 Invite link copied to clipboard!')
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors whitespace-nowrap"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  Share this link with friends to invite them to this lobby
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

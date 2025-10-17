@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
@@ -11,6 +11,7 @@ import { useToast } from '@/contexts/ToastContext'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
   const [formData, setFormData] = useState({
     email: '',
@@ -20,6 +21,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
+  const returnUrl = searchParams.get('returnUrl') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,10 +67,10 @@ export default function RegisterPage() {
 
       if (loginResult?.error) {
         toast.error('Registration successful but login failed. Please login manually.')
-        router.push('/auth/login')
+        router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`)
       } else {
         toast.success('Account created successfully! Welcome aboard! 🎉')
-        router.push('/')
+        router.push(returnUrl)
         router.refresh()
       }
     } catch (err: any) {
@@ -82,7 +84,7 @@ export default function RegisterPage() {
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
     try {
-      await signIn(provider, { callbackUrl: '/' })
+      await signIn(provider, { callbackUrl: returnUrl })
     } catch (err: any) {
       setError(err.message)
       toast.error(`Failed to sign in with ${provider}`)
@@ -93,6 +95,23 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="card max-w-md w-full">
+        {/* Invite Banner */}
+        {returnUrl.includes('/lobby/join/') && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-300 dark:border-green-600 rounded-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🎮</span>
+              <div>
+                <p className="font-semibold text-green-700 dark:text-green-300">
+                  You've been invited to a game!
+                </p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Register to join the lobby
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
           Register
         </h1>
@@ -200,7 +219,10 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+          <Link 
+            href={`/auth/login${returnUrl !== '/' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+          >
             Login
           </Link>
         </p>
