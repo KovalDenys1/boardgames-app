@@ -7,15 +7,15 @@ import { prisma } from './db'
 import { comparePassword } from './auth'
 
 export const authOptions: NextAuthOptions = {
-  // Don't use adapter during build phase to avoid DB connection attempts
-  adapter: process.env.VERCEL_ENV ? undefined : PrismaAdapter(prisma),
+  // Use adapter in production to save OAuth users to database
+  adapter: PrismaAdapter(prisma),
   providers: [
     // Include providers only when configured to avoid build-time errors
-    ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
       ? [
           GitHubProvider({
-            clientId: process.env.GITHUB_ID,
-            clientSecret: process.env.GITHUB_SECRET,
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
           }),
         ]
       : []),
@@ -66,6 +66,17 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/login',
+  },
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+      },
+    },
   },
   callbacks: {
     async jwt({ token, user }) {
