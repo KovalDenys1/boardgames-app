@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import {
   YahtzeeGameState,
@@ -17,6 +18,7 @@ let socket: Socket
 export default function LobbyPage() {
   const router = useRouter()
   const params = useParams()
+  const { data: session, status } = useSession()
   const code = params.code as string
 
   const [lobby, setLobby] = useState<any>(null)
@@ -25,15 +27,16 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [currentUser, setCurrentUser] = useState<any>(null)
 
   useEffect(() => {
-    const user = localStorage.getItem('user')
-    if (user) {
-      setCurrentUser(JSON.parse(user))
+    if (status === 'unauthenticated') {
+      router.push('/auth/login')
+      return
     }
-    loadLobby()
-  }, [code])
+    if (status === 'authenticated') {
+      loadLobby()
+    }
+  }, [code, status])
 
   useEffect(() => {
     if (!socket && lobby) {
@@ -86,8 +89,7 @@ export default function LobbyPage() {
 
   const handleJoinLobby = async () => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
+      if (!session?.user?.id) {
         router.push('/auth/login')
         return
       }
@@ -96,7 +98,6 @@ export default function LobbyPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ password }),
       })
@@ -222,7 +223,7 @@ export default function LobbyPage() {
     )
   }
 
-  const isInGame = game?.players?.some((p: any) => p.userId === currentUser?.id)
+  const isInGame = game?.players?.some((p: any) => p.userId === session?.user?.id)
   const isGameStarted = gameState !== null
 
   return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifyToken } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/next-auth'
 
 export async function GET(
   request: NextRequest,
@@ -49,16 +50,10 @@ export async function POST(
   { params }: { params: { code: string } }
 ) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Verify authentication with NextAuth
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const lobby = await prisma.lobby.findUnique({
@@ -99,7 +94,7 @@ export async function POST(
       where: {
         gameId_userId: {
           gameId: game.id,
-          userId: payload.userId,
+          userId: session.user.id,
         },
       },
     })
@@ -124,7 +119,7 @@ export async function POST(
     const player = await prisma.player.create({
       data: {
         gameId: game.id,
-        userId: payload.userId,
+        userId: session.user.id,
         position: playerCount,
         scorecard: JSON.stringify({}),
       },
