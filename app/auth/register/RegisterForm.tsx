@@ -17,9 +17,10 @@ export default function RegisterForm() {
     email: '',
     username: '',
     password: '',
+    confirmPassword: '',
   })
   const [error, setError] = useState('')
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string }>({})
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string; confirmPassword?: string }>({})
   const [loading, setLoading] = useState(false)
   const returnUrl = searchParams.get('returnUrl') || '/'
 
@@ -30,7 +31,11 @@ export default function RegisterForm() {
     setFieldErrors({})
 
     try {
-      // client-side validate
+      if (formData.password !== formData.confirmPassword) {
+        setFieldErrors({ confirmPassword: 'Passwords do not match' })
+        throw new Error('Passwords do not match')
+      }
+
       const parsed = registerSchema.safeParse(formData)
       if (!parsed.success) {
         const errs: Record<string, string> = {}
@@ -69,9 +74,8 @@ export default function RegisterForm() {
         toast.error('Registration successful but login failed. Please login manually.')
         router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`)
       } else {
-        toast.success('Account created successfully! Welcome aboard! 🎉')
-        router.push(returnUrl)
-        router.refresh()
+        toast.success('Account created! Please check your email to verify your account.')
+        router.push('/auth/verify-email')
       }
     } catch (err: any) {
       setError(err.message)
@@ -85,7 +89,6 @@ export default function RegisterForm() {
   const handleEmailChange = (email: string) => {
     setFormData({ ...formData, email })
     
-    // Auto-fill username if it's empty or matches previous email suggestion
     if (!formData.username || formData.username === formData.email.split('@')[0]) {
       const suggestedUsername = email.split('@')[0]
       setFormData({ ...formData, email, username: suggestedUsername })
@@ -176,6 +179,19 @@ export default function RegisterForm() {
             />
             {fieldErrors.password && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="label">Confirm Password</label>
+            <PasswordInput
+              value={formData.confirmPassword}
+              onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
+              placeholder="Confirm your password"
+              autoComplete="new-password"
+            />
+            {fieldErrors.confirmPassword && (
+              <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
             )}
           </div>
 

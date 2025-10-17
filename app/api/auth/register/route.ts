@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { hashPassword, createToken } from '@/lib/auth'
+import { sendVerificationEmail } from '@/lib/email'
+import crypto from 'crypto'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -52,7 +54,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Create JWT token
+    const verificationToken = crypto.randomBytes(32).toString('hex')
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expires,
+      },
+    })
+
+    await sendVerificationEmail(email, verificationToken)
+
     const token = createToken({ userId: user.id, email: user.email ?? email })
 
     return NextResponse.json({

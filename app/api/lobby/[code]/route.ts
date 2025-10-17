@@ -64,10 +64,21 @@ export async function POST(
   { params }: { params: { code: string } }
 ) {
   try {
-    // Verify authentication with NextAuth
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    if (!user.emailVerified) {
+      return NextResponse.json({ error: 'Please verify your email before joining a game' }, { status: 403 })
     }
 
     const lobby = await prisma.lobby.findUnique({

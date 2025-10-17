@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: 'Please verify your email before creating a lobby' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { name, password, maxPlayers } = createLobbySchema.parse(body)
 
