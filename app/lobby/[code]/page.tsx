@@ -442,7 +442,8 @@ export default function LobbyPage() {
   }
 
   const handleLeaveLobby = async () => {
-    if (!confirm('Are you sure you want to leave this lobby? The game will end if only one player remains.')) {
+    // Только спрашиваем подтверждение если игра уже началась
+    if (isGameStarted && !confirm('Are you sure you want to leave this game? The game will end if only one player remains.')) {
       return
     }
 
@@ -510,7 +511,8 @@ export default function LobbyPage() {
   }
 
   const isInGame = game?.players?.some((p: any) => p.userId === session?.user?.id)
-  const isGameStarted = gameState !== null
+  const isGameStarted = gameState !== null && game?.status === 'playing'
+  const isWaitingInLobby = isInGame && !isGameStarted
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
@@ -587,8 +589,8 @@ export default function LobbyPage() {
           </div>
         ) : (
           <>
-            {/* Player List */}
-            {game?.players && gameState && (
+            {/* Player List - показываем только когда есть игроки */}
+            {game?.players && game.players.length > 0 && (
               <PlayerList
                 players={game.players.map((p: any, index: number) => ({
                   id: p.id,
@@ -597,11 +599,11 @@ export default function LobbyPage() {
                     username: p.user.username,
                     email: p.user.email,
                   },
-                  score: calculateTotalScore(gameState.scores[index] || {}), // Показываем актуальный счёт
+                  score: gameState ? calculateTotalScore(gameState.scores[index] || {}) : 0,
                   position: p.position || game.players.indexOf(p),
                   isReady: true,
                 }))}
-                currentTurn={gameState.currentPlayerIndex}
+                currentTurn={gameState?.currentPlayerIndex ?? -1}
                 currentUserId={session?.user?.id}
               />
             )}

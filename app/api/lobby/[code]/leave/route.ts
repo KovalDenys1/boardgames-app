@@ -77,7 +77,31 @@ export async function POST(
       where: { gameId: activeGame.id }
     })
 
-    // If only 1 or 0 players remain, end the game and deactivate lobby
+    // Different behavior based on game status
+    if (activeGame.status === 'waiting') {
+      // In waiting state, just remove player
+      // If no players left, deactivate the lobby
+      if (remainingPlayers === 0) {
+        await prisma.lobby.update({
+          where: { id: lobby.id },
+          data: { isActive: false }
+        })
+        
+        return NextResponse.json({
+          message: 'You left the lobby',
+          gameEnded: false,
+          lobbyDeactivated: true
+        })
+      }
+      
+      return NextResponse.json({
+        message: 'You left the lobby',
+        gameEnded: false,
+        lobbyDeactivated: false
+      })
+    }
+
+    // If game is playing and only 1 or 0 players remain, end the game
     if (remainingPlayers <= 1) {
       // Update game status to finished
       await prisma.game.update({
