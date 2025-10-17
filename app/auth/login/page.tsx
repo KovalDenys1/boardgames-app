@@ -45,8 +45,13 @@ export default function LoginPage() {
         throw new Error('Invalid credentials')
       }
 
-      router.push('/')
-      router.refresh()
+      if (result?.ok) {
+        // Wait a bit for session to be set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        window.location.href = '/'
+      } else {
+        throw new Error('Login failed. Please try again.')
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {

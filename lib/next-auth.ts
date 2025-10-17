@@ -61,11 +61,11 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: '/auth/login',
   },
-  useSecureCookies: true,
   callbacks: {
     async signIn({ user, account, profile }) {
       // Handle OAuth sign-ins (Google, GitHub)
@@ -95,12 +95,17 @@ export const authOptions: NextAuthOptions = {
       }
       return true
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
+      // On sign in, add user id to token
       if (user) {
-        // For credentials login, user.id is already set
         token.id = user.id
-      } else if (account?.provider && token.email) {
-        // For OAuth, fetch user from database
+        token.email = user.email
+        token.name = user.name
+        token.picture = user.image
+      }
+      
+      // For OAuth providers, ensure we have user ID
+      if (!token.id && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
         })
@@ -108,11 +113,16 @@ export const authOptions: NextAuthOptions = {
           token.id = dbUser.id
         }
       }
+      
       return token
     },
     async session({ session, token }) {
-      if (session.user && token.id) {
+      // Add user id to session
+      if (token && session.user) {
         session.user.id = token.id as string
+        session.user.email = token.email as string
+        session.user.name = token.name as string
+        session.user.image = token.picture as string
       }
       return session
     },
