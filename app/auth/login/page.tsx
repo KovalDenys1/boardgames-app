@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import { loginSchema } from '@/lib/validation/auth'
+import PasswordInput from '@/components/PasswordInput'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function LoginPage() {
   const router = useRouter()
+  const toast = useToast()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,6 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,10 +43,20 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
-        callbackUrl: '/',
+        redirect: false,
       })
+
+      if (result?.error) {
+        setError('Invalid email or password')
+        toast.error('Invalid email or password')
+      } else {
+        toast.success('Welcome back! 👋')
+        router.push('/')
+        router.refresh()
+      }
     } catch (err: any) {
       setError(err.message)
+      toast.error(err.message || 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -53,6 +68,7 @@ export default function LoginPage() {
       await signIn(provider, { callbackUrl: '/' })
     } catch (err: any) {
       setError(err.message)
+      toast.error(`Failed to sign in with ${provider}`)
       setLoading(false)
     }
   }
@@ -70,29 +86,47 @@ export default function LoginPage() {
             <input
               type="email"
               required
+              disabled={loading}
               className="input"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="your@email.com"
+              autoComplete="email"
             />
             {fieldErrors.email && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
             )}
           </div>
 
-          <div>
-            <label className="label">Password</label>
-            <input
-              type="password"
-              required
-              className="input"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="••••••••"
-            />
-            {fieldErrors.password && (
-              <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
-            )}
+          <PasswordInput
+            value={formData.password}
+            onChange={(value) => setFormData({ ...formData, password: value })}
+            label="Password"
+            placeholder="Enter your password"
+            error={fieldErrors.password}
+            showStrength={false}
+            required={true}
+            autoComplete="current-password"
+          />
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Remember me
+              </span>
+            </label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Forgot password?
+            </Link>
           </div>
 
           {error && (
@@ -104,9 +138,16 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary w-full"
+            className="btn btn-primary w-full flex items-center justify-center gap-2"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span>Logging in...</span>
+              </>
+            ) : (
+              'Login'
+            )}
           </button>
         </form>
 

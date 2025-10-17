@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
+import PasswordInput from '@/components/PasswordInput'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const toast = useToast()
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -53,16 +57,23 @@ export default function RegisterPage() {
       }
 
       // Auto-login after registration
-      await signIn('credentials', {
+      const loginResult = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
         redirect: false,
       })
 
-      router.push('/')
-      router.refresh()
+      if (loginResult?.error) {
+        toast.error('Registration successful but login failed. Please login manually.')
+        router.push('/auth/login')
+      } else {
+        toast.success('Account created successfully! Welcome aboard! 🎉')
+        router.push('/')
+        router.refresh()
+      }
     } catch (err: any) {
       setError(err.message)
+      toast.error(err.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -74,6 +85,7 @@ export default function RegisterPage() {
       await signIn(provider, { callbackUrl: '/' })
     } catch (err: any) {
       setError(err.message)
+      toast.error(`Failed to sign in with ${provider}`)
       setLoading(false)
     }
   }
@@ -91,10 +103,12 @@ export default function RegisterPage() {
             <input
               type="email"
               required
+              disabled={loading}
               className="input"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="your@email.com"
+              autoComplete="email"
             />
             {fieldErrors.email && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
@@ -106,31 +120,28 @@ export default function RegisterPage() {
             <input
               type="text"
               required
+              disabled={loading}
               className="input"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               placeholder="your_username"
+              autoComplete="username"
             />
             {fieldErrors.username && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.username}</p>
             )}
           </div>
 
-          <div>
-            <label className="label">Password</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              className="input"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="••••••••"
-            />
-            {fieldErrors.password && (
-              <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
-            )}
-          </div>
+          <PasswordInput
+            value={formData.password}
+            onChange={(value) => setFormData({ ...formData, password: value })}
+            label="Password"
+            placeholder="Create a strong password"
+            error={fieldErrors.password}
+            showStrength={true}
+            required={true}
+            autoComplete="new-password"
+          />
 
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -141,9 +152,16 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary w-full"
+            className="btn btn-primary w-full flex items-center justify-center gap-2"
           >
-            {loading ? 'Creating account...' : 'Register'}
+            {loading ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span>Creating account...</span>
+              </>
+            ) : (
+              'Register'
+            )}
           </button>
         </form>
 
