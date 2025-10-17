@@ -504,7 +504,30 @@ export default function LobbyPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <>
+                {/* Game Status Bar */}
+                <div className="card mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-sm opacity-90">Round</p>
+                      <p className="text-3xl font-bold">{Math.floor(gameState.round / (game?.players?.length || 1)) + 1} / 13</p>
+                    </div>
+                    <div>
+                      <p className="text-sm opacity-90">Current Player</p>
+                      <p className="text-lg font-bold truncate">
+                        {game.players[gameState.currentPlayerIndex]?.user?.username || 'Player'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm opacity-90">Your Score</p>
+                      <p className="text-3xl font-bold">
+                        {calculateTotalScore(gameState.scores[getCurrentPlayerIndex()] || {})}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Dice Section - Left Column */}
                 <div className="lg:col-span-1">
                   <DiceGroup
@@ -564,6 +587,7 @@ export default function LobbyPage() {
                   />
                 </div>
               </div>
+              </>
             )}
           </>
         )}

@@ -57,7 +57,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       className={`
         relative w-16 h-16 md:w-20 md:h-20 rounded-xl shadow-lg transition-all duration-200
         ${held ? 'bg-blue-500 border-4 border-blue-600 scale-95' : 'bg-white border-4 border-gray-800 hover:scale-105 active:scale-95'}
-        ${isRolling ? 'animate-roll' : ''}
+        ${isRolling ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
       key={animationKey}

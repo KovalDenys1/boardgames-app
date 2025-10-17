@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       attempts++
     }
 
-    // Create lobby
+    // Create lobby with initial game and add creator as first player
     const lobby = await prisma.lobby.create({
       data: {
         code,
@@ -53,10 +53,43 @@ export async function POST(request: NextRequest) {
         password,
         maxPlayers,
         creatorId: user.id,
+        games: {
+          create: {
+            status: 'waiting',
+            state: JSON.stringify({
+              round: 0,
+              currentPlayerIndex: 0,
+              dice: [1, 1, 1, 1, 1],
+              held: [false, false, false, false, false],
+              rollsLeft: 3,
+              scores: [{}], // First player's empty scorecard
+              finished: false,
+            }),
+            players: {
+              create: {
+                userId: user.id,
+                position: 0,
+                scorecard: JSON.stringify({}),
+              },
+            },
+          },
+        },
+      },
+      include: {
+        games: {
+          where: { status: 'waiting' },
+          include: {
+            players: true,
+          },
+        },
       },
     })
 
-    return NextResponse.json({ lobby })
+    return NextResponse.json({ 
+      lobby,
+      autoJoined: true,
+      message: 'Lobby created and you have been added as the first player!'
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
