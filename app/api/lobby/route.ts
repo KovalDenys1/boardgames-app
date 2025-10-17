@@ -19,6 +19,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Verify user exists in database
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    })
+
+    if (!user) {
+      console.error('User not found in database:', session.user.id)
+      return NextResponse.json(
+        { error: 'User not found. Please log in again.' },
+        { status: 404 }
+      )
+    }
+
     const body = await request.json()
     const { name, password, maxPlayers } = createLobbySchema.parse(body)
 
@@ -39,7 +52,7 @@ export async function POST(request: NextRequest) {
         name,
         password,
         maxPlayers,
-        creatorId: session.user.id,
+        creatorId: user.id,
       },
     })
 
@@ -49,6 +62,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
     console.error('Create lobby error:', error)
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Foreign key constraint')) {
+        return NextResponse.json(
+          { error: 'User account not found. Please log out and log in again.' },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

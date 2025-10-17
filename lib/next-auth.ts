@@ -71,14 +71,14 @@ export const authOptions: NextAuthOptions = {
       // Handle OAuth sign-ins (Google, GitHub)
       if (account?.provider && account.provider !== 'credentials') {
         try {
-          // Check if user already exists
+          // Check if user already exists by email
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
           })
 
           if (!existingUser) {
             // Create new user from OAuth profile
-            await prisma.user.create({
+            const newUser = await prisma.user.create({
               data: {
                 email: user.email!,
                 name: user.name,
@@ -87,15 +87,24 @@ export const authOptions: NextAuthOptions = {
                 emailVerified: new Date(),
               },
             })
+            
+            // Update user object with database ID
+            user.id = newUser.id
+            
+            console.log('Created new OAuth user:', newUser.id, newUser.email)
+          } else {
+            // Use existing user ID
+            user.id = existingUser.id
+            console.log('OAuth user already exists:', existingUser.id, existingUser.email)
           }
         } catch (error) {
-          console.error('Error saving OAuth user:', error)
+          console.error('Error in signIn callback:', error)
           return false
         }
       }
       return true
     },
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user }) {
       // On sign in, add user id to token
       if (user) {
         token.id = user.id
@@ -104,13 +113,14 @@ export const authOptions: NextAuthOptions = {
         token.picture = user.image
       }
       
-      // For OAuth providers, ensure we have user ID
+      // Ensure we have user ID from database
       if (!token.id && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
         })
         if (dbUser) {
           token.id = dbUser.id
+          token.name = dbUser.username || dbUser.name
         }
       }
       
