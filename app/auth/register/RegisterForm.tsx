@@ -69,7 +69,7 @@ export default function RegisterForm() {
         toast.error('Registration successful but login failed. Please login manually.')
         router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`)
       } else {
-        toast.success('Account created successfully! Welcome aboard! í¾‰')
+        toast.success('Account created successfully! Welcome aboard! ðŸŽ‰')
         router.push(returnUrl)
         router.refresh()
       }
@@ -99,7 +99,7 @@ export default function RegisterForm() {
         {returnUrl.includes('/lobby/join/') && (
           <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-300 dark:border-green-600 rounded-lg">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">í¾®</span>
+              <span className="text-3xl">ðŸŽ®</span>
               <div>
                 <p className="font-semibold text-green-700 dark:text-green-300">
                   You have been invited to a game!
