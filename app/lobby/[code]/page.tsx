@@ -196,10 +196,17 @@ export default function LobbyPage() {
           setUpdateTimeout(timeout)
           
         } else if (data.action === 'player-left') {
-          toast.info(`${data.payload.username || 'A player'} left the lobby`)
+          // Don't show toast if it's the current user leaving (they get their own success message)
+          const isCurrentUser = data.payload.userId === session?.user?.id
+          
+          if (!isCurrentUser) {
+            toast.info(`${data.payload.username || 'A player'} left the lobby`)
+          }
           
           if (data.payload.gameEnded) {
-            toast.warning('⚠️ Game ended! Not enough players remaining.')
+            if (!isCurrentUser) {
+              toast.warning('⚠️ Game ended! Not enough players remaining.')
+            }
             setGameState(null)
           }
           loadLobby()
@@ -487,12 +494,8 @@ export default function LobbyPage() {
         })
       }
 
-      // Show success message
-      if (data.gameEnded) {
-        toast.success('You left the lobby. The game has ended.')
-      } else {
-        toast.success('You left the lobby.')
-      }
+      // Show single success message
+      toast.success(data.gameEnded ? 'Game ended' : 'Left lobby')
 
       // Redirect to lobby list
       router.push('/lobby')
