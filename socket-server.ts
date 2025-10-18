@@ -49,6 +49,16 @@ io.on('connection', (socket) => {
     console.log(`Socket ${socket.id} left lobby ${lobbyCode}`)
   })
 
+  socket.on('join-lobby-list', () => {
+    socket.join('lobby-list')
+    console.log(`Socket ${socket.id} joined lobby-list`)
+  })
+
+  socket.on('leave-lobby-list', () => {
+    socket.leave('lobby-list')
+    console.log(`Socket ${socket.id} left lobby-list`)
+  })
+
   socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
     // Broadcast to all clients in the lobby EXCEPT the sender
     // This prevents the sender from processing their own update twice
@@ -56,6 +66,21 @@ io.on('connection', (socket) => {
       action: data.action,
       payload: data.payload,
     })
+
+    // Notify lobby list page about changes
+    if (data.action === 'player-left' || data.action === 'state-change') {
+      io.to('lobby-list').emit('lobby-list-update')
+    }
+  })
+
+  socket.on('lobby-created', () => {
+    console.log('New lobby created, notifying lobby list')
+    io.to('lobby-list').emit('lobby-list-update')
+  })
+
+  socket.on('player-joined', () => {
+    console.log('Player joined lobby, notifying lobby list')
+    io.to('lobby-list').emit('lobby-list-update')
   })
 
   socket.on('disconnect', (reason) => {

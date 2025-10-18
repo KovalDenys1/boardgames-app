@@ -305,6 +305,9 @@ export default function LobbyPage() {
 
       setGame(data.game)
       await loadLobby()
+      
+      // Notify lobby list about player joining
+      socket?.emit('player-joined')
     } catch (err: any) {
       setError(err.message)
     }

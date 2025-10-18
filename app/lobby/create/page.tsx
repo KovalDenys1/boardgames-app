@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { io } from 'socket.io-client'
 
 export default function CreateLobbyPage() {
   const router = useRouter()
@@ -45,6 +46,12 @@ export default function CreateLobbyPage() {
       if (!res.ok) {
         throw new Error(data.error || 'Failed to create lobby')
       }
+
+      // Notify lobby list about new lobby via WebSocket
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
+      const socket = io(socketUrl)
+      socket.emit('lobby-created')
+      socket.disconnect()
 
       // Redirect to the new lobby
       router.push(`/lobby/${data.lobby.code}`)

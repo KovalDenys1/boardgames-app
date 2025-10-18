@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import { io, Socket } from 'socket.io-client'
+
+let socket: Socket
 
 interface Lobby {
   id: string
@@ -33,6 +36,48 @@ export default function LobbyListPage() {
     loadLobbies()
     // Trigger automatic cleanup of inactive lobbies
     triggerCleanup()
+
+    // Auto-refresh lobbies every 5 seconds
+    const refreshInterval = setInterval(() => {
+      loadLobbies()
+    }, 5000)
+
+    // Setup WebSocket for real-time updates
+    if (!socket) {
+      const url = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
+      console.log('🔌 Connecting to Socket.IO for lobby list:', url)
+      
+      socket = io(url, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+      })
+
+      socket.on('connect', () => {
+        console.log('✅ Socket connected for lobby list')
+        socket.emit('join-lobby-list')
+      })
+
+      socket.on('lobby-list-update', () => {
+        console.log('📡 Lobby list update received')
+        loadLobbies()
+      })
+
+      socket.on('disconnect', () => {
+        console.log('❌ Socket disconnected from lobby list')
+      })
+    }
+
+    return () => {
+      clearInterval(refreshInterval)
+      if (socket && socket.connected) {
+        console.log('🔌 Disconnecting socket from lobby list')
+        socket.emit('leave-lobby-list')
+        socket.disconnect()
+        socket = null as any
+      }
+    }
   }, [])
 
   const triggerCleanup = async () => {
