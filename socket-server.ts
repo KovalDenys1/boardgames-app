@@ -27,6 +27,13 @@ const io = new SocketIOServer(server, {
   cors: {
     origin: allowedOrigins,
   },
+  pingTimeout: 60000, // How long to wait for pong before disconnect (60s)
+  pingInterval: 25000, // How often to send ping (25s)
+  transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling
+  allowUpgrades: true, // Allow transport upgrades
+  upgradeTimeout: 10000, // Timeout for transport upgrade
+  maxHttpBufferSize: 1e6, // 1MB max buffer
+  connectTimeout: 45000, // Connection timeout
 })
 
 io.on('connection', (socket) => {
@@ -43,14 +50,20 @@ io.on('connection', (socket) => {
   })
 
   socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
-    io.to(`lobby:${data.lobbyCode}`).emit('game-update', {
+    // Broadcast to all clients in the lobby EXCEPT the sender
+    // This prevents the sender from processing their own update twice
+    socket.to(`lobby:${data.lobbyCode}`).emit('game-update', {
       action: data.action,
       payload: data.payload,
     })
   })
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id)
+  socket.on('disconnect', (reason) => {
+    console.log('Client disconnected:', socket.id, 'Reason:', reason)
+  })
+
+  socket.on('error', (error) => {
+    console.error('Socket error:', socket.id, error)
   })
 })
 

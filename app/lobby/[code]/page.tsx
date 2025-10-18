@@ -43,6 +43,9 @@ export default function LobbyPage() {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { celebrate, fireworks } = useConfetti()
 
+  // Debounce for game state updates to avoid excessive re-renders
+  const [updateTimeout, setUpdateTimeout] = useState<NodeJS.Timeout | null>(null)
+
   const getCurrentPlayerIndex = () => {
     if (!game?.players || !session?.user?.id) {
       console.log('❌ No game.players or session.user.id:', { 
@@ -128,18 +131,29 @@ export default function LobbyPage() {
       socket = io(url, {
         transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 10, // More attempts
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000, // Max delay between attempts
+        timeout: 20000, // Connection timeout
+        autoConnect: true,
       })
+
+      let isFirstConnection = true
 
       socket.on('connect', () => {
         console.log('✅ Socket connected:', socket.id)
         socket.emit('join-lobby', code)
-        toast.info('Connected to game server')
+        
+        // Only show toast on first connection, not on reconnects
+        if (isFirstConnection) {
+          isFirstConnection = false
+        }
       })
 
       socket.on('disconnect', (reason) => {
         console.log('❌ Socket disconnected:', reason)
+        // Auto-reconnect is handled by Socket.IO
+        // Only manually reconnect if server initiated disconnect
         if (reason === 'io server disconnect') {
           socket.connect()
         }
@@ -147,17 +161,19 @@ export default function LobbyPage() {
 
       socket.on('connect_error', (error) => {
         console.error('❌ Socket connection error:', error)
-        toast.error('Connection error. Trying to reconnect...')
-        setTimeout(() => {
-          if (!socket.connected) {
-            socket.connect()
-          }
-        }, 2000)
+        // Don't show toast on every error - it's annoying
+        // Socket.IO will auto-retry with exponential backoff
       })
 
       socket.on('game-update', (data) => {
         console.log('📡 Game update received:', data)
+        
         if (data.action === 'state-change') {
+          // Clear previous timeout to debounce rapid updates
+          if (updateTimeout) {
+            clearTimeout(updateTimeout)
+          }
+          
           const updatedState = data.payload
           
           if (!updatedState.scores || !Array.isArray(updatedState.scores)) {
@@ -172,7 +188,13 @@ export default function LobbyPage() {
           
           console.log('🎲 Setting new game state:', updatedState)
           setGameState(updatedState)
-          loadLobby()
+          
+          // Debounce lobby reload to avoid excessive API calls
+          const timeout = setTimeout(() => {
+            loadLobby()
+          }, 500)
+          setUpdateTimeout(timeout)
+          
         } else if (data.action === 'player-left') {
           toast.info(`${data.payload.username || 'A player'} left the lobby`)
           
@@ -191,6 +213,11 @@ export default function LobbyPage() {
         socket.emit('leave-lobby', code)
         socket.disconnect()
         socket = null as any
+      }
+      
+      // Clear any pending update timeouts
+      if (updateTimeout) {
+        clearTimeout(updateTimeout)
       }
     }
   }, [lobby, code])
