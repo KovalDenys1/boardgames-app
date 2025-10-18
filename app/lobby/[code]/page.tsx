@@ -186,6 +186,41 @@ export default function LobbyPage() {
             updatedState.dice = rollDice()
           }
           
+          // Play sounds for other players based on what changed
+          if (gameState) {
+            // Check if dice were rolled (rollsLeft decreased)
+            if (updatedState.rollsLeft < gameState.rollsLeft) {
+              soundManager.play('diceRoll')
+            }
+            
+            // Check if turn changed (new player's turn)
+            if (updatedState.currentPlayerIndex !== gameState.currentPlayerIndex) {
+              soundManager.play('turnChange')
+              
+              // Check if it's now my turn
+              const myIndex = getCurrentPlayerIndex()
+              if (myIndex === updatedState.currentPlayerIndex) {
+                // Small delay so sounds don't overlap
+                setTimeout(() => {
+                  soundManager.play('click')
+                }, 300)
+              }
+            }
+            
+            // Check if someone scored (round increased or scores changed)
+            if (updatedState.round > gameState.round) {
+              soundManager.play('score')
+            }
+            
+            // Check if game just finished
+            if (!gameState.finished && updatedState.finished) {
+              soundManager.play('win')
+              setTimeout(() => {
+                fireworks()
+              }, 200)
+            }
+          }
+          
           console.log('🎲 Setting new game state:', updatedState)
           setGameState(updatedState)
           
