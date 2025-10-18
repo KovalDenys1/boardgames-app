@@ -19,6 +19,8 @@ import DiceGroup from '@/components/DiceGroup'
 import Scorecard from '@/components/Scorecard'
 import PlayerList from '@/components/PlayerList'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { soundManager } from '@/lib/sounds'
+import { useConfetti } from '@/hooks/useConfetti'
 
 let socket: Socket
 
@@ -38,6 +40,8 @@ export default function LobbyPage() {
   const [viewingPlayerIndex, setViewingPlayerIndex] = useState<number>(0)
   const [timeLeft, setTimeLeft] = useState<number>(60)
   const [timerActive, setTimerActive] = useState<boolean>(false)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const { celebrate, fireworks } = useConfetti()
 
   const getCurrentPlayerIndex = () => {
     if (!game?.players || !session?.user?.id) {
@@ -288,13 +292,14 @@ export default function LobbyPage() {
     setGameState(newState)
     await saveGameState(game.id, newState)
     
+    soundManager.play('diceRoll')
+    
     socket?.emit('game-action', {
       lobbyCode: code,
       action: 'state-change',
       payload: newState,
     })
 
-    // Show notification on last roll
     if (newState.rollsLeft === 0) {
       toast.info('Last roll! Choose a category to score.')
     }
@@ -305,6 +310,8 @@ export default function LobbyPage() {
 
     const newHeld = [...gameState.held]
     newHeld[index] = !newHeld[index]
+
+    soundManager.play('click')
 
     const newState = { ...gameState, held: newHeld }
     setGameState(newState)
@@ -367,6 +374,12 @@ export default function LobbyPage() {
     const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
     toast.success(`Scored ${score} points in ${categoryName}!`)
     
+    // Play score sound and celebrate if it's a good score
+    soundManager.play('score')
+    if (score >= 20) {
+      celebrate()
+    }
+    
     if (allFinished) {
       setTimerActive(false)
       
@@ -375,9 +388,14 @@ export default function LobbyPage() {
       const winnerIndex = scores.indexOf(maxScore)
       const winnerName = game.players[winnerIndex]?.user?.username || 'Player ' + (winnerIndex + 1)
       
+      // Play win sound and fireworks for game completion
+      soundManager.play('win')
+      fireworks()
+      
       toast.success(`🎉 Game Over! ${winnerName} wins with ${maxScore} points!`)
     } else if (nextPlayerIndex !== playerIndex) {
       const nextPlayerName = game.players[nextPlayerIndex]?.user?.username || 'Player ' + (nextPlayerIndex + 1)
+      soundManager.play('turnChange')
       toast.info(`${nextPlayerName}'s turn!`)
     }
   }
@@ -493,9 +511,22 @@ export default function LobbyPage() {
                 Code: <span className="font-mono font-bold text-lg">{lobby.code}</span>
               </p>
             </div>
-            <button onClick={handleLeaveLobby} className="btn btn-secondary">
-              Leave
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  soundManager.toggle()
+                  setSoundEnabled(soundManager.isEnabled())
+                  toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
+                }} 
+                className="btn btn-secondary"
+                title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+              >
+                {soundEnabled ? '🔊' : '🔇'}
+              </button>
+              <button onClick={handleLeaveLobby} className="btn btn-secondary">
+                Leave
+              </button>
+            </div>
           </div>
           
           {/* Invite Link */}
@@ -602,7 +633,10 @@ export default function LobbyPage() {
                 
                 {lobby?.creatorId === session?.user?.id ? (
                   <button 
-                    onClick={handleStartGame}
+                    onClick={() => {
+                      soundManager.play('click')
+                      handleStartGame()
+                    }}
                     disabled={game?.players?.length < 2}
                     className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed"
                   >
