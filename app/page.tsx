@@ -34,18 +34,18 @@ export default function HomePage() {
           {isLoggedIn ? (
             <>
               <button
-                onClick={() => router.push('/lobby')}
+                onClick={() => router.push('/games')}
                 className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
               >
                 <span className="text-2xl">🎮</span>
-                <span>Browse Lobbies</span>
+                <span>Browse Games</span>
               </button>
               <button
-                onClick={() => router.push('/lobby/create')}
-                className="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
+                onClick={() => router.push('/lobby')}
+                className="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
               >
-                <span className="text-2xl">✨</span>
-                <span>Create New Lobby</span>
+                <span className="text-2xl">🏠</span>
+                <span>View Lobbies</span>
               </button>
             </>
           ) : (
@@ -72,13 +72,13 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in">
             <div className="text-4xl mb-4">🎲</div>
-            <h3 className="text-xl font-bold mb-2">Yahtzee Game</h3>
-            <p className="text-white/80 text-sm">Classic dice game with full multiplayer support and real-time updates</p>
+            <h3 className="text-xl font-bold mb-2">Multiple Games</h3>
+            <p className="text-white/80 text-sm">Yahtzee, Guess the Spy, and many more games coming soon!</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="text-4xl mb-4">🔐</div>
-            <h3 className="text-xl font-bold mb-2">Secure Lobbies</h3>
-            <p className="text-white/80 text-sm">Create private lobbies with password protection for your friends</p>
+            <div className="text-4xl mb-4">�</div>
+            <h3 className="text-xl font-bold mb-2">Live Chat</h3>
+            <p className="text-white/80 text-sm">Chat with friends in real-time while playing your favorite games</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <div className="text-4xl mb-4">⚡</div>
@@ -86,9 +86,9 @@ export default function HomePage() {
             <p className="text-white/80 text-sm">Instant updates with Socket.IO for seamless multiplayer experience</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <div className="text-4xl mb-4">🏆</div>
-            <h3 className="text-xl font-bold mb-2">Leaderboards</h3>
-            <p className="text-white/80 text-sm">Track scores and compete with friends for the highest score</p>
+            <div className="text-4xl mb-4">🔐</div>
+            <h3 className="text-xl font-bold mb-2">Private Lobbies</h3>
+            <p className="text-white/80 text-sm">Create password-protected lobbies for you and your friends</p>
           </div>
         </div>
 

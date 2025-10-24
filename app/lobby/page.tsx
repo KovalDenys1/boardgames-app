@@ -114,9 +114,17 @@ export default function LobbyListPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">🎮 Game Lobbies</h1>
-          <p className="text-gray-600 dark:text-gray-400">Join an existing lobby or create your own!</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">🎮 Game Lobbies</h1>
+            <p className="text-gray-600 dark:text-gray-400">Join an existing lobby or create your own!</p>
+          </div>
+          <button
+            onClick={() => router.push('/games')}
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+          >
+            ← Back to Games
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
