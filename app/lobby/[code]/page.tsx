@@ -721,8 +721,8 @@ export default function LobbyPage() {
       }
       setChatMessages(prev => [...prev, leaveMessage])
 
-      // Redirect to lobby list
-      router.push('/lobby')
+      // Redirect to game lobbies
+      router.push('/games/yahtzee/lobbies')
     } catch (err: any) {
       toast.error(err.message || 'Failed to leave lobby')
     }
@@ -742,7 +742,7 @@ export default function LobbyPage() {
         <div className="card max-w-md">
           <h1 className="text-2xl font-bold mb-4">Lobby Not Found</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button onClick={() => router.push('/lobby')} className="btn btn-primary">
+          <button onClick={() => router.push('/games/yahtzee/lobbies')} className="btn btn-primary">
             Back to Lobbies
           </button>
         </div>
@@ -757,6 +757,32 @@ export default function LobbyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="max-w-6xl mx-auto">
+        {/* Breadcrumbs */}
+        <div className="mb-4 flex items-center gap-2 text-white/80 text-sm">
+          <button 
+            onClick={() => router.push('/')}
+            className="hover:text-white transition-colors"
+          >
+            🏠 Home
+          </button>
+          <span>›</span>
+          <button 
+            onClick={() => router.push('/games')}
+            className="hover:text-white transition-colors"
+          >
+            🎮 Games
+          </button>
+          <span>›</span>
+          <button 
+            onClick={() => router.push('/games/yahtzee/lobbies')}
+            className="hover:text-white transition-colors"
+          >
+            🎲 Yahtzee
+          </button>
+          <span>›</span>
+          <span className="text-white font-semibold">{lobby.code}</span>
+        </div>
+
         <div className="card mb-4">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -995,7 +1021,7 @@ export default function LobbyPage() {
                   <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
                     🔄 Play Again
                   </button>
-                  <button onClick={() => router.push('/lobby')} className="btn btn-secondary text-lg px-8 py-3">
+                  <button onClick={() => router.push('/games/yahtzee/lobbies')} className="btn btn-secondary text-lg px-8 py-3">
                     🏠 Back to Lobbies
                   </button>
                 </div>

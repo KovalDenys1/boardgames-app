@@ -25,7 +25,7 @@ const games: Game[] = [
     players: '2-8 players',
     difficulty: 'Easy',
     status: 'available',
-    route: '/lobby',
+    route: '/games/yahtzee/lobbies',
     color: 'from-blue-500 to-purple-600'
   },
   {

@@ -33,6 +33,11 @@ export default function LobbyListPage() {
   const [joinCode, setJoinCode] = useState('')
 
   useEffect(() => {
+    // Redirect to new games page
+    router.push('/games')
+  }, [router])
+
+  useEffect(() => {
     loadLobbies()
     // Trigger automatic cleanup of inactive lobbies
     triggerCleanup()

@@ -51,20 +51,14 @@ export default function Header() {
               {status === 'authenticated' && (
                 <>
                   <button
-                    onClick={() => router.push('/lobby')}
+                    onClick={() => router.push('/games')}
                     className={`px-3 py-2 rounded-lg font-medium transition-colors ${
-                      isActive('/lobby')
+                      pathname?.startsWith('/games')
                         ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    🎮 Lobbies
-                  </button>
-                  <button
-                    onClick={() => router.push('/lobby/create')}
-                    className="px-3 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-                  >
-                    ➕ Create Lobby
+                    🎮 Games
                   </button>
                 </>
               )}
@@ -156,25 +150,16 @@ export default function Header() {
                 <>
                   <button
                     onClick={() => {
-                      router.push('/lobby')
+                      router.push('/games')
                       setMobileMenuOpen(false)
                     }}
                     className={`w-full text-left px-3 py-2 rounded-lg font-medium transition-colors ${
-                      isActive('/lobby')
+                      pathname?.startsWith('/games')
                         ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    🎮 Lobbies
-                  </button>
-                  <button
-                    onClick={() => {
-                      router.push('/lobby/create')
-                      setMobileMenuOpen(false)
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-                  >
-                    ➕ Create Lobby
+                    🎮 Games
                   </button>
                   
                   <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">

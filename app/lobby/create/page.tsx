@@ -75,58 +75,84 @@ export default function CreateLobbyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 py-12 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Breadcrumbs */}
+        <div className="mb-6 flex items-center gap-2 text-white/80 text-sm">
+          <button 
+            onClick={() => router.push('/')}
+            className="hover:text-white transition-colors"
+          >
+            🏠 Home
+          </button>
+          <span>›</span>
+          <button 
+            onClick={() => router.push('/games')}
+            className="hover:text-white transition-colors"
+          >
+            🎮 Games
+          </button>
+          <span>›</span>
+          <button 
+            onClick={() => router.push('/games/yahtzee/lobbies')}
+            className="hover:text-white transition-colors"
+          >
+            🎲 Yahtzee
+          </button>
+          <span>›</span>
+          <span className="text-white font-semibold">Create Lobby</span>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white mb-4">
-            <span className="text-3xl">✨</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
+            <span className="text-5xl">✨</span>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Create New Lobby</h1>
-          <p className="text-gray-600 dark:text-gray-400">Set up your game and invite friends to join!</p>
+          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Create New Lobby</h1>
+          <p className="text-xl text-white/90">Set up your Yahtzee game and invite friends to join!</p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border-2 border-white/20">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Lobby Name */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-bold text-white mb-2">
                 🎮 Lobby Name *
               </label>
               <input
                 type="text"
                 required
                 placeholder="e.g., Friday Night Game"
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                className="w-full px-4 py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-white/80 mt-1">
                 Choose a memorable name for your lobby
               </p>
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-bold text-white mb-2">
                 🔒 Password (Optional)
               </label>
               <input
                 type="password"
                 placeholder="Leave empty for public lobby"
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                className="w-full px-4 py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-white/80 mt-1">
                 Set a password to make your lobby private
               </p>
             </div>
 
             {/* Max Players */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-bold text-white mb-2">
                 👥 Maximum Players *
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -137,22 +163,22 @@ export default function CreateLobbyPage() {
                     onClick={() => setFormData({ ...formData, maxPlayers: num })}
                     className={`px-4 py-3 rounded-xl font-bold transition-all ${
                       formData.maxPlayers === num
-                        ? 'bg-blue-600 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-white text-blue-600 shadow-lg scale-105'
+                        : 'bg-white/20 text-white hover:bg-white/30'
                     }`}
                   >
                     {num}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              <p className="text-xs text-white/80 mt-2">
                 Select how many players can join
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="bg-red-100 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl flex items-center gap-2">
+              <div className="bg-red-500/20 border-2 border-red-400 text-white px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
@@ -164,15 +190,15 @@ export default function CreateLobbyPage() {
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => router.push('/lobby')}
-                className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                onClick={() => router.push('/games/yahtzee/lobbies')}
+                className="flex-1 px-6 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

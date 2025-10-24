@@ -112,9 +112,19 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Get gameType filter from query params
+    const { searchParams } = new URL(request.url)
+    const gameType = searchParams.get('gameType')
+
+    // Build where clause
+    const where: any = { isActive: true }
+    if (gameType) {
+      where.gameType = gameType
+    }
+
     // Get active lobbies
     const lobbies = await prisma.lobby.findMany({
-      where: { isActive: true },
+      where,
       include: {
         creator: {
           select: {
@@ -123,7 +133,7 @@ export async function GET(request: NextRequest) {
           },
         },
         games: {
-          where: { status: 'playing' },
+          where: { status: { in: ['waiting', 'playing'] } },
           select: { 
             id: true,
             status: true,

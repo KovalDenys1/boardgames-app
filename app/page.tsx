@@ -40,13 +40,6 @@ export default function HomePage() {
                 <span className="text-2xl">🎮</span>
                 <span>Browse Games</span>
               </button>
-              <button
-                onClick={() => router.push('/lobby')}
-                className="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
-              >
-                <span className="text-2xl">🏠</span>
-                <span>View Lobbies</span>
-              </button>
             </>
           ) : (
             <>
