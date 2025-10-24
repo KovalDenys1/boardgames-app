@@ -45,7 +45,8 @@ const games: Game[] = [
     description: 'Strategic board game for two players. Checkmate your opponent to win!',
     players: '2 players',
     difficulty: 'Hard',
-    status: 'coming-soon',
+    status: 'available',
+    route: '/games/chess/lobbies',
     color: 'from-gray-700 to-gray-900'
   },
   {

@@ -1,22 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
-import {
-  YahtzeeGameState,
-  YahtzeeCategory,
-  rollDice,
-  calculateScore,
-  calculateTotalScore,
-  isGameFinished,
-} from '@/lib/yahtzee'
+import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { ChessGame } from '@/lib/games/chess-game'
+import { Move } from '@/lib/game-engine'
+import { YahtzeeCategory } from '@/lib/yahtzee'
+import { ChessMove, Position, PieceColor } from '@/lib/games/chess-types'
 import { saveGameState } from '@/lib/game'
 import { useToast } from '@/contexts/ToastContext'
 import toast from 'react-hot-toast'
 import DiceGroup from '@/components/DiceGroup'
 import Scorecard from '@/components/Scorecard'
+import ChessBoard from '@/components/ChessBoard'
 import PlayerList from '@/components/PlayerList'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
@@ -34,7 +32,7 @@ export default function LobbyPage() {
 
   const [lobby, setLobby] = useState<any>(null)
   const [game, setGame] = useState<any>(null)
-  const [gameState, setGameState] = useState<YahtzeeGameState | null>(null)
+  const [gameEngine, setGameEngine] = useState<YahtzeeGame | ChessGame | null>(null)
   const [loading, setLoading] = useState(true)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -47,6 +45,11 @@ export default function LobbyPage() {
   const [chatMinimized, setChatMinimized] = useState(false)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
+
+  // Chess-specific state
+  const [selectedSquare, setSelectedSquare] = useState<Position | null>(null)
+  const [possibleMoves, setPossibleMoves] = useState<Position[]>([])
+  const [chessCurrentPlayer, setChessCurrentPlayer] = useState<PieceColor>('white')
 
   // Debounce for game state updates to avoid excessive re-renders
   const [updateTimeout, setUpdateTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -65,17 +68,17 @@ export default function LobbyPage() {
       sessionUserId: session.user.id,
       players: game.players.map((p: any) => ({ id: p.userId, name: p.user?.username })),
       foundIndex: index,
-      currentTurn: gameState?.currentPlayerIndex,
-      isMyTurn: index === gameState?.currentPlayerIndex
+      currentTurn: gameEngine?.getState().currentPlayerIndex,
+      isMyTurn: index === gameEngine?.getState().currentPlayerIndex
     })
     return index
   }
 
   const isMyTurn = () => {
-    if (!gameState) return false
+    if (!gameEngine) return false
     const myIndex = getCurrentPlayerIndex()
-    const result = myIndex !== -1 && myIndex === gameState.currentPlayerIndex
-    console.log(`🔄 Is my turn? ${result} (myIndex: ${myIndex}, currentTurn: ${gameState.currentPlayerIndex})`)
+    const result = myIndex !== -1 && myIndex === gameEngine.getState().currentPlayerIndex
+    console.log(`🔄 Is my turn? ${result} (myIndex: ${myIndex}, currentTurn: ${gameEngine.getState().currentPlayerIndex})`)
     return result
   }
 
@@ -99,32 +102,32 @@ export default function LobbyPage() {
   }, [game?.players, session?.user?.id])
 
   useEffect(() => {
-    if (!gameState || gameState.finished || !timerActive) return
+    if (gameEngine && !gameEngine.isGameFinished() && timerActive) {
+      setTimeLeft(60)
 
-    setTimeLeft(60)
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (!isMyTurn()) return prev
+          
+          if (prev <= 1) {
+            handleTimeOut()
+            return 60
+          }
+          return prev - 1
+        })
+      }, 1000)
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (!isMyTurn()) return prev
-        
-        if (prev <= 1) {
-          handleTimeOut()
-          return 60
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [gameState?.currentPlayerIndex, timerActive, gameState?.finished])
+      return () => clearInterval(timer)
+    }
+  }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished()])
 
   useEffect(() => {
-    if (gameState && !gameState.finished && game?.players?.length >= 2) {
+    if (gameEngine && !gameEngine.isGameFinished() && game?.players?.length >= 2) {
       setTimerActive(true)
     } else {
       setTimerActive(false)
     }
-  }, [gameState, game?.players?.length])
+  }, [gameEngine, game?.players?.length])
 
   useEffect(() => {
     if (!lobby || !code) return
@@ -201,53 +204,14 @@ export default function LobbyPage() {
           
           const updatedState = data.payload
           
-          if (!updatedState.scores || !Array.isArray(updatedState.scores)) {
-            updatedState.scores = []
-          }
-          if (!updatedState.held || !Array.isArray(updatedState.held)) {
-            updatedState.held = [false, false, false, false, false]
-          }
-          if (!updatedState.dice || !Array.isArray(updatedState.dice)) {
-            updatedState.dice = rollDice()
-          }
-          
-          // Play sounds for other players based on what changed
-          if (gameState) {
-            // Check if dice were rolled (rollsLeft decreased)
-            if (updatedState.rollsLeft < gameState.rollsLeft) {
-              soundManager.play('diceRoll')
-            }
-            
-            // Check if turn changed (new player's turn)
-            if (updatedState.currentPlayerIndex !== gameState.currentPlayerIndex) {
-              soundManager.play('turnChange')
-              
-              // Check if it's now my turn
-              const myIndex = getCurrentPlayerIndex()
-              if (myIndex === updatedState.currentPlayerIndex) {
-                // Small delay so sounds don't overlap
-                setTimeout(() => {
-                  soundManager.play('click')
-                }, 300)
-              }
-            }
-            
-            // Check if someone scored (round increased or scores changed)
-            if (updatedState.round > gameState.round) {
-              soundManager.play('score')
-            }
-            
-            // Check if game just finished
-            if (!gameState.finished && updatedState.finished) {
-              soundManager.play('win')
-              setTimeout(() => {
-                fireworks()
-              }, 200)
-            }
+          // Update game engine state
+          if (gameEngine) {
+            gameEngine.restoreState(updatedState)
+            setGameEngine(new YahtzeeGame(gameEngine.getState().id)) // Create new instance to trigger re-render
+            gameEngine.restoreState(updatedState)
           }
           
           console.log('🎲 Setting new game state:', updatedState)
-          setGameState(updatedState)
           
           // Debounce lobby reload to avoid excessive API calls
           const timeout = setTimeout(() => {
@@ -267,7 +231,7 @@ export default function LobbyPage() {
             if (!isCurrentUser) {
               toast.warning('⚠️ Game ended! Not enough players remaining.')
             }
-            setGameState(null)
+            setGameEngine(null)
           }
           loadLobby()
         } else if (data.action === 'chat-message') {
@@ -339,22 +303,18 @@ export default function LobbyPage() {
             const parsedState = JSON.parse(activeGame.state)
             console.log('🎲 Parsed game state:', parsedState)
             
-            if (!parsedState.scores || !Array.isArray(parsedState.scores)) {
-              parsedState.scores = []
+            // Create game engine from saved state based on game type
+            let engine: YahtzeeGame | ChessGame
+            if (lobby.gameType === 'chess') {
+              engine = new ChessGame(activeGame.id)
+            } else {
+              engine = new YahtzeeGame(activeGame.id)
             }
-            if (!parsedState.held || !Array.isArray(parsedState.held)) {
-              parsedState.held = [false, false, false, false, false]
-            }
-            if (!parsedState.dice || !Array.isArray(parsedState.dice)) {
-              parsedState.dice = rollDice()
-            }
-            if (typeof parsedState.currentPlayerIndex !== 'number') {
-              console.warn('⚠️ currentPlayerIndex is missing, setting to 0')
-              parsedState.currentPlayerIndex = 0
-            }
+            // Restore state
+            engine.restoreState(parsedState)
+            setGameEngine(engine)
             
-            console.log('✅ Final game state:', parsedState)
-            setGameState(parsedState)
+            console.log('✅ Game engine restored:', engine.getState())
           } catch (parseError) {
             console.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
@@ -411,7 +371,7 @@ export default function LobbyPage() {
   }
 
   const handleRollDice = async () => {
-    if (!gameState || !game) return
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
 
     // Validate that it's the current player's turn
     if (!isMyTurn()) {
@@ -420,92 +380,114 @@ export default function LobbyPage() {
     }
 
     // Validate that there are rolls left
-    if (gameState.rollsLeft === 0) {
+    if (gameEngine.getRollsLeft() === 0) {
       toast.error('🚫 No rolls left! Choose a category to score.')
       return
     }
 
-    const newDice = gameState.dice.map((die, i) =>
-      gameState.held[i] ? die : Math.floor(Math.random() * 6) + 1
-    )
-
-    const newState = {
-      ...gameState,
-      dice: newDice,
-      rollsLeft: gameState.rollsLeft - 1,
+    // Create roll move
+    const move: Move = {
+      playerId: session?.user?.id || '',
+      type: 'roll',
+      data: {},
+      timestamp: new Date(),
     }
 
-    setGameState(newState)
-    await saveGameState(game.id, newState)
-    
-    soundManager.play('diceRoll')
-    
-    socket?.emit('game-action', {
-      lobbyCode: code,
-      action: 'state-change',
-      payload: newState,
-    })
+    // Send move to server
+    try {
+      const res = await fetch(`/api/game/${game.id}/state`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ move }),
+      })
 
-    // Check if this was the last roll and only one category remains
-    if (newState.rollsLeft === 0) {
-      const categories: YahtzeeCategory[] = [
-        'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-        'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
-        'largeStraight', 'yahtzee', 'chance'
-      ]
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to roll dice')
+      }
 
-      const playerIndex = newState.currentPlayerIndex
-      const currentScorecard = newState.scores[playerIndex] || {}
-      const availableCategories = categories.filter(cat => currentScorecard[cat] === undefined)
+      const data = await res.json()
+      
+      // Update local game engine
+      if (gameEngine) {
+        gameEngine.restoreState(data.game.state)
+        setGameEngine(new YahtzeeGame(gameEngine.getState().id))
+        gameEngine.restoreState(data.game.state)
+      }
+      
+      soundManager.play('diceRoll')
+      
+      // Emit to other players
+      socket?.emit('game-action', {
+        lobbyCode: code,
+        action: 'state-change',
+        payload: data.game.state,
+      })
 
-      if (availableCategories.length === 1) {
-        // Automatically select the last remaining category
-        const lastCategory = availableCategories[0]
-        toast.info(`🎯 Last roll! Automatically scoring in ${lastCategory.replace(/([A-Z])/g, ' $1').trim()}...`)
-        
-        // Small delay for better UX
-        setTimeout(() => {
-          handleScoreSelection(lastCategory)
-        }, 1500)
-      } else {
+      // Check if this was the last roll and only one category remains
+      const currentRollsLeft = gameEngine.getRollsLeft()
+      if (currentRollsLeft === 0) {
+        // Auto-score logic would go here
         toast.info('Last roll! Choose a category to score.')
       }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to roll dice')
     }
   }
 
   const handleToggleHold = (index: number) => {
-    if (!gameState || gameState.rollsLeft === 3) return
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || gameEngine.getRollsLeft() === 3) return
 
-    const newHeld = [...gameState.held]
-    newHeld[index] = !newHeld[index]
+    // Create hold move
+    const move: Move = {
+      playerId: session?.user?.id || '',
+      type: 'hold',
+      data: { diceIndex: index },
+      timestamp: new Date(),
+    }
 
-    soundManager.play('click')
-
-    const newState = { ...gameState, held: newHeld }
-    setGameState(newState)
+    // Send move to server
+    fetch(`/api/game/${game?.id}/state`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ move }),
+    }).then(res => {
+      if (res.ok) {
+        res.json().then(data => {
+          // Update local game engine
+          if (gameEngine) {
+            gameEngine.restoreState(data.game.state)
+            setGameEngine(new YahtzeeGame(gameEngine.getState().id))
+            gameEngine.restoreState(data.game.state)
+          }
+          
+          soundManager.play('click')
+          
+          // Emit to other players
+          socket?.emit('game-action', {
+            lobbyCode: code,
+            action: 'state-change',
+            payload: data.game.state,
+          })
+        })
+      }
+    }).catch(error => {
+      console.error('Failed to toggle hold:', error)
+    })
   }
 
   const handleTimeOut = async () => {
-    if (!gameState || !game) return
-
-    const categories: YahtzeeCategory[] = [
-      'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-      'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
-      'largeStraight', 'yahtzee', 'chance'
-    ]
-
-    const playerIndex = gameState.currentPlayerIndex
-    const currentScorecard = gameState.scores[playerIndex] || {}
-    const availableCategory = categories.find(cat => currentScorecard[cat] === undefined)
-    
-    if (availableCategory) {
-      toast.error('⏰ Time is up! First available category filled with 0 points.')
-      await handleScoreSelection(availableCategory)
-    }
+    // Time out logic is now handled on the server side
+    // This function is kept for compatibility but does nothing
+    console.log('Time out - logic handled by server')
   }
 
   const handleScoreSelection = async (category: YahtzeeCategory) => {
-    if (!gameState || !game) return
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
 
     // Validate that it's the current player's turn
     if (!isMyTurn()) {
@@ -514,129 +496,138 @@ export default function LobbyPage() {
     }
 
     // Validate that the player has rolled at least once (rollsLeft < 3)
-    if (gameState.rollsLeft === 3) {
+    if (gameEngine.getRollsLeft() === 3) {
       toast.error('🚫 You must roll the dice at least once before scoring!')
       return
     }
 
-    // Validate that the category is not already used
-    const currentPlayerIndex = getCurrentPlayerIndex()
-    const currentScorecard = gameState.scores[currentPlayerIndex] || {}
-    if (currentScorecard[category] !== undefined) {
-      toast.error('🚫 This category is already scored!')
-      return
+    // Create score move
+    const move: Move = {
+      playerId: session?.user?.id || '',
+      type: 'score',
+      data: { category },
+      timestamp: new Date(),
     }
 
-    const playerIndex = gameState.currentPlayerIndex
-    const score = calculateScore(gameState.dice, category)
-    
-    const newScores = [...gameState.scores]
-    newScores[playerIndex] = {
-      ...newScores[playerIndex],
-      [category]: score,
-    }
+    try {
+      const res = await fetch(`/api/game/${game.id}/state`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ move }),
+      })
 
-    const nextPlayerIndex = (playerIndex + 1) % game.players.length
-    const allFinished = newScores.every(sc => isGameFinished(sc))
-
-    const newState: YahtzeeGameState = {
-      ...gameState,
-      scores: newScores,
-      currentPlayerIndex: nextPlayerIndex,
-      dice: rollDice(),
-      held: [false, false, false, false, false],
-      rollsLeft: 3,
-      round: gameState.round + 1,
-      finished: allFinished,
-    }
-
-    setGameState(newState)
-    await saveGameState(game.id, newState, allFinished ? 'finished' : 'playing')
-    
-    socket?.emit('game-action', {
-      lobbyCode: code,
-      action: 'state-change',
-      payload: newState,
-    })
-
-    const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
-    toast.success(`Scored ${score} points in ${categoryName}!`)
-    
-    // Play score sound and celebrate if it's a good score
-    soundManager.play('score')
-    if (score >= 20) {
-      celebrate()
-    }
-    
-    if (allFinished) {
-      setTimerActive(false)
-      
-      const scores = newScores.map(sc => calculateTotalScore(sc))
-      const maxScore = Math.max(...scores)
-      const winnerIndex = scores.indexOf(maxScore)
-      const winnerName = game.players[winnerIndex]?.user?.username || 'Player ' + (winnerIndex + 1)
-      
-      // Play win sound and fireworks for game completion
-      soundManager.play('win')
-      fireworks()
-      
-      toast.success(`🎉 Game Over! ${winnerName} wins with ${maxScore} points!`)
-
-      // Add system message to chat
-      const gameEndMessage = {
-        id: Date.now().toString() + '_gameend',
-        userId: 'system',
-        username: 'System',
-        message: `🎉 Game Over! ${winnerName} wins with ${maxScore} points!`,
-        timestamp: Date.now(),
-        type: 'system'
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to score')
       }
-      setChatMessages(prev => [...prev, gameEndMessage])
-    } else if (nextPlayerIndex !== playerIndex) {
-      const nextPlayerName = game.players[nextPlayerIndex]?.user?.username || 'Player ' + (nextPlayerIndex + 1)
-      soundManager.play('turnChange')
-      toast.info(`${nextPlayerName}'s turn!`)
+
+      const data = await res.json()
+      
+      // Update local game engine
+      if (gameEngine) {
+        gameEngine.restoreState(data.game.state)
+        setGameEngine(new YahtzeeGame(gameEngine.getState().id))
+        gameEngine.restoreState(data.game.state)
+      }
+      
+      const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
+      toast.success(`Scored in ${categoryName}!`)
+      
+      soundManager.play('score')
+      
+      // Emit to other players
+      socket?.emit('game-action', {
+        lobbyCode: code,
+        action: 'state-change',
+        payload: data.game.state,
+      })
+
+      if (gameEngine.isGameFinished()) {
+        setTimerActive(false)
+        
+        const winner = gameEngine.checkWinCondition()
+        if (winner) {
+          soundManager.play('win')
+          fireworks()
+          
+          toast.success(`🎉 Game Over! ${winner.name} wins!`)
+        }
+      } else {
+        const nextPlayer = gameEngine.getCurrentPlayer()
+        if (nextPlayer) {
+          soundManager.play('turnChange')
+          toast.info(`${nextPlayer.name}'s turn!`)
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to score')
     }
   }
 
   const handleStartGame = async () => {
     if (!game) return
 
-    const initialState: YahtzeeGameState = {
-      round: 0,
-      currentPlayerIndex: 0,
-      dice: rollDice(),
-      held: [false, false, false, false, false],
-      rollsLeft: 3,
-      scores: game.players.map(() => ({})),
-      finished: false,
+    try {
+      const res = await fetch('/api/game/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameType: lobby.gameType || 'yahtzee',
+          lobbyId: lobby.id,
+          config: { maxPlayers: lobby.maxPlayers, minPlayers: lobby.gameType === 'chess' ? 2 : 1 }
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to start game')
+      }
+
+      const data = await res.json()
+      
+      // Create game engine from response based on game type
+      let engine: YahtzeeGame | ChessGame
+      if (lobby.gameType === 'chess') {
+        engine = new ChessGame(data.game.id)
+        setChessCurrentPlayer('white') // Initialize chess player
+      } else {
+        engine = new YahtzeeGame(data.game.id)
+      }
+      engine.restoreState(data.game.state)
+      setGameEngine(engine)
+      
+      setTimerActive(true)
+      setTimeLeft(60)
+      
+      socket?.emit('game-action', {
+        lobbyCode: code,
+        action: 'state-change',
+        payload: data.game.state,
+      })
+
+      const firstPlayerName = data.game.players[0]?.name || 'Player 1'
+      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
+
+      // Add system message to chat
+      const gameStartMessage = {
+        id: Date.now().toString() + '_gamestart',
+        userId: 'system',
+        username: 'System',
+        message: `🎲 Game started! ${firstPlayerName} goes first!`,
+        timestamp: Date.now(),
+        type: 'system'
+      }
+      setChatMessages(prev => [...prev, gameStartMessage])
+      
+      // Reload lobby to get updated game info
+      loadLobby()
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to start game')
     }
-
-    setGameState(initialState)
-    setTimerActive(true)
-    setTimeLeft(60)
-    
-    await saveGameState(game.id, initialState, 'playing')
-    
-    socket?.emit('game-action', {
-      lobbyCode: code,
-      action: 'state-change',
-      payload: initialState,
-    })
-
-    const firstPlayerName = game.players[0]?.user?.username || 'Player 1'
-    toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
-
-    // Add system message to chat
-    const gameStartMessage = {
-      id: Date.now().toString() + '_gamestart',
-      userId: 'system',
-      username: 'System',
-      message: `🎲 Game started! ${firstPlayerName} goes first!`,
-      timestamp: Date.now(),
-      type: 'system'
-    }
-    setChatMessages(prev => [...prev, gameStartMessage])
   }
 
   const handleSendChatMessage = (message: string) => {
@@ -678,6 +669,88 @@ export default function LobbyPage() {
       return newState
     })
   }
+
+  const handleChessSquareClick = useCallback((position: Position) => {
+    if (!gameEngine || !(gameEngine instanceof ChessGame) || !game) return
+
+    const chessGame = gameEngine as ChessGame
+    const piece = chessGame.getBoard().pieces[position.row][position.col]
+
+    if (selectedSquare) {
+      // If clicking on a possible move, make the move
+      const isPossibleMove = possibleMoves.some(move => move.row === position.row && move.col === position.col)
+      if (isPossibleMove) {
+        const move: ChessMove = {
+          from: selectedSquare,
+          to: position,
+          piece: chessGame.getBoard().pieces[selectedSquare.row][selectedSquare.col]!,
+          capturedPiece: piece || undefined
+        }
+        handleChessMove(move)
+        return
+      }
+    }
+
+    // Select a piece if it's the current player's piece
+    if (piece && piece.color === chessCurrentPlayer && isMyTurn()) {
+      setSelectedSquare(position)
+      // Calculate possible moves for this piece
+      const moves = chessGame.getPossibleMoves(position)
+      setPossibleMoves(moves)
+    } else {
+      // Deselect if clicking on empty square or opponent's piece
+      setSelectedSquare(null)
+      setPossibleMoves([])
+    }
+  }, [gameEngine, game, selectedSquare, possibleMoves, chessCurrentPlayer])
+
+  const handleChessMove = useCallback(async (move: ChessMove) => {
+    if (!gameEngine || !(gameEngine instanceof ChessGame) || !game) return
+
+    try {
+      const res = await fetch(`/api/game/${game.id}/move`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          move: move,
+          playerId: session?.user?.id
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to make move')
+      }
+
+      // Clear selection
+      setSelectedSquare(null)
+      setPossibleMoves([])
+
+      // Update local game state
+      if (data.game) {
+        setGame(data.game)
+        setGameEngine(data.gameEngine)
+      }
+
+      // Emit move to other players
+      if (socket) {
+        socket.emit('game-action', {
+          lobbyCode: code,
+          action: 'move-made',
+          payload: {
+            gameId: game.id,
+            move: move,
+            playerId: session?.user?.id
+          },
+        })
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to make move')
+    }
+  }, [gameEngine, game, session?.user?.id, socket, code])
 
   const handleLeaveLobby = async () => {
 
@@ -722,7 +795,7 @@ export default function LobbyPage() {
       setChatMessages(prev => [...prev, leaveMessage])
 
       // Redirect to game lobbies
-      router.push('/games/yahtzee/lobbies')
+      router.push(`/games/${lobby.gameType}/lobbies`)
     } catch (err: any) {
       toast.error(err.message || 'Failed to leave lobby')
     }
@@ -742,7 +815,7 @@ export default function LobbyPage() {
         <div className="card max-w-md">
           <h1 className="text-2xl font-bold mb-4">Lobby Not Found</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button onClick={() => router.push('/games/yahtzee/lobbies')} className="btn btn-primary">
+          <button onClick={() => router.push('/games/chess/lobbies')} className="btn btn-primary">
             Back to Lobbies
           </button>
         </div>
@@ -751,7 +824,7 @@ export default function LobbyPage() {
   }
 
   const isInGame = game?.players?.some((p: any) => p.userId === session?.user?.id)
-  const isGameStarted = gameState !== null && game?.status === 'playing'
+  const isGameStarted = gameEngine !== null && game?.status === 'playing'
   const isWaitingInLobby = isInGame && !isGameStarted
 
   return (
@@ -774,10 +847,10 @@ export default function LobbyPage() {
           </button>
           <span>›</span>
           <button 
-            onClick={() => router.push('/games/yahtzee/lobbies')}
+            onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             className="hover:text-white transition-colors"
           >
-            🎲 Yahtzee
+            {lobby.gameType === 'chess' ? '♟️ Chess' : '🎲 Yahtzee'}
           </button>
           <span>›</span>
           <span className="text-white font-semibold">{lobby.code}</span>
@@ -878,11 +951,11 @@ export default function LobbyPage() {
                     username: p.user.username,
                     email: p.user.email,
                   },
-                  score: gameState ? calculateTotalScore(gameState.scores[index] || {}) : 0,
+                  score: gameEngine ? gameEngine.getPlayers()[index]?.score || 0 : 0,
                   position: p.position || game.players.indexOf(p),
                   isReady: true,
                 }))}
-                currentTurn={gameState?.currentPlayerIndex ?? -1}
+                currentTurn={gameEngine?.getState().currentPlayerIndex ?? -1}
                 currentUserId={session?.user?.id}
               />
             )}
@@ -891,15 +964,17 @@ export default function LobbyPage() {
               <div className="card text-center animate-scale-in">
                 <div className="mb-6">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-                    <span className="text-4xl">🎲</span>
+                    <span className="text-4xl">{lobby.gameType === 'chess' ? '♟️' : '🎲'}</span>
                   </div>
-                  <h2 className="text-3xl font-bold mb-2">Ready to Play Yahtzee?</h2>
+                  <h2 className="text-3xl font-bold mb-2">
+                    Ready to Play {lobby.gameType === 'chess' ? 'Chess' : 'Yahtzee'}?
+                  </h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
                     {game?.players?.length || 0} player(s) in lobby
                   </p>
-                  {game?.players?.length < 2 ? (
+                  {game?.players?.length < (lobby.gameType === 'chess' ? 2 : 2) ? (
                     <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
-                      ⏳ Waiting for more players to join... (minimum 2 players)
+                      ⏳ Waiting for more players to join... (minimum {lobby.gameType === 'chess' ? 2 : 2} players)
                     </p>
                   ) : (
                     <p className="text-sm text-green-600 dark:text-green-400 mb-4">
@@ -907,20 +982,23 @@ export default function LobbyPage() {
                     </p>
                   )}
                   <p className="text-sm text-gray-500 dark:text-gray-500">
-                    Roll the dice, score big, and have fun!
+                    {lobby.gameType === 'chess'
+                      ? 'Checkmate your opponent to win!'
+                      : 'Roll the dice, score big, and have fun!'
+                    }
                   </p>
                 </div>
-                
+
                 {lobby?.creatorId === session?.user?.id ? (
-                  <button 
+                  <button
                     onClick={() => {
                       soundManager.play('click')
                       handleStartGame()
                     }}
-                    disabled={game?.players?.length < 2}
+                    disabled={game?.players?.length < (lobby.gameType === 'chess' ? 2 : 2)}
                     className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    🎮 Start Yahtzee Game
+                    🎮 Start {lobby.gameType === 'chess' ? 'Chess' : 'Yahtzee'} Game
                   </button>
                 ) : (
                   <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
@@ -933,95 +1011,95 @@ export default function LobbyPage() {
                   </div>
                 )}
               </div>
-            ) : gameState?.finished ? (
+            ) : gameEngine?.isGameFinished() ? (
               <div className="card text-center animate-scale-in">
                 <div className="mb-6">
                   <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in">
                     <span className="text-6xl">🏆</span>
                   </div>
                   <h2 className="text-4xl font-bold mb-2">Game Over!</h2>
-                  <p className="text-gray-600 dark:text-gray-400">13 rounds completed</p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {lobby.gameType === 'chess' ? 'Checkmate!' : '13 rounds completed'}
+                  </p>
                 </div>
-                
+
                 {(() => {
-                  const scores = game?.players?.map((player: any, i: number) => ({
-                    name: player.user.username || `Player ${i + 1}`,
-                    score: calculateTotalScore(gameState.scores[i] || {}),
-                    index: i,
-                    scorecard: gameState.scores[i] || {},
-                  })).sort((a: any, b: any) => b.score - a.score)
-                  
-                  const winner = scores[0]
-                  const isWinner = winner.name === session?.user?.name || 
-                                  game?.players[winner.index]?.userId === session?.user?.id
-                  
-                  return (
-                    <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
-                      <p className="text-2xl font-bold mb-2">
-                        {isWinner ? '🎊 You Won! 🎊' : `🏆 ${winner.name} Wins! 🏆`}
-                      </p>
-                      <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
-                        {winner.score} points
-                      </p>
-                    </div>
-                  )
-                })()}
-                
-                {/* Winner Podium */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-4">Final Standings</h3>
-                  {game?.players
-                    ?.map((player: any, i: number) => {
-                      const scorecard = gameState.scores[i] || {}
-                      const upperSection = (scorecard.ones || 0) + (scorecard.twos || 0) + 
-                        (scorecard.threes || 0) + (scorecard.fours || 0) + 
-                        (scorecard.fives || 0) + (scorecard.sixes || 0)
-                      const bonus = upperSection >= 63 ? 35 : 0
-                      
-                      return {
-                        name: player.user.username || `Player ${i + 1}`,
-                        score: calculateTotalScore(scorecard),
-                        index: i,
-                        upperSection,
-                        bonus,
-                      }
-                    })
-                    .sort((a: any, b: any) => b.score - a.score)
-                    .map((player: any, rank: number) => (
-                      <div
-                        key={player.index}
-                        className={`
-                          p-4 mb-3 rounded-lg transition-all duration-300
-                          ${rank === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white scale-105 shadow-xl' : ''}
-                          ${rank === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400 shadow-lg' : ''}
-                          ${rank === 2 ? 'bg-gradient-to-r from-orange-300 to-orange-400 shadow-lg' : ''}
-                          ${rank > 2 ? 'bg-gray-100 dark:bg-gray-700' : ''}
-                          transform
-                        `}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-3xl font-bold">
-                              {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
-                            </span>
-                            <div className="text-left">
-                              <p className="text-xl font-semibold">{player.name}</p>
-                              <p className={`text-sm ${rank === 0 ? 'text-yellow-100' : 'text-gray-600 dark:text-gray-400'}`}>
-                                Upper: {player.upperSection} {player.bonus > 0 ? `+${player.bonus} bonus` : ''}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-3xl font-bold">{player.score}</span>
-                        </div>
+                  if (lobby.gameType === 'chess' && gameEngine instanceof ChessGame) {
+                    const chessGame = gameEngine as ChessGame
+                    const winner = chessGame.checkWinCondition()
+                    const winnerPlayer = winner ? game.players.find((p: any) => p.userId === winner.id) : null
+
+                    return (
+                      <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
+                        <p className="text-2xl font-bold mb-2">
+                          {winner && winnerPlayer?.userId === session?.user?.id ? '🎊 You Won! 🎊' :
+                           winner ? `🏆 ${winnerPlayer?.user?.username || winner.name} Wins! 🏆` :
+                           '🤝 It\'s a Draw! 🤝'}
+                        </p>
+                        <p className="text-lg text-gray-700 dark:text-gray-300">
+                          {winner ? 'Checkmate!' : 'Stalemate or draw by agreement'}
+                        </p>
                       </div>
-                    ))}
-                </div>
+                    )
+                  } else {
+                    const players = gameEngine.getPlayers()
+                    const winner = gameEngine.checkWinCondition()
+
+                    return (
+                      <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
+                        <p className="text-2xl font-bold mb-2">
+                          {winner && winner.name === session?.user?.name ? '🎊 You Won! 🎊' : `🏆 ${winner?.name || 'Player'} Wins! 🏆`}
+                        </p>
+                        <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {winner?.score || 0} points
+                        </p>
+                      </div>
+                    )
+                  }
+                })()}
+
+                {/* Winner Podium - Only for Yahtzee */}
+                {lobby.gameType !== 'chess' && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-4">Final Standings</h3>
+                    {gameEngine.getPlayers()
+                      .sort((a: any, b: any) => (b.score || 0) - (a.score || 0))
+                      .map((player: any, rank: number) => (
+                        <div
+                          key={player.id}
+                          className={`
+                            p-4 mb-3 rounded-lg transition-all duration-300
+                            ${rank === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white scale-105 shadow-xl' : ''}
+                            ${rank === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400 shadow-lg' : ''}
+                            ${rank === 2 ? 'bg-gradient-to-r from-orange-300 to-orange-400 shadow-lg' : ''}
+                            ${rank > 2 ? 'bg-gray-100 dark:bg-gray-700' : ''}
+                            transform
+                          `}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-3xl font-bold">
+                                {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
+                              </span>
+                              <div className="text-left">
+                                <p className="text-xl font-semibold">{player.name}</p>
+                                <p className={`text-sm ${rank === 0 ? 'text-yellow-100' : 'text-gray-600 dark:text-gray-400'}`}>
+                                  Score: {player.score || 0}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-3xl font-bold">{player.score || 0}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
 
                 <div className="flex gap-4 justify-center">
                   <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
                     🔄 Play Again
                   </button>
-                  <button onClick={() => router.push('/games/yahtzee/lobbies')} className="btn btn-secondary text-lg px-8 py-3">
+                  <button onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)} className="btn btn-secondary text-lg px-8 py-3">
                     🏠 Back to Lobbies
                   </button>
                 </div>
@@ -1030,200 +1108,332 @@ export default function LobbyPage() {
               <>
                 {/* Game Status Bar */}
                 <div className="card mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                  <div className="grid grid-cols-4 gap-4 text-center">
-                    <div>
-                      <p className="text-sm opacity-90">Round</p>
-                      <p className="text-3xl font-bold">{Math.floor(gameState.round / (game?.players?.length || 1)) + 1} / 13</p>
-                    </div>
-                    <div>
-                      <p className="text-sm opacity-90">Current Player</p>
-                      <p className="text-lg font-bold truncate">
-                        {game.players[gameState.currentPlayerIndex]?.user?.username || 'Player'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm opacity-90">Your Score</p>
-                      <p className="text-3xl font-bold">
-                        {calculateTotalScore(gameState.scores[getCurrentPlayerIndex()] || {})}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm opacity-90">Time Left</p>
-                      <div className="flex items-center justify-center gap-2">
-                        <div className={`text-3xl font-bold ${
-                          timeLeft <= 10 ? 'text-red-300 animate-pulse' : 
-                          timeLeft <= 30 ? 'text-yellow-300' : ''
-                        }`}>
-                          {timeLeft}s
+                  {lobby.gameType === 'chess' && gameEngine instanceof ChessGame ? (
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-sm opacity-90">Current Player</p>
+                        <p className="text-3xl font-bold">
+                          {chessCurrentPlayer === 'white' ? '⚪ White' : '⚫ Black'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Move</p>
+                        <p className="text-3xl font-bold">{(gameEngine as ChessGame).getFullMoveNumber()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Time Left</p>
+                        <div className="flex items-center justify-center gap-2">
+                          <div className={`text-3xl font-bold ${
+                            timeLeft <= 10 ? 'text-red-300 animate-pulse' :
+                            timeLeft <= 30 ? 'text-yellow-300' : ''
+                          }`}>
+                            {timeLeft}s
+                          </div>
+                          {timeLeft <= 10 && (
+                            <span className="text-2xl animate-bounce">⏰</span>
+                          )}
                         </div>
-                        {timeLeft <= 10 && (
-                          <span className="text-2xl animate-bounce">⏰</span>
-                        )}
                       </div>
                     </div>
-                  </div>
+                  ) : lobby.gameType === 'yahtzee' && gameEngine instanceof YahtzeeGame ? (
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                      <div>
+                        <p className="text-sm opacity-90">Round</p>
+                        <p className="text-3xl font-bold">{Math.floor((gameEngine as YahtzeeGame).getRound() / (game?.players?.length || 1)) + 1} / 13</p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Current Player</p>
+                        <p className="text-lg font-bold truncate">
+                          {(gameEngine as YahtzeeGame).getCurrentPlayer()?.name || 'Player'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Your Score</p>
+                        <p className="text-3xl font-bold">
+                          {(gameEngine as YahtzeeGame).getPlayers().find(p => p.id === session?.user?.id)?.score || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm opacity-90">Time Left</p>
+                        <div className="flex items-center justify-center gap-2">
+                          <div className={`text-3xl font-bold ${
+                            timeLeft <= 10 ? 'text-red-300 animate-pulse' :
+                            timeLeft <= 30 ? 'text-yellow-300' : ''
+                          }`}>
+                            {timeLeft}s
+                          </div>
+                          {timeLeft <= 10 && (
+                            <span className="text-2xl animate-bounce">⏰</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500">Loading game status...</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Dice Section - Left Column */}
-                <div className="lg:col-span-1">
-                  <DiceGroup
-                    dice={gameState.dice}
-                    held={gameState.held}
-                    onToggleHold={handleToggleHold}
-                    disabled={gameState.rollsLeft === 3 || !isMyTurn()}
-                  />
-                  
-                  {/* Roll Button */}
-                  <div className="card mt-4">
-                    {/* Turn Indicator */}
-                    <div className={`text-center mb-4 p-4 rounded-lg transition-all ${
-                      isMyTurn() 
-                        ? timeLeft <= 10 
-                          ? 'bg-red-100 dark:bg-red-900 border-2 border-red-500 animate-pulse' 
-                          : timeLeft <= 30
-                            ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
-                            : 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
-                        : 'bg-gray-100 dark:bg-gray-700'
-                    }`}>
-                      {isMyTurn() ? (
-                        <div className="space-y-2">
-                          <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                            🎯 YOUR TURN!
-                          </p>
-                          <div className={`text-3xl font-extrabold ${
-                            timeLeft <= 10 
-                              ? 'text-red-600 dark:text-red-400' 
-                              : timeLeft <= 30
-                                ? 'text-yellow-600 dark:text-yellow-400'
-                                : 'text-gray-700 dark:text-gray-300'
+                  {lobby.gameType === 'chess' && gameEngine instanceof ChessGame ? (
+                    <>
+                      {/* Chess Board - Center */}
+                      <div className="lg:col-span-2 flex justify-center">
+                        <div className="card p-6">
+                          <ChessBoard
+                            board={(gameEngine as ChessGame).getBoard().pieces}
+                            currentPlayer={chessCurrentPlayer}
+                            selectedSquare={selectedSquare || undefined}
+                            possibleMoves={possibleMoves}
+                            onSquareClick={handleChessSquareClick}
+                            onMove={handleChessMove}
+                            disabled={!isMyTurn()}
+                            flipped={chessCurrentPlayer === 'black'} // Flip board for black player
+                          />
+                        </div>
+                      </div>
+
+                      {/* Chess Game Info - Right */}
+                      <div className="lg:col-span-1">
+                        <div className="card">
+                          <h3 className="text-lg font-bold mb-4">♟️ Chess Game</h3>
+
+                          {/* Current Turn */}
+                          <div className={`text-center mb-4 p-4 rounded-lg transition-all ${
+                            isMyTurn()
+                              ? timeLeft <= 10
+                                ? 'bg-red-100 dark:bg-red-900 border-2 border-red-500 animate-pulse'
+                                : timeLeft <= 30
+                                  ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
+                                  : 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
+                              : 'bg-gray-100 dark:bg-gray-700'
                           }`}>
-                            <span className={timeLeft <= 10 ? 'animate-bounce inline-block' : ''}>
-                              {timeLeft <= 10 ? '⏰' : '⏱️'}
-                            </span> {timeLeft}s
+                            {isMyTurn() ? (
+                              <div className="space-y-2">
+                                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                  🎯 YOUR TURN!
+                                </p>
+                                <p className="text-lg">
+                                  Playing as <span className="font-bold">{chessCurrentPlayer === 'white' ? '⚪ White' : '⚫ Black'}</span>
+                                </p>
+                                <div className={`text-3xl font-extrabold ${
+                                  timeLeft <= 10
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : timeLeft <= 30
+                                      ? 'text-yellow-600 dark:text-yellow-400'
+                                      : 'text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  <span className={timeLeft <= 10 ? 'animate-bounce inline-block' : ''}>
+                                    {timeLeft <= 10 ? '⏰' : '⏱️'}
+                                  </span> {timeLeft}s
+                                </div>
+                                {timeLeft <= 10 && (
+                                  <p className="text-sm text-red-600 dark:text-red-400 font-semibold">
+                                    ⚠️ Hurry up! Time is running out!
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                                  ⏳ Waiting for opponent...
+                                </p>
+                                <p className="text-sm">
+                                  Current player: <span className="font-bold">{chessCurrentPlayer === 'white' ? '⚪ White' : '⚫ Black'}</span>
+                                </p>
+                              </div>
+                            )}
                           </div>
-                          {timeLeft <= 10 && (
-                            <p className="text-sm text-red-600 dark:text-red-400 font-semibold">
-                              ⚠️ Hurry up! Time is running out!
+
+                          {/* Game Status */}
+                          <div className="mb-4">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Move: {(gameEngine as ChessGame).getFullMoveNumber()}
                             </p>
+                          </div>
+
+                          {/* Selected Square Info */}
+                          {selectedSquare && (
+                            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                                Selected: {String.fromCharCode(97 + selectedSquare.col)}{8 - selectedSquare.row}
+                              </p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400">
+                                {possibleMoves.length} possible moves
+                              </p>
+                            </div>
                           )}
                         </div>
-                      ) : (
-                        <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                          ⏳ Waiting for {game.players[gameState.currentPlayerIndex]?.user?.username || 'player'}...
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="text-center mb-4">
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        Rolls Left: {gameState.rollsLeft}
-                      </p>
-                      {gameState.rollsLeft === 0 && isMyTurn() && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          Choose a category to score
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleRollDice}
-                      disabled={gameState.rollsLeft === 0 || !isMyTurn()}
-                      className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2"
-                    >
-                      🎲 Roll Dice
-                    </button>
-                  </div>
-                </div>
-
-                {/* Scorecard Section - Right Columns */}
-                <div className="lg:col-span-2">
-                  {/* Player Selector */}
-                  <div className="card mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                        View Player's Scorecard
-                      </h3>
-                      <div className="flex gap-2">
-                        {game?.players?.map((player: any, index: number) => {
-                          const isMe = player.userId === session?.user?.id
-                          const isViewing = viewingPlayerIndex === index
-                          const isCurrentTurn = gameState.currentPlayerIndex === index
-                          
-                          return (
-                            <button
-                              key={player.id}
-                              onClick={() => setViewingPlayerIndex(index)}
-                              className={`
-                                px-4 py-2 rounded-lg font-semibold transition-all relative
-                                ${isViewing 
-                                  ? 'bg-blue-600 text-white shadow-lg scale-105' 
-                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }
-                              `}
-                            >
-                              {isMe ? '👤 You' : player.user?.username || `Player ${index + 1}`}
-                              {isCurrentTurn && (
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                              )}
-                            </button>
-                          )
-                        })}
                       </div>
-                    </div>
-                    
-                    {/* Current Viewing Info */}
-                    <div className={`p-3 rounded-lg ${
-                      viewingPlayerIndex === getCurrentPlayerIndex()
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600'
-                        : 'bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {viewingPlayerIndex === getCurrentPlayerIndex() ? (
-                            <>
-                              <span className="text-2xl">📊</span>
-                              <div>
-                                <p className="font-bold text-blue-700 dark:text-blue-300">Your Scorecard</p>
-                                <p className="text-sm text-blue-600 dark:text-blue-400">
-                                  {isMyTurn() ? "It's your turn!" : "Waiting for your turn..."}
+                    </>
+                  ) : lobby.gameType === 'yahtzee' && gameEngine instanceof YahtzeeGame ? (
+                    <>
+                      {/* Yahtzee Dice Section - Left Column */}
+                      <div className="lg:col-span-1">
+                        <DiceGroup
+                          dice={(gameEngine as YahtzeeGame).getDice()}
+                          held={(gameEngine as YahtzeeGame).getHeld()}
+                          onToggleHold={handleToggleHold}
+                          disabled={(gameEngine as YahtzeeGame).getRollsLeft() === 3 || !isMyTurn()}
+                        />
+
+                        {/* Roll Button */}
+                        <div className="card mt-4">
+                          {/* Turn Indicator */}
+                          <div className={`text-center mb-4 p-4 rounded-lg transition-all ${
+                            isMyTurn()
+                              ? timeLeft <= 10
+                                ? 'bg-red-100 dark:bg-red-900 border-2 border-red-500 animate-pulse'
+                                : timeLeft <= 30
+                                  ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
+                                  : 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
+                              : 'bg-gray-100 dark:bg-gray-700'
+                          }`}>
+                            {isMyTurn() ? (
+                              <div className="space-y-2">
+                                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                                  🎯 YOUR TURN!
                                 </p>
+                                <div className={`text-3xl font-extrabold ${
+                                  timeLeft <= 10
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : timeLeft <= 30
+                                      ? 'text-yellow-600 dark:text-yellow-400'
+                                      : 'text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  <span className={timeLeft <= 10 ? 'animate-bounce inline-block' : ''}>
+                                    {timeLeft <= 10 ? '⏰' : '⏱️'}
+                                  </span> {timeLeft}s
+                                </div>
+                                {timeLeft <= 10 && (
+                                  <p className="text-sm text-red-600 dark:text-red-400 font-semibold">
+                                    ⚠️ Hurry up! Time is running out!
+                                  </p>
+                                )}
                               </div>
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-2xl">👀</span>
-                              <div>
-                                <p className="font-bold text-yellow-700 dark:text-yellow-300">
-                                  Viewing: {game?.players[viewingPlayerIndex]?.user?.username || `Player ${viewingPlayerIndex + 1}`}
-                                </p>
-                                <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                                  {gameState.currentPlayerIndex === viewingPlayerIndex 
-                                    ? "Currently playing..." 
-                                    : "Waiting for turn"}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {calculateTotalScore(gameState.scores[viewingPlayerIndex] || {})}
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Total Score</p>
+                            ) : (
+                              <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                                ⏳ Waiting for {game.players[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.username || 'player'}...
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="text-center mb-4">
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                              Rolls Left: {(gameEngine as YahtzeeGame).getRollsLeft()}
+                            </p>
+                            {(gameEngine as YahtzeeGame).getRollsLeft() === 0 && isMyTurn() && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Choose a category to score
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={handleRollDice}
+                            disabled={(gameEngine as YahtzeeGame).getRollsLeft() === 0 || !isMyTurn()}
+                            className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2"
+                          >
+                            🎲 Roll Dice
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <Scorecard
-                    scorecard={gameState.scores[viewingPlayerIndex] || {}}
-                    currentDice={gameState.dice}
-                    onSelectCategory={handleScoreSelection}
-                    canSelectCategory={gameState.rollsLeft < 3 && isMyTurn() && viewingPlayerIndex === getCurrentPlayerIndex()}
-                    isCurrentPlayer={viewingPlayerIndex === getCurrentPlayerIndex()}
-                  />
+                      {/* Yahtzee Scorecard Section - Right Columns */}
+                      <div className="lg:col-span-2">
+                        {/* Player Selector */}
+                        <div className="card mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                              View Player's Scorecard
+                            </h3>
+                            <div className="flex gap-2">
+                              {game?.players?.map((player: any, index: number) => {
+                                const isMe = player.userId === session?.user?.id
+                                const isViewing = viewingPlayerIndex === index
+                                const isCurrentTurn = (gameEngine as YahtzeeGame).getState().currentPlayerIndex === index
+
+                                return (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => setViewingPlayerIndex(index)}
+                                    className={`
+                                      px-4 py-2 rounded-lg font-semibold transition-all relative
+                                      ${isViewing
+                                        ? 'bg-blue-600 text-white shadow-lg scale-105'
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                      }
+                                    `}
+                                  >
+                                    {isMe ? '👤 You' : player.user?.username || `Player ${index + 1}`}
+                                    {isCurrentTurn && (
+                                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                                    )}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Current Viewing Info */}
+                          <div className={`p-3 rounded-lg ${
+                            viewingPlayerIndex === getCurrentPlayerIndex()
+                              ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600'
+                              : 'bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {viewingPlayerIndex === getCurrentPlayerIndex() ? (
+                                  <>
+                                    <span className="text-2xl">📊</span>
+                                    <div>
+                                      <p className="font-bold text-blue-700 dark:text-blue-300">Your Scorecard</p>
+                                      <p className="text-sm text-blue-600 dark:text-blue-400">
+                                        {isMyTurn() ? "It's your turn!" : "Waiting for your turn..."}
+                                      </p>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-2xl">👀</span>
+                                    <div>
+                                      <p className="font-bold text-yellow-700 dark:text-yellow-300">
+                                        Viewing: {game?.players[viewingPlayerIndex]?.user?.username || `Player ${viewingPlayerIndex + 1}`}
+                                      </p>
+                                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                                        {(gameEngine as YahtzeeGame).getState().currentPlayerIndex === viewingPlayerIndex
+                                          ? "Currently playing..."
+                                          : "Waiting for turn"}
+                                      </p>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                  {gameEngine.getPlayers()[viewingPlayerIndex]?.score || 0}
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Total Score</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Scorecard
+                          scorecard={(gameEngine as YahtzeeGame).getScorecard(game.players[viewingPlayerIndex]?.userId) || {}}
+                          currentDice={(gameEngine as YahtzeeGame).getDice()}
+                          onSelectCategory={handleScoreSelection}
+                          canSelectCategory={(gameEngine as YahtzeeGame).getRollsLeft() < 3 && isMyTurn() && viewingPlayerIndex === getCurrentPlayerIndex()}
+                          isCurrentPlayer={viewingPlayerIndex === getCurrentPlayerIndex()}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Loading game...</p>
+                    </div>
+                  )}
                 </div>
-              </div>
               </>
             )}
           </>

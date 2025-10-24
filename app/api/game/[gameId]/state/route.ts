@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
+import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { ChessGame } from '@/lib/games/chess-game'
+import { Move } from '@/lib/game-engine'
 
 export async function POST(
   request: NextRequest,
@@ -14,13 +17,21 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { state, status } = await request.json()
+    const { move } = await request.json()
 
-    // Verify user is a player in this game
+    if (!move || !move.type) {
+      return NextResponse.json({ error: 'Invalid move data' }, { status: 400 })
+    }
+
+    // Get game from database
     const game = await prisma.game.findUnique({
       where: { id: params.gameId },
       include: {
-        players: true,
+        players: {
+          include: {
+            user: true,
+          },
+        },
         lobby: true,
       },
     })
@@ -29,54 +40,93 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const isPlayer = game.players.some((p: any) => p.userId === session.user.id)
-    if (!isPlayer) {
+    // Verify user is a player in this game
+    const playerRecord = game.players.find((p: any) => p.userId === session.user.id)
+    if (!playerRecord) {
       return NextResponse.json({ error: 'Not a player in this game' }, { status: 403 })
     }
 
-    // Update game state
+    // Recreate game engine from saved state
+    const gameState = JSON.parse(game.state)
+    let gameEngine: any
+
+    switch (game.lobby.gameType) {
+      case 'yahtzee':
+        gameEngine = new YahtzeeGame(game.id)
+        // Restore state
+        gameEngine.state = gameState
+        break
+      case 'chess':
+        gameEngine = new ChessGame(game.id)
+        // Restore state
+        gameEngine.state = gameState
+        break
+      default:
+        return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    }
+
+    // Create move object
+    const gameMove: Move = {
+      playerId: session.user.id,
+      type: move.type,
+      data: move.data || {},
+      timestamp: new Date(),
+    }
+
+    // Make the move
+    const moveResult = gameEngine.makeMove(gameMove)
+    if (!moveResult) {
+      return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
+    }
+
+    // Update game state in database
     const updatedGame = await prisma.game.update({
       where: { id: params.gameId },
       data: {
-        state: JSON.stringify(state),
-        status: status || game.status,
+        state: JSON.stringify(gameEngine.getState()),
+        status: gameEngine.getState().status,
+        currentTurn: gameEngine.getState().currentPlayerIndex,
         updatedAt: new Date(),
+      },
+      include: {
+        players: {
+          include: {
+            user: true,
+          },
+        },
       },
     })
 
-    // Update player scores if game is finished
-    if (status === 'finished' && state.scores) {
-      await Promise.all(
-        game.players.map((player: any, index: number) =>
-          prisma.player.update({
-            where: { id: player.id },
+    // Update player scores
+    await Promise.all(
+      gameEngine.getPlayers().map(async (player: any, index: number) => {
+        const dbPlayer = updatedGame.players[index]
+        if (dbPlayer) {
+          await prisma.player.update({
+            where: { id: dbPlayer.id },
             data: {
-              scorecard: JSON.stringify(state.scores[index] || {}),
-              score: calculateTotalFromScorecard(state.scores[index] || {}),
+              score: player.score || 0,
+              scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
             },
           })
-        )
-      )
-    }
+        }
+      })
+    )
 
-    return NextResponse.json({ game: updatedGame })
+    return NextResponse.json({
+      game: {
+        id: updatedGame.id,
+        status: updatedGame.status,
+        state: gameEngine.getState(),
+        players: updatedGame.players.map(p => ({
+          id: p.userId,
+          name: p.user.name || 'Unknown',
+          score: p.score,
+        })),
+      }
+    })
   } catch (error) {
     console.error('Update game state error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-}
-
-function calculateTotalFromScorecard(scorecard: any): number {
-  const upperSection = (scorecard.ones || 0) + (scorecard.twos || 0) + 
-    (scorecard.threes || 0) + (scorecard.fours || 0) + 
-    (scorecard.fives || 0) + (scorecard.sixes || 0)
-  
-  const upperBonus = upperSection >= 63 ? 35 : 0
-  
-  const lowerSection = (scorecard.threeOfKind || 0) + (scorecard.fourOfKind || 0) +
-    (scorecard.fullHouse || 0) + (scorecard.smallStraight || 0) +
-    (scorecard.largeStraight || 0) + (scorecard.yahtzee || 0) +
-    (scorecard.chance || 0)
-  
-  return upperSection + upperBonus + lowerSection
 }
