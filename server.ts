@@ -2,6 +2,8 @@ import { createServer } from 'http'
 import { parse } from 'url'
 import next from 'next'
 import { Server as SocketIOServer } from 'socket.io'
+import jwt from 'jsonwebtoken'
+import { prisma } from './lib/db'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = process.env.HOSTNAME || '0.0.0.0'
@@ -32,24 +34,110 @@ app.prepare().then(() => {
     },
   })
 
+  // Socket.IO authentication middleware
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token || socket.handshake.query.token
+
+      if (!token) {
+        console.log('Socket connection rejected: No token provided')
+        return next(new Error('Authentication error: No token provided'))
+      }
+
+      // Verify JWT token
+      const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
+      if (!secret) {
+        console.error('JWT secret not configured')
+        return next(new Error('Server configuration error'))
+      }
+
+      const decoded = jwt.verify(token, secret) as any
+
+      if (!decoded?.id) {
+        console.log('Socket connection rejected: Invalid token')
+        return next(new Error('Authentication error: Invalid token'))
+      }
+
+      // Verify user exists in database
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, username: true, email: true }
+      })
+
+      if (!user) {
+        console.log('Socket connection rejected: User not found')
+        return next(new Error('Authentication error: User not found'))
+      }
+
+      // Attach user to socket
+      socket.data.user = user
+      console.log(`Socket authenticated for user: ${user.username} (${user.id})`)
+
+      next()
+    } catch (error) {
+      console.log('Socket authentication error:', error)
+      next(new Error('Authentication error'))
+    }
+  })
+
   // Socket.IO connection handling
   io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id)
+    const user = socket.data.user
+    console.log(`Authenticated client connected: ${socket.id} (User: ${user.username})`)
 
     // Join lobby with validation
-    socket.on('join-lobby', (lobbyCode: string) => {
+    socket.on('join-lobby', async (lobbyCode: string) => {
       if (!lobbyCode || typeof lobbyCode !== 'string') {
         console.error('Invalid lobby code')
         return
       }
-      socket.join(`lobby:${lobbyCode}`)
-      console.log(`Socket ${socket.id} joined lobby ${lobbyCode}`)
-      
-      // Notify others in the lobby
-      socket.to(`lobby:${lobbyCode}`).emit('player-joined', {
-        socketId: socket.id,
-        timestamp: Date.now(),
-      })
+
+      try {
+        // Verify user is allowed to join this lobby
+        const lobby = await prisma.lobby.findUnique({
+          where: { code: lobbyCode },
+          include: {
+            games: {
+              where: {
+                status: { in: ['waiting', 'playing'] }
+              },
+              include: {
+                players: {
+                  include: { user: true }
+                }
+              }
+            }
+          }
+        })
+
+        if (!lobby) {
+          socket.emit('error', { message: 'Lobby not found' })
+          return
+        }
+
+        // Check if there's an active game and user is a player
+        const activeGame = lobby.games[0]
+        if (activeGame) {
+          const isPlayer = activeGame.players.some((p: any) => p.userId === user.id)
+          if (!isPlayer) {
+            socket.emit('error', { message: 'You are not a player in this game' })
+            return
+          }
+        }
+
+        socket.join(`lobby:${lobbyCode}`)
+        console.log(`User ${user.username} joined lobby ${lobbyCode}`)
+
+        // Notify others in the lobby
+        socket.to(`lobby:${lobbyCode}`).emit('player-joined', {
+          userId: user.id,
+          username: user.username,
+          timestamp: Date.now(),
+        })
+      } catch (error) {
+        console.error('Error joining lobby:', error)
+        socket.emit('error', { message: 'Failed to join lobby' })
+      }
     })
 
     socket.on('leave-lobby', (lobbyCode: string) => {
@@ -58,11 +146,12 @@ app.prepare().then(() => {
         return
       }
       socket.leave(`lobby:${lobbyCode}`)
-      console.log(`Socket ${socket.id} left lobby ${lobbyCode}`)
-      
+      console.log(`User ${user.username} left lobby ${lobbyCode}`)
+
       // Notify others in the lobby
       socket.to(`lobby:${lobbyCode}`).emit('player-left', {
-        socketId: socket.id,
+        userId: user.id,
+        username: user.username,
         timestamp: Date.now(),
       })
     })
@@ -73,19 +162,20 @@ app.prepare().then(() => {
         console.error('Invalid game action data')
         return
       }
-      
+
       // Broadcast game action to all players in the lobby (including sender)
       io.to(`lobby:${data.lobbyCode}`).emit('game-update', {
         action: data.action,
         payload: data.payload,
         timestamp: Date.now(),
-        socketId: socket.id,
+        userId: user.id,
+        username: user.username,
       })
-      console.log(`Game action in ${data.lobbyCode}: ${data.action}`)
+      console.log(`Game action by ${user.username} in ${data.lobbyCode}: ${data.action}`)
     })
 
     socket.on('disconnect', () => {
-      console.log('Client disconnected:', socket.id)
+      console.log(`User ${user.username} disconnected: ${socket.id}`)
     })
   })
 

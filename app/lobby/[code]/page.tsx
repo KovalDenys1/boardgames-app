@@ -132,6 +132,20 @@ export default function LobbyPage() {
     if (!socket) {
       const url = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
       console.log('🔌 Connecting to Socket.IO:', url)
+
+      // Get NextAuth session token from cookies
+      const getAuthToken = () => {
+        const cookies = document.cookie.split(';')
+        for (const cookie of cookies) {
+          const [name, value] = cookie.trim().split('=')
+          if (name === 'next-auth.session-token') {
+            return value
+          }
+        }
+        return null
+      }
+
+      const token = getAuthToken()
       
       socket = io(url, {
         transports: ['websocket', 'polling'],
@@ -141,6 +155,12 @@ export default function LobbyPage() {
         reconnectionDelayMax: 5000, // Max delay between attempts
         timeout: 20000, // Connection timeout
         autoConnect: true,
+        auth: {
+          token: token
+        },
+        query: {
+          token: token
+        },
       })
 
       let isFirstConnection = true
@@ -393,6 +413,18 @@ export default function LobbyPage() {
   const handleRollDice = async () => {
     if (!gameState || !game) return
 
+    // Validate that it's the current player's turn
+    if (!isMyTurn()) {
+      toast.error('🚫 It\'s not your turn to roll the dice!')
+      return
+    }
+
+    // Validate that there are rolls left
+    if (gameState.rollsLeft === 0) {
+      toast.error('🚫 No rolls left! Choose a category to score.')
+      return
+    }
+
     const newDice = gameState.dice.map((die, i) =>
       gameState.held[i] ? die : Math.floor(Math.random() * 6) + 1
     )
@@ -474,6 +506,26 @@ export default function LobbyPage() {
 
   const handleScoreSelection = async (category: YahtzeeCategory) => {
     if (!gameState || !game) return
+
+    // Validate that it's the current player's turn
+    if (!isMyTurn()) {
+      toast.error('🚫 It\'s not your turn to score!')
+      return
+    }
+
+    // Validate that the player has rolled at least once (rollsLeft < 3)
+    if (gameState.rollsLeft === 3) {
+      toast.error('🚫 You must roll the dice at least once before scoring!')
+      return
+    }
+
+    // Validate that the category is not already used
+    const currentPlayerIndex = getCurrentPlayerIndex()
+    const currentScorecard = gameState.scores[currentPlayerIndex] || {}
+    if (currentScorecard[category] !== undefined) {
+      toast.error('🚫 This category is already scored!')
+      return
+    }
 
     const playerIndex = gameState.currentPlayerIndex
     const score = calculateScore(gameState.dice, category)
