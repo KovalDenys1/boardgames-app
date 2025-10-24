@@ -17,6 +17,7 @@ class SoundManager {
       win: '/sounds/win.mp3',
       turnChange: '/sounds/turn-change.mp3',
       score: '/sounds/score.mp3',
+      message: '/sounds/click.mp3', // Use click sound for messages
     }
 
     Object.entries(soundFiles).forEach(([key, path]) => {

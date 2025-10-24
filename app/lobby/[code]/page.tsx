@@ -19,6 +19,7 @@ import DiceGroup from '@/components/DiceGroup'
 import Scorecard from '@/components/Scorecard'
 import PlayerList from '@/components/PlayerList'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import Chat from '@/components/Chat'
 import { soundManager } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 
@@ -42,6 +43,10 @@ export default function LobbyPage() {
   const [timerActive, setTimerActive] = useState<boolean>(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { celebrate, fireworks } = useConfetti()
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatMinimized, setChatMinimized] = useState(false)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+  const [someoneTyping, setSomeoneTyping] = useState(false)
 
   // Debounce for game state updates to avoid excessive re-renders
   const [updateTimeout, setUpdateTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -245,6 +250,32 @@ export default function LobbyPage() {
             setGameState(null)
           }
           loadLobby()
+        } else if (data.action === 'chat-message') {
+          // Add chat message to state, but avoid duplicates
+          setChatMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === data.payload.id)
+            if (messageExists) return prev
+            
+            // Play sound for new messages from other users
+            if (data.payload.userId !== session?.user?.id) {
+              soundManager.play('message')
+              
+              // Increment unread count if chat is minimized
+              if (chatMinimized) {
+                setUnreadMessageCount(prev => prev + 1)
+              }
+            }
+            
+            return [...prev, data.payload]
+          })
+          
+          // Show notification for other users
+          if (data.payload.userId !== session?.user?.id) {
+            // Optional: show toast for new messages if chat is minimized
+            if (chatMinimized) {
+              toast.info(`💬 ${data.payload.username}: ${data.payload.message}`)
+            }
+          }
         }
       })
     }
@@ -343,6 +374,17 @@ export default function LobbyPage() {
       
       // Notify lobby list about player joining
       socket?.emit('player-joined')
+      
+      // Add system message to chat
+      const joinMessage = {
+        id: Date.now().toString() + '_join',
+        userId: 'system',
+        username: 'System',
+        message: `${session?.user?.name || 'A player'} joined the lobby`,
+        timestamp: Date.now(),
+        type: 'system'
+      }
+      setChatMessages(prev => [...prev, joinMessage])
     } catch (err: any) {
       setError(err.message)
     }
@@ -487,6 +529,17 @@ export default function LobbyPage() {
       fireworks()
       
       toast.success(`🎉 Game Over! ${winnerName} wins with ${maxScore} points!`)
+
+      // Add system message to chat
+      const gameEndMessage = {
+        id: Date.now().toString() + '_gameend',
+        userId: 'system',
+        username: 'System',
+        message: `🎉 Game Over! ${winnerName} wins with ${maxScore} points!`,
+        timestamp: Date.now(),
+        type: 'system'
+      }
+      setChatMessages(prev => [...prev, gameEndMessage])
     } else if (nextPlayerIndex !== playerIndex) {
       const nextPlayerName = game.players[nextPlayerIndex]?.user?.username || 'Player ' + (nextPlayerIndex + 1)
       soundManager.play('turnChange')
@@ -521,12 +574,60 @@ export default function LobbyPage() {
 
     const firstPlayerName = game.players[0]?.user?.username || 'Player 1'
     toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
+
+    // Add system message to chat
+    const gameStartMessage = {
+      id: Date.now().toString() + '_gamestart',
+      userId: 'system',
+      username: 'System',
+      message: `🎲 Game started! ${firstPlayerName} goes first!`,
+      timestamp: Date.now(),
+      type: 'system'
+    }
+    setChatMessages(prev => [...prev, gameStartMessage])
+  }
+
+  const handleSendChatMessage = (message: string) => {
+    if (!session?.user?.id || !session?.user?.name) return
+
+    const chatMessage = {
+      id: Date.now().toString() + Math.random(),
+      userId: session.user.id,
+      username: session.user.name,
+      message: message,
+      timestamp: Date.now(),
+      type: 'message'
+    }
+
+    // Add to local state immediately for instant feedback
+    setChatMessages(prev => [...prev, chatMessage])
+
+    // Send to other players via Socket.IO
+    socket?.emit('game-action', {
+      lobbyCode: code,
+      action: 'chat-message',
+      payload: chatMessage,
+    })
+  }
+
+  const clearChat = () => {
+    setChatMessages([])
+    setUnreadMessageCount(0)
+    toast.success('🗑️ Chat cleared!')
+  }
+
+  const handleToggleChat = () => {
+    setChatMinimized(prev => {
+      const newState = !prev
+      // Reset unread count when opening chat
+      if (!newState) {
+        setUnreadMessageCount(0)
+      }
+      return newState
+    })
   }
 
   const handleLeaveLobby = async () => {
-    if (isGameStarted && !confirm('Are you sure you want to leave this game? The game will end if only one player remains.')) {
-      return
-    }
 
     try {
       const res = await fetch(`/api/lobby/${code}/leave`, {
@@ -556,6 +657,17 @@ export default function LobbyPage() {
 
       // Show single success message
       toast.success(data.gameEnded ? 'Game ended' : 'Left lobby')
+
+      // Add system message to chat
+      const leaveMessage = {
+        id: Date.now().toString() + '_leave',
+        userId: 'system',
+        username: 'System',
+        message: `${session?.user?.name || 'A player'} left the lobby`,
+        timestamp: Date.now(),
+        type: 'system'
+      }
+      setChatMessages(prev => [...prev, leaveMessage])
 
       // Redirect to lobby list
       router.push('/lobby')
@@ -1039,6 +1151,20 @@ export default function LobbyPage() {
           </>
         )}
       </div>
+
+      {/* Chat Component */}
+      {isInGame && (
+        <Chat
+          messages={chatMessages}
+          onSendMessage={handleSendChatMessage}
+          currentUserId={session?.user?.id}
+          isMinimized={chatMinimized}
+          onToggleMinimize={handleToggleChat}
+          onClearChat={clearChat}
+          unreadCount={unreadMessageCount}
+          someoneTyping={someoneTyping}
+        />
+      )}
     </div>
   )
 }
