@@ -372,8 +372,30 @@ export default function LobbyPage() {
       payload: newState,
     })
 
+    // Check if this was the last roll and only one category remains
     if (newState.rollsLeft === 0) {
-      toast.info('Last roll! Choose a category to score.')
+      const categories: YahtzeeCategory[] = [
+        'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
+        'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
+        'largeStraight', 'yahtzee', 'chance'
+      ]
+
+      const playerIndex = newState.currentPlayerIndex
+      const currentScorecard = newState.scores[playerIndex] || {}
+      const availableCategories = categories.filter(cat => currentScorecard[cat] === undefined)
+
+      if (availableCategories.length === 1) {
+        // Automatically select the last remaining category
+        const lastCategory = availableCategories[0]
+        toast.info(`🎯 Last roll! Automatically scoring in ${lastCategory.replace(/([A-Z])/g, ' $1').trim()}...`)
+        
+        // Small delay for better UX
+        setTimeout(() => {
+          handleScoreSelection(lastCategory)
+        }, 1500)
+      } else {
+        toast.info('Last roll! Choose a category to score.')
+      }
     }
   }
 
