@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { ChessGame } from '@/lib/games/chess-game'
 import { Move } from '@/lib/game-engine'
+import { BotMoveExecutor } from '@/lib/bot-executor'
 
 export async function POST(
   request: NextRequest,
@@ -54,12 +55,12 @@ export async function POST(
       case 'yahtzee':
         gameEngine = new YahtzeeGame(game.id)
         // Restore state
-        gameEngine.state = gameState
+        gameEngine.restoreState(gameState)
         break
       case 'chess':
         gameEngine = new ChessGame(game.id)
         // Restore state
-        gameEngine.state = gameState
+        gameEngine.restoreState(gameState)
         break
       default:
         return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
@@ -113,18 +114,96 @@ export async function POST(
       })
     )
 
-    return NextResponse.json({
+    const response = {
       game: {
         id: updatedGame.id,
         status: updatedGame.status,
         state: gameEngine.getState(),
-        players: updatedGame.players.map(p => ({
+        players: updatedGame.players.map((p: any) => ({
           id: p.userId,
           name: p.user.name || 'Unknown',
           score: p.score,
+          isBot: p.user.isBot || false,
         })),
       }
-    })
+    }
+
+    // Check if next player is a bot and execute their turn
+    if (game.lobby.gameType === 'yahtzee' && !gameEngine.isGameFinished()) {
+      const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
+      const currentPlayer = updatedGame.players[currentPlayerIndex]
+      
+      if (currentPlayer && BotMoveExecutor.isBot(currentPlayer)) {
+        console.log('🤖 Next player is a bot, scheduling automatic turn...')
+        
+        // Execute bot turn asynchronously (don't wait for it)
+        setImmediate(async () => {
+          try {
+            // Reload game state to ensure we have the latest
+            const latestGame = await prisma.game.findUnique({
+              where: { id: params.gameId },
+              include: {
+                players: {
+                  include: {
+                    user: true,
+                  },
+                },
+                lobby: true,
+              },
+            })
+
+            if (!latestGame) return
+
+            const botGameState = JSON.parse(latestGame.state)
+            const botGameEngine = new YahtzeeGame(latestGame.id)
+            botGameEngine.restoreState(botGameState)
+
+            // Execute bot's turn
+            await BotMoveExecutor.executeBotTurn(
+              botGameEngine,
+              currentPlayer.userId,
+              async (botMove: Move) => {
+                // Make the bot's move
+                botGameEngine.makeMove(botMove)
+                
+                // Save to database
+                await prisma.game.update({
+                  where: { id: params.gameId },
+                  data: {
+                    state: JSON.stringify(botGameEngine.getState()),
+                    status: botGameEngine.getState().status,
+                    currentTurn: botGameEngine.getState().currentPlayerIndex,
+                    updatedAt: new Date(),
+                  },
+                })
+
+                // Update player scores
+                await Promise.all(
+                  botGameEngine.getPlayers().map(async (player: any, index: number) => {
+                    const dbPlayer = latestGame.players[index]
+                    if (dbPlayer) {
+                      await prisma.player.update({
+                        where: { id: dbPlayer.id },
+                        data: {
+                          score: player.score || 0,
+                          scorecard: JSON.stringify(botGameEngine.getScorecard?.(player.id) || {}),
+                        },
+                      })
+                    }
+                  })
+                )
+              }
+            )
+
+            console.log('🤖 Bot turn completed successfully')
+          } catch (error) {
+            console.error('Error executing bot turn:', error)
+          }
+        })
+      }
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Update game state error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
