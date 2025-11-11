@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
+    "db:setup": "prisma db push && prisma generate",
     "postinstall": "prisma generate"
   },
   "dependencies": {

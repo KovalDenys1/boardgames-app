@@ -8,6 +8,7 @@ interface Player {
   user: {
     username: string | null
     email: string | null
+    isBot?: boolean
   }
   score: number
   position: number
@@ -56,7 +57,10 @@ export default function PlayerList({ players, currentTurn, currentUserId }: Play
         {sortedPlayers.map((player, index) => {
           const isCurrentTurn = index === currentTurn
           const isCurrentUser = player.userId === currentUserId
-          const playerName = player.user.username || player.user.email || 'Player'
+          const isBot = player.user.isBot === true
+          const playerName = isBot 
+            ? '🤖 AI Bot' 
+            : player.user.username || player.user.email || 'Player'
 
           return (
             <div
@@ -68,6 +72,7 @@ export default function PlayerList({ players, currentTurn, currentUserId }: Play
                   : 'border-gray-200 dark:border-gray-700'
                 }
                 ${isCurrentUser ? 'ring-2 ring-green-500' : ''}
+                ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20' : ''}
               `}
             >
               <div className="flex items-center justify-between">
@@ -89,7 +94,12 @@ export default function PlayerList({ players, currentTurn, currentUserId }: Play
                       <span className="font-semibold text-lg">
                         {playerName}
                       </span>
-                      {isCurrentUser && (
+                      {isBot && (
+                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">
+                          AI
+                        </span>
+                      )}
+                      {isCurrentUser && !isBot && (
                         <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
                           You
                         </span>

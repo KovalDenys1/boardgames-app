@@ -16,8 +16,9 @@ This project is actively being developed and serves as both a learning experienc
 
 ### Yahtzee Game
 - 🎲 **Real-time Multiplayer** - Play with friends synchronously online
+- 🤖 **AI Bot Opponent** - Practice against an intelligent AI with optimal strategy
 - 👥 **Lobby System** - Create or join game rooms with unique codes
-- � **Invite Links** - Share lobby codes to invite friends
+- 🔗 **Invite Links** - Share lobby codes to invite friends
 - ⏱️ **Turn Timer** - 60-second countdown per turn with visual indicators
 - 🏆 **Automatic Scoring** - Real-time score calculation and winner determination
 - 🎯 **Live Updates** - Game state synchronized across all connected players
@@ -41,7 +42,7 @@ This project uses modern web technologies to deliver a seamless real-time gaming
 - **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/) - Type-safe database access
 - **Authentication**: [NextAuth.js](https://next-auth.js.org/) - Flexible authentication for Next.js
 - **Database Hosting**: [Supabase](https://supabase.com/) - PostgreSQL hosting with excellent visualization tools
-- **Deployment**: [Fly.io](https://fly.io/) - Global application platform
+- **Deployment**: [Vercel](https://vercel.com/) - Optimal platform for Next.js applications
 
 ### Why This Stack?
 
@@ -50,7 +51,7 @@ This project uses modern web technologies to deliver a seamless real-time gaming
 - **Socket.IO**: Simplifies real-time bidirectional communication for live multiplayer games
 - **Prisma**: Type-safe database queries and excellent migration system
 - **Supabase**: Offers PostgreSQL with great developer tools and real-time capabilities
-- **Fly.io**: Fast global deployment with excellent performance
+- **Vercel**: Perfect integration with Next.js, instant deployments, and global CDN
 
 
 ## 🎯 Roadmap
@@ -202,27 +203,47 @@ boardgames-app/
 
 ## 🚀 Deployment
 
-This project is configured to deploy on **Fly.io** with a **Supabase** PostgreSQL database.
+This project is configured to deploy on **Vercel** with a **Supabase** PostgreSQL database.
 
-### Deploy to Fly.io
+### Deploy to Vercel
 
-1. Install the [Fly CLI](https://fly.io/docs/hands-on/install-flyctl/)
-2. Login to Fly.io: `fly auth login`
-3. Create a new app: `fly launch`
-4. Set environment variables:
-   ```bash
-   fly secrets set DATABASE_URL="your-supabase-connection-string"
-   fly secrets set NEXTAUTH_SECRET="your-secret-key"
-   fly secrets set NEXTAUTH_URL="https://your-app.fly.dev"
-   ```
-5. Deploy: `fly deploy`
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KovalDenys1/boardgames-app)
 
-### Using Supabase for Database
+**Manual deployment:**
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com/) and sign in
+3. Click **"Add New Project"**
+4. Import your `boardgames-app` repository
+5. Add environment variables (see below)
+6. Click **"Deploy"**
+
+**Required Environment Variables:**
+```bash
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+NEXTAUTH_SECRET=your-secret-key
+NEXTAUTH_URL=https://your-project.vercel.app
+NEXT_PUBLIC_SOCKET_URL=https://your-project.vercel.app
+```
+
+**Optional (OAuth):**
+```bash
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+📖 **Detailed deployment guide:** See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
+
+### Setup Supabase Database
 
 1. Create a project at [Supabase](https://supabase.com/)
-2. Get your PostgreSQL connection string from Project Settings → Database
+2. Get your PostgreSQL connection string from **Settings** → **Database**
 3. Use the connection string in your `DATABASE_URL` environment variable
 4. Run migrations: `npx prisma db push`
+
+📖 **Database migration guide:** See [MIGRATE_QUICK_START.md](MIGRATE_QUICK_START.md)
 
 
 ## 📚 API Overview
@@ -313,7 +334,7 @@ Special thanks to the amazing open-source projects that make this possible:
 - [Prisma](https://www.prisma.io/) - Next-generation ORM
 - [NextAuth.js](https://next-auth.js.org/) - Authentication for Next.js
 - [Supabase](https://supabase.com/) - Open source Firebase alternative
-- [Fly.io](https://fly.io/) - Deploy app servers close to your users
+- [Vercel](https://vercel.com/) - Platform for frontend frameworks and static sites
 
 Built with ❤️ and lots of coffee ☕
 

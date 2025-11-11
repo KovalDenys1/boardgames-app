@@ -801,6 +801,44 @@ export default function LobbyPage() {
     }
   }
 
+  const handleAddBot = async () => {
+    try {
+      const res = await fetch(`/api/lobby/${code}/add-bot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to add bot')
+      }
+
+      toast.success('🤖 Bot added to lobby!')
+      
+      // Reload lobby to show updated player list
+      await loadLobby()
+
+      // Notify other players
+      socket?.emit('player-joined')
+
+      // Add system message to chat
+      const botJoinMessage = {
+        id: Date.now().toString() + '_botjoin',
+        userId: 'system',
+        username: 'System',
+        message: '🤖 AI Bot joined the lobby',
+        timestamp: Date.now(),
+        type: 'system'
+      }
+      setChatMessages(prev => [...prev, botJoinMessage])
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add bot')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -990,16 +1028,33 @@ export default function LobbyPage() {
                 </div>
 
                 {lobby?.creatorId === session?.user?.id ? (
-                  <button
-                    onClick={() => {
-                      soundManager.play('click')
-                      handleStartGame()
-                    }}
-                    disabled={game?.players?.length < (lobby.gameType === 'chess' ? 2 : 2)}
-                    className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    🎮 Start {lobby.gameType === 'chess' ? 'Chess' : 'Yahtzee'} Game
-                  </button>
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => {
+                        soundManager.play('click')
+                        handleStartGame()
+                      }}
+                      disabled={game?.players?.length < (lobby.gameType === 'chess' ? 2 : 2)}
+                      className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                    >
+                      🎮 Start {lobby.gameType === 'chess' ? 'Chess' : 'Yahtzee'} Game
+                    </button>
+                    
+                    {/* Add Bot Button */}
+                    {lobby.gameType === 'yahtzee' && game?.players?.length < lobby.maxPlayers && (
+                      <button
+                        onClick={() => {
+                          soundManager.play('click')
+                          handleAddBot()
+                        }}
+                        disabled={game?.players?.some((p: any) => p.user?.isBot)}
+                        className="btn btn-secondary text-lg px-8 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={game?.players?.some((p: any) => p.user?.isBot) ? 'Bot already added' : 'Add AI opponent'}
+                      >
+                        🤖 Add Bot Player
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
                     <p className="text-blue-700 dark:text-blue-300 font-semibold">

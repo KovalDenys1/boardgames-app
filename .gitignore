@@ -34,6 +34,11 @@ Thumbs.db
 prisma/*.db
 prisma/*.db-journal
 
+# Database backups
+*.sql
+render_*.sql
+supabase_*.sql
+
 # Testing
 coverage
 .nyc_output
