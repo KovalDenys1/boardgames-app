@@ -1,35 +1,82 @@
-# 🎮 BoardGames - Multiplayer Platform
+# 🎮 Boardgames App
 
-A real-time multiplayer board games platform built with Next.js, Socket.IO, and PostgreSQL. Currently features Yahtzee with support for multiple simultaneous games.
+> A real-time multiplayer platform for playing classic board games with friends online
 
-## ✨ Features
+**Boardgames App** is a web-based multiplayer gaming platform where you can enjoy various board games with friends in real-time. Built as a learning project with plans to grow into a fully-featured public application, it showcases modern web development practices and real-time communication technologies.
 
-- 🎲 **Real-time Yahtzee** - Play with friends in real-time
-- 👥 **Multiplayer Lobbies** - Create or join game rooms with unique codes
-- 🔐 **Authentication** - Secure login with email/password or OAuth (Google, GitHub)
-- 🎯 **Live Game State** - Synchronized game state across all players
-- ⏱️ **Turn Timer** - 60-second timer per turn with visual warnings
-- 🏆 **Score Tracking** - Automatic score calculation and winner determination
-- 🔗 **Invite Links** - Share lobby links with friends
-- 👤 **User Profiles** - Customizable username and profile settings
-- 📱 **Responsive Design** - Works on desktop and mobile devices
+## 🚀 Project Status
+
+**Current Stage**: Early Development  
+**Available Games**: Yahtzee  
+**Planned Games**: Guess the Spy, and more casual multiplayer games
+
+This project is actively being developed and serves as both a learning experience and a portfolio piece. Future plans include expanding the game library, improving UI/UX, and opening the platform for community contributions.
+
+## ✨ Current Features
+
+### Yahtzee Game
+- 🎲 **Real-time Multiplayer** - Play with friends synchronously online
+- 👥 **Lobby System** - Create or join game rooms with unique codes
+- � **Invite Links** - Share lobby codes to invite friends
+- ⏱️ **Turn Timer** - 60-second countdown per turn with visual indicators
+- 🏆 **Automatic Scoring** - Real-time score calculation and winner determination
+- 🎯 **Live Updates** - Game state synchronized across all connected players
+
+### Platform Features
+- 🔐 **Authentication System** - Email/password registration and login
+- 👤 **User Profiles** - Customizable usernames and profile management
+- 👻 **Guest Access** - Play without creating an account
+- 💬 **In-game Chat** - Communicate with other players during games
+- 📱 **Responsive Design** - Optimized for both desktop and mobile devices
+- 🔊 **Sound Effects** - Interactive audio feedback for game actions
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Custom Node.js server
-- **Real-time**: Socket.IO for WebSocket communication
-- **Database**: PostgreSQL with Prisma ORM
-- **Auth**: NextAuth.js with JWT strategy
-- **Deployment**: Render.com
+This project uses modern web technologies to deliver a seamless real-time gaming experience:
 
-## 📋 Prerequisites
+- **Framework**: [Next.js 14](https://nextjs.org/) with App Router - For server-side rendering, routing, and API endpoints
+- **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe development
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework for rapid UI development
+- **Real-time Communication**: [Socket.IO](https://socket.io/) - WebSocket-based bidirectional event communication
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/) - Type-safe database access
+- **Authentication**: [NextAuth.js](https://next-auth.js.org/) - Flexible authentication for Next.js
+- **Database Hosting**: [Supabase](https://supabase.com/) - PostgreSQL hosting with excellent visualization tools
+- **Deployment**: [Fly.io](https://fly.io/) - Global application platform
 
-- Node.js 18+
-- PostgreSQL database
-- npm or yarn
+### Why This Stack?
 
-## 🚀 Quick Start
+- **Next.js**: Provides excellent developer experience with built-in routing, API routes, and optimized production builds
+- **TypeScript**: Catches errors early and improves code maintainability
+- **Socket.IO**: Simplifies real-time bidirectional communication for live multiplayer games
+- **Prisma**: Type-safe database queries and excellent migration system
+- **Supabase**: Offers PostgreSQL with great developer tools and real-time capabilities
+- **Fly.io**: Fast global deployment with excellent performance
+
+
+## 🎯 Roadmap
+
+### Immediate Focus
+- 🎨 **UI/UX Improvements** - Enhanced visual design and user experience
+- �️ **Guess the Spy Game** - Social deduction party game
+- 🎲 **Additional Casual Games** - More lightweight games suitable for online play
+
+### Future Plans
+- 📊 **Player Statistics** - Track wins, games played, and achievements
+- 🏆 **Leaderboards** - Global and friend rankings
+- 🌐 **Internationalization** - Multi-language support
+- 🎮 **More Game Modes** - Variations and tournament modes
+- 📱 **Progressive Web App** - Installable mobile experience
+- 🤝 **Community Contributions** - Open platform for developers to add their own games
+
+## �📋 Prerequisites
+
+Before running this project, ensure you have:
+
+- **Node.js** 18 or higher
+- **PostgreSQL** database (or Supabase account)
+- **npm** or **yarn** package manager
+
+## 🚀 Getting Started
 
 ### 1. Clone and Install
 
@@ -39,72 +86,73 @@ cd boardgames-app
 npm install
 ```
 
-### 2. Configure Environment
+### 2. Environment Configuration
 
-Copy `.env.example` to `.env.local` and fill in your values:
+Create a `.env.local` file in the root directory with the following variables:
 
-```bash
-cp .env.example .env.local
+```env
+# Database
+DATABASE_URL="postgresql://username:password@host:port/database"
+
+# NextAuth
+NEXTAUTH_SECRET="your-secret-key-min-32-characters"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Email (if using email features)
+EMAIL_SERVER="smtp://username:password@smtp.example.com:587"
+EMAIL_FROM="noreply@example.com"
 ```
 
-Required variables:
-- `DATABASE_URL` - PostgreSQL connection string
-- `NEXTAUTH_SECRET` - Random string (min 32 chars)
-- `NEXTAUTH_URL` - Your app URL (http://localhost:3000 for dev)
-
-Optional OAuth:
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
-
-Generate secure secrets:
+**Generate a secure secret:**
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### 3. Setup Database
+**Using Supabase?** Get your PostgreSQL connection string from your Supabase project settings.
+
+### 3. Database Setup
+
+Run Prisma migrations to create the database schema:
 
 ```bash
 npx prisma db push
 ```
 
-### 4. Start Development Server
+To view your database in Prisma Studio:
+```bash
+npx prisma studio
+```
+
+### 4. Run Development Server
+
+Start the development server with Socket.IO support:
 
 ```bash
 npm run dev
 ```
 
-App will be available at `http://localhost:3000`
+The application will be available at **http://localhost:3000**
 
-## 🎮 How to Play
+## 🎮 How to Play Yahtzee
 
-1. **Register** at `/auth/register`
-2. **Create a Lobby** - Set name, password (optional), max players
-3. **Invite Friends** - Share the lobby code or copy the invite link
-4. **Start Game** - Owner starts when 2+ players are ready
-5. **Play Yahtzee**:
-   - Roll dice (3 rolls per turn)
-   - Click dice to hold/unhold them
-   - Choose a scoring category
-   - 60 seconds per turn
-   - Game ends when all categories are filled
+1. **Create an Account** or play as a guest at `/auth/register`
+2. **Create a Lobby** - Set game name, optional password, and maximum players
+3. **Invite Friends** - Share the unique lobby code or copy the invite link
+4. **Start the Game** - Lobby owner can start when 2+ players have joined
+5. **Play Your Turn**:
+   - Roll the dice (up to 3 rolls per turn)
+   - Click on dice to hold/unhold them between rolls
+   - Select a scoring category from the scorecard
+   - Complete your turn within 60 seconds
+6. **Win the Game** - Player with the highest total score when all categories are filled wins!
 
-## 🔐 OAuth Setup
+## 🔐 Authentication Options
 
-This app supports optional OAuth authentication:
+The platform currently supports:
+- **Email/Password** - Traditional registration and login
+- **Guest Access** - Quick play without account creation
 
-**Google OAuth Setup:**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-6. Copy Client ID and Secret to `.env.local`
-
-**GitHub OAuth Setup:**
-1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
-2. Create new OAuth App
-3. Set callback URL: `http://localhost:3000/api/auth/callback/github`
-4. Copy Client ID and Secret to `.env.local`
+_OAuth providers (Google, GitHub) may be added in future versions._
 
 ## 📁 Project Structure
 
@@ -115,86 +163,134 @@ boardgames-app/
 │   │   ├── auth/             # Authentication endpoints
 │   │   ├── lobby/            # Lobby management
 │   │   ├── game/             # Game state management
-│   │   └── user/             # User profile
-│   ├── auth/                 # Auth pages (login, register)
-│   ├── lobby/                # Lobby and game pages
+│   │   └── user/             # User profile endpoints
+│   ├── auth/                 # Authentication pages
+│   ├── games/                # Games directory and lobbies
+│   ├── lobby/                # Lobby pages
 │   ├── profile/              # User profile page
 │   └── page.tsx              # Landing page
-├── components/               # React components
-│   ├── Dice.tsx              # Dice component
+├── components/               # Reusable React components
+│   ├── Chat.tsx              # In-game chat
+│   ├── Dice.tsx              # Single dice component
 │   ├── DiceGroup.tsx         # Dice group with roll logic
 │   ├── Scorecard.tsx         # Yahtzee scorecard
-│   ├── PlayerList.tsx        # Player list with scores
-│   └── Header.tsx            # App header
-├── lib/                      # Utility functions
+│   ├── PlayerList.tsx        # Player list display
+│   └── Header.tsx            # Application header
+├── contexts/                 # React Context providers
+│   └── ToastContext.tsx      # Toast notification system
+├── hooks/                    # Custom React hooks
+│   └── useConfetti.ts        # Confetti animation hook
+├── lib/                      # Utility functions and logic
 │   ├── auth.ts               # Authentication helpers
-│   ├── db.ts                 # Prisma client
-│   ├── game.ts               # Game state management
-│   ├── lobby.ts              # Lobby utilities
+│   ├── db.ts                 # Prisma database client
+│   ├── game-engine.ts        # Core game engine
+│   ├── lobby.ts              # Lobby management utilities
 │   ├── yahtzee.ts            # Yahtzee game logic
-│   └── next-auth.ts          # NextAuth configuration
+│   ├── sounds.ts             # Sound effects manager
+│   ├── games/                # Individual game implementations
+│   └── validation/           # Input validation schemas
 ├── prisma/
-│   └── schema.prisma         # Database schema
-├── server.ts                 # Custom server (Next.js + Socket.IO)
-├── socket-server.ts          # Socket.IO server
-└── package.json
+│   ├── schema.prisma         # Database schema definition
+│   └── migrations/           # Database migrations
+├── public/
+│   └── sounds/               # Sound effect files
+├── types/                    # TypeScript type definitions
+├── server.ts                 # Custom Next.js server with Socket.IO
+├── socket-server.ts          # Socket.IO event handlers
+└── package.json              # Project dependencies and scripts
 ```
 
 ## 🚀 Deployment
 
-### Deploy to Render.com
+This project is configured to deploy on **Fly.io** with a **Supabase** PostgreSQL database.
 
-1. Create new Web Service
-2. Connect your GitHub repository
-3. Set build command: `npm install && npm run build`
-4. Set start command: `npm start`
-5. Add environment variables (see `.env.example`)
-6. Deploy!
+### Deploy to Fly.io
 
-**Important**: Set `DATABASE_URL` to your PostgreSQL connection string on Render.
+1. Install the [Fly CLI](https://fly.io/docs/hands-on/install-flyctl/)
+2. Login to Fly.io: `fly auth login`
+3. Create a new app: `fly launch`
+4. Set environment variables:
+   ```bash
+   fly secrets set DATABASE_URL="your-supabase-connection-string"
+   fly secrets set NEXTAUTH_SECRET="your-secret-key"
+   fly secrets set NEXTAUTH_URL="https://your-app.fly.dev"
+   ```
+5. Deploy: `fly deploy`
 
-## 📚 API Endpoints
+### Using Supabase for Database
 
-### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET/POST /api/auth/[...nextauth]` - NextAuth endpoints
+1. Create a project at [Supabase](https://supabase.com/)
+2. Get your PostgreSQL connection string from Project Settings → Database
+3. Use the connection string in your `DATABASE_URL` environment variable
+4. Run migrations: `npx prisma db push`
 
-### Lobby
-- `GET /api/lobby` - List active lobbies
-- `POST /api/lobby` - Create new lobby
-- `GET /api/lobby/[code]` - Get lobby details
-- `POST /api/lobby/[code]` - Join lobby
-- `POST /api/lobby/[code]/leave` - Leave lobby
-- `POST /api/lobby/cleanup` - Cleanup inactive lobbies
 
-### User
-- `GET /api/user/profile` - Get user profile
-- `PATCH /api/user/profile` - Update username
+## 📚 API Overview
+
+The application provides REST API endpoints for game and user management:
+
+### Authentication
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/guest` - Create guest session
+- `POST /api/auth/verify-email` - Email verification
+- `POST /api/auth/forgot-password` - Password reset request
+- `POST /api/auth/reset-password` - Reset password with token
+
+### Lobby Management
+- `GET /api/lobby` - List all active lobbies
+- `POST /api/lobby` - Create a new game lobby
+- `GET /api/lobby/[code]` - Get specific lobby details
+- `POST /api/lobby/[code]` - Join a lobby
+- `POST /api/lobby/[code]/leave` - Leave a lobby
 
 ### Game
-- `GET /api/game/[gameId]/state` - Get game state
+- `GET /api/game/[gameId]/state` - Retrieve current game state
+- `POST /api/game/create` - Create a new game session
 
-## 🎯 Roadmap
+### User
+- `GET /api/user/profile` - Get user profile information
+- `PATCH /api/user/profile` - Update user profile (username, etc.)
 
-See [ROADMAP.md](ROADMAP.md) for detailed development plans.
-
-**Next Features:**
-- [ ] More games (Chess, Uno, Checkers)
-- [ ] Player rankings and statistics
-- [ ] In-game chat
-- [ ] Spectator mode
-- [ ] Mobile app
+### WebSocket Events (Socket.IO)
+Real-time events are handled through Socket.IO for immediate game updates, chat messages, and player actions.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project welcomes contributions! Whether you want to:
+- 🎮 Add a new game
+- 🐛 Fix bugs
+- 🎨 Improve UI/UX
+- 📝 Enhance documentation
+- ✨ Suggest new features
 
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Feel free to open an issue or submit a pull request!
+
+### Contributing Guidelines
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Make your changes and commit: `git commit -m 'Add some feature'`
+4. Push to your branch: `git push origin feature/your-feature-name`
+5. Open a Pull Request with a clear description
+
+### Adding a New Game
+
+Interested in adding your own game? Check out the existing game implementations in `lib/games/` for reference. Each game should:
+- Implement core game logic as a separate module
+- Define game state types
+- Create corresponding Socket.IO event handlers
+- Add UI components for the game board/interface
+
+## 🎓 Learning Resources
+
+This project uses several modern web technologies. If you're learning, here are helpful resources:
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Socket.IO Documentation](https://socket.io/docs/)
+- [Prisma Guides](https://www.prisma.io/docs/)
+- [Tailwind CSS Docs](https://tailwindcss.com/docs)
 
 ## 📄 License
 
@@ -202,18 +298,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Denys Koval**
+**Denys Koval**  
+- GitHub: [@KovalDenys1](https://github.com/KovalDenys1)
 
-Built with ❤️ and GitHub Copilot
+This project serves as both a learning journey and a portfolio piece, demonstrating real-time web application development with modern technologies.
 
 ## 🙏 Acknowledgments
 
-- [Next.js](https://nextjs.org/) - React framework
-- [Socket.IO](https://socket.io/) - Real-time engine
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Prisma](https://www.prisma.io/) - Database ORM
-- [NextAuth.js](https://next-auth.js.org/) - Authentication
+Special thanks to the amazing open-source projects that make this possible:
+
+- [Next.js](https://nextjs.org/) - The React framework for production
+- [Socket.IO](https://socket.io/) - Real-time bidirectional event-based communication
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [Prisma](https://www.prisma.io/) - Next-generation ORM
+- [NextAuth.js](https://next-auth.js.org/) - Authentication for Next.js
+- [Supabase](https://supabase.com/) - Open source Firebase alternative
+- [Fly.io](https://fly.io/) - Deploy app servers close to your users
+
+Built with ❤️ and lots of coffee ☕
 
 ---
 
-⭐ Star this repo if you find it useful!
+⭐ **Star this repository** if you find it interesting or useful!
+
+💬 **Questions or suggestions?** Feel free to open an issue!
+
+🎮 **Want to play?** [Visit the live demo](#) _(coming soon)_
