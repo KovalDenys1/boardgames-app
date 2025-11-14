@@ -305,7 +305,7 @@ export default function LobbyPage() {
             
             // Create game engine from saved state based on game type
             let engine: YahtzeeGame | ChessGame
-            if (lobby.gameType === 'chess') {
+            if (data.lobby.gameType === 'chess') {
               engine = new ChessGame(activeGame.id)
             } else {
               engine = new YahtzeeGame(activeGame.id)

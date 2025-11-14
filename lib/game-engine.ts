@@ -124,6 +124,10 @@ export abstract class GameEngine {
   }
 
   getPlayers(): Player[] {
+    // Ensure players is always an array
+    if (!Array.isArray(this.state.players)) {
+      this.state.players = [];
+    }
     return [...this.state.players];
   }
 
@@ -137,6 +141,12 @@ export abstract class GameEngine {
 
   // Method to restore state from saved data
   restoreState(savedState: GameState): void {
-    this.state = { ...savedState }
+    // Ensure players is an array when restoring state
+    if (savedState && typeof savedState === 'object') {
+      this.state = {
+        ...savedState,
+        players: Array.isArray(savedState.players) ? savedState.players : [],
+      }
+    }
   }
 }
