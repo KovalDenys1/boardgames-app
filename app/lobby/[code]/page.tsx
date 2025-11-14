@@ -56,30 +56,17 @@ export default function LobbyPage() {
 
   const getCurrentPlayerIndex = () => {
     if (!game?.players || !session?.user?.id) {
-      console.log('❌ No game.players or session.user.id:', { 
-        hasPlayers: !!game?.players, 
-        hasUserId: !!session?.user?.id 
-      })
       return -1
     }
     
     const index = game.players.findIndex((p: any) => p.userId === session.user.id)
-    console.log('🎮 Current player index:', {
-      sessionUserId: session.user.id,
-      players: game.players.map((p: any) => ({ id: p.userId, name: p.user?.username })),
-      foundIndex: index,
-      currentTurn: gameEngine?.getState().currentPlayerIndex,
-      isMyTurn: index === gameEngine?.getState().currentPlayerIndex
-    })
     return index
   }
 
   const isMyTurn = () => {
     if (!gameEngine) return false
     const myIndex = getCurrentPlayerIndex()
-    const result = myIndex !== -1 && myIndex === gameEngine.getState().currentPlayerIndex
-    console.log(`🔄 Is my turn? ${result} (myIndex: ${myIndex}, currentTurn: ${gameEngine.getState().currentPlayerIndex})`)
-    return result
+    return myIndex !== -1 && myIndex === gameEngine.getState().currentPlayerIndex
   }
 
   useEffect(() => {
@@ -134,7 +121,6 @@ export default function LobbyPage() {
 
     if (!socket) {
       const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
-      console.log('🔌 Connecting to Socket.IO:', url)
 
       // Get NextAuth session token from cookies
       const getAuthToken = () => {
@@ -169,7 +155,6 @@ export default function LobbyPage() {
       let isFirstConnection = true
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected:', socket.id)
         socket.emit('join-lobby', code)
         
         // Only show toast on first connection, not on reconnects
@@ -179,7 +164,6 @@ export default function LobbyPage() {
       })
 
       socket.on('disconnect', (reason) => {
-        console.log('❌ Socket disconnected:', reason)
         // Auto-reconnect is handled by Socket.IO
         // Only manually reconnect if server initiated disconnect
         if (reason === 'io server disconnect') {
@@ -188,13 +172,11 @@ export default function LobbyPage() {
       })
 
       socket.on('connect_error', (error) => {
-        console.error('❌ Socket connection error:', error)
         // Don't show toast on every error - it's annoying
         // Socket.IO will auto-retry with exponential backoff
       })
 
       socket.on('game-update', (data) => {
-        console.log('📡 Game update received:', data)
         
         if (data.action === 'state-change') {
           // Clear previous timeout to debounce rapid updates
@@ -281,7 +263,6 @@ export default function LobbyPage() {
 
   const loadLobby = async () => {
     try {
-      console.log('🔄 Loading lobby:', code)
       const res = await fetch(`/api/lobby/${code}`)
       const data = await res.json()
 
@@ -289,19 +270,16 @@ export default function LobbyPage() {
         throw new Error(data.error || 'Failed to load lobby')
       }
 
-      console.log('✅ Lobby loaded:', data.lobby)
       setLobby(data.lobby)
       
       const activeGame = data.lobby.games.find((g: any) =>
         ['waiting', 'playing'].includes(g.status)
       )
       if (activeGame) {
-        console.log('🎮 Active game found:', activeGame)
         setGame(activeGame)
         if (activeGame.state) {
           try {
             const parsedState = JSON.parse(activeGame.state)
-            console.log('🎲 Parsed game state:', parsedState)
             
             // Create game engine from saved state based on game type
             let engine: YahtzeeGame | ChessGame
@@ -313,8 +291,6 @@ export default function LobbyPage() {
             // Restore state
             engine.restoreState(parsedState)
             setGameEngine(engine)
-            
-            console.log('✅ Game engine restored:', engine.getState())
           } catch (parseError) {
             console.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
@@ -483,7 +459,6 @@ export default function LobbyPage() {
   const handleTimeOut = async () => {
     // Time out logic is now handled on the server side
     // This function is kept for compatibility but does nothing
-    console.log('Time out - logic handled by server')
   }
 
   const handleScoreSelection = async (category: YahtzeeCategory) => {
