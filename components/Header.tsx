@@ -32,7 +32,7 @@ export default function Header() {
               onClick={() => router.push('/')}
               className="flex items-center gap-2 text-2xl font-bold text-blue-600 dark:text-blue-400 hover:scale-105 transition-transform"
             >
-              🎲 BoardGames
+              🎲 Boardly
             </button>
 
             {/* Desktop Navigation */}

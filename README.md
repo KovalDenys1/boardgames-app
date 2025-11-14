@@ -115,8 +115,8 @@ Before running this project, ensure you have:
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/KovalDenys1/boardgames-app.git
-cd boardgames-app
+git clone https://github.com/KovalDenys1/Boardly.git
+cd Boardly
 npm install
 ```
 
@@ -191,7 +191,7 @@ _OAuth providers (Google, GitHub) may be added in future versions._
 ## 📁 Project Structure
 
 ```
-boardgames-app/
+Boardly/
 ├── app/                      # Next.js App Router
 │   ├── api/                  # API Routes
 │   │   ├── auth/             # Authentication endpoints
@@ -240,14 +240,14 @@ This project is configured to deploy on **Vercel** with a **Supabase** PostgreSQ
 
 ### Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KovalDenys1/boardgames-app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KovalDenys1/Boardly)
 
 **Manual deployment:**
 
 1. Push your code to GitHub
 2. Go to [vercel.com](https://vercel.com/) and sign in
 3. Click **"Add New Project"**
-4. Import your `boardgames-app` repository
+4. Import your `Boardly` repository
 5. Add environment variables (see below)
 6. Click **"Deploy"**
 

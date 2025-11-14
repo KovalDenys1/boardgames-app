@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 // Only initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'BoardGames <onboarding@resend.dev>'
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Boardly <onboarding@resend.dev>'
 
 export async function sendVerificationEmail(email: string, token: string) {
   if (!resend) {
@@ -17,7 +17,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     await resend!.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Verify your email - BoardGames',
+      subject: 'Verify your email - Boardly',
       html: `
         <!DOCTYPE html>
         <html>
@@ -68,7 +68,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     await resend!.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Reset your password - BoardGames',
+      subject: 'Reset your password - Boardly',
       html: `
         <!DOCTYPE html>
         <html>
@@ -79,7 +79,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎮 BoardGames</h1>
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎲 Boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #333; margin-top: 0;">Reset Your Password</h2>
@@ -117,18 +117,18 @@ export async function sendWelcomeEmail(email: string, username: string) {
     await resend!.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Welcome to BoardGames! 🎉',
+      subject: 'Welcome to Boardly! 🎉',
       html: `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Welcome to BoardGames</title>
+            <title>Welcome to Boardly</title>
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎮 BoardGames</h1>
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎲 Boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #333; margin-top: 0;">Welcome, ${username}! 🎉</h2>

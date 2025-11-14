@@ -80,7 +80,7 @@ export async function POST(
         data: {
           username: 'AI Bot',
           name: 'AI Bot 🤖',
-          email: `bot-${Date.now()}@boardgames.local`,
+          email: `bot-${Date.now()}@boardly.local`,
           isBot: true,
           botDifficulty: 'hard'
         } as any // Type cast until Prisma regenerates

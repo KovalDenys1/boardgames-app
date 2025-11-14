@@ -1,4 +1,4 @@
-# Contributing to BoardGames
+# Contributing to Boardly
 
 ## 👋 Welcome!
 
@@ -21,7 +21,7 @@ This project contains multiple board games. Each game is developed independently
 ## 🏗️ Project Structure
 
 ```
-boardgames-app/
+Boardly/
 ├── app/
 │   ├── games/              # Games selection page
 │   │   ├── page.tsx        # Main games menu

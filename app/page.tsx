@@ -17,7 +17,7 @@ export default function HomePage() {
             <span className="text-6xl">🎲</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg">
-            BoardGames
+            Boardly
           </h1>
           <p className="text-xl md:text-2xl text-white/90 mb-4 max-w-2xl mx-auto">
             Play classic board games with friends in real-time
@@ -117,7 +117,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-black/20 backdrop-blur-sm py-8 mt-20">
         <div className="max-w-7xl mx-auto px-4 text-center text-white/60 text-sm">
-          <p>© 2025 BoardGames. Built with Next.js, Socket.IO, and Prisma.</p>
+          <p>© 2025 Boardly. Built with Next.js, Socket.IO, and Prisma.</p>
         </div>
       </footer>
     </div>
