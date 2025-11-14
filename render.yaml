@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: boardly-websocket
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npm run db:generate
+    startCommand: npm run socket:start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: CORS_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+    healthCheckPath: /health

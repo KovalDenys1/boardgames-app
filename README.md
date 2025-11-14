@@ -1,53 +1,86 @@
-# 🎮 Boardgames App
+# 🎮 Boardly - Multiplayer Board Games Platform
 
 > A real-time multiplayer platform for playing classic board games with friends online
 
-**Boardgames App** is a web-based multiplayer gaming platform where you can enjoy various board games with friends in real-time. Built as a learning project with plans to grow into a fully-featured public application, it showcases modern web development practices and real-time communication technologies.
+**Boardly** is a web-based multiplayer gaming platform where you can enjoy various board games with friends in real-time. Play Yahtzee, Chess, and more games with real-time synchronization and AI opponents.
+
+🌐 **Live Demo**: [boardly.online](https://boardly.online)
 
 ## 🚀 Project Status
 
-**Current Stage**: Early Development  
-**Available Games**: Yahtzee  
+**Current Stage**: Production Ready  
+**Available Games**: Yahtzee, Chess  
 **Planned Games**: Guess the Spy, and more casual multiplayer games
 
-This project is actively being developed and serves as both a learning experience and a portfolio piece. Future plans include expanding the game library, improving UI/UX, and opening the platform for community contributions.
+## ✨ Features
 
-## ✨ Current Features
-
-### Yahtzee Game
-- 🎲 **Real-time Multiplayer** - Play with friends synchronously online
-- 🤖 **AI Bot Opponent** - Practice against an intelligent AI with optimal strategy
-- 👥 **Lobby System** - Create or join game rooms with unique codes
-- 🔗 **Invite Links** - Share lobby codes to invite friends
-- ⏱️ **Turn Timer** - 60-second countdown per turn with visual indicators
-- 🏆 **Automatic Scoring** - Real-time score calculation and winner determination
-- 🎯 **Live Updates** - Game state synchronized across all connected players
+### Games
+- 🎲 **Yahtzee** - Classic dice game with real-time multiplayer
+- ♟️ **Chess** - Strategic board game with full rule implementation
+- 🤖 **AI Opponents** - Practice against intelligent bots
 
 ### Platform Features
-- 🔐 **Authentication System** - Email/password registration and login
+- 🔐 **Authentication System** - Email/password registration and login with email verification
 - 👤 **User Profiles** - Customizable usernames and profile management
 - 👻 **Guest Access** - Play without creating an account
 - 💬 **In-game Chat** - Communicate with other players during games
-- 📱 **Responsive Design** - Optimized for both desktop and mobile devices
-- 🔊 **Sound Effects** - Interactive audio feedback for game actions
+- 👥 **Lobby System** - Create or join game rooms with unique codes
+- 🔗 **Invite Links** - Share lobby codes to invite friends
+- ⏱️ **Turn Timer** - Time limits with visual indicators
+- 🏆 **Automatic Scoring** - Real-time score calculation
+- 📱 **Responsive Design** - Optimized for desktop and mobile
+- 🔊 **Sound Effects** - Interactive audio feedback
 
 ## 🛠 Tech Stack
 
-This project uses modern web technologies to deliver a seamless real-time gaming experience:
+- **Framework**: [Next.js 14](https://nextjs.org/) with App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Real-time**: [Socket.IO](https://socket.io/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
+- **Auth**: [NextAuth.js](https://next-auth.js.org/)
+- **Email**: [Resend](https://resend.com/)
+- **Hosting**: 
+  - Frontend: [Vercel](https://vercel.com/)
+  - Database: [Supabase](https://supabase.com/)
+  - WebSocket: [Render](https://render.com/)
 
-- **Framework**: [Next.js 14](https://nextjs.org/) with App Router - For server-side rendering, routing, and API endpoints
-- **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe development
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework for rapid UI development
-- **Real-time Communication**: [Socket.IO](https://socket.io/) - WebSocket-based bidirectional event communication
-- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/) - Type-safe database access
-- **Authentication**: [NextAuth.js](https://next-auth.js.org/) - Flexible authentication for Next.js
-- **Database Hosting**: [Supabase](https://supabase.com/) - PostgreSQL hosting with excellent visualization tools
-- **Deployment**: [Vercel](https://vercel.com/) - Optimal platform for Next.js applications
+## 🚀 Deployment
 
-### Why This Stack?
+See our comprehensive deployment guides:
+- **Quick Start**: [DEPLOYMENT_QUICKSTART.md](DEPLOYMENT_QUICKSTART.md) - Fast deployment in 30 minutes
+- **Full Guide**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Detailed step-by-step instructions
 
-- **Next.js**: Provides excellent developer experience with built-in routing, API routes, and optimized production builds
-- **TypeScript**: Catches errors early and improves code maintainability
+### Quick Deploy
+
+1. **Database Setup (Supabase)**:
+   ```bash
+   # Set DATABASE_URL in .env
+   npm install
+   npx prisma migrate deploy
+   ```
+
+2. **WebSocket Server (Render)**:
+   - Use `render.yaml` for auto-configuration
+   - See `.render-env-template.md` for environment variables
+
+3. **Frontend (Vercel)**:
+   - Connect your GitHub repository
+   - See `.vercel-env-template.md` for environment variables
+   - Configure custom domain: boardly.online
+
+### Environment Setup Script
+
+```bash
+# Linux/Mac
+chmod +x setup-env.sh
+./setup-env.sh
+
+# Windows
+setup-env.bat
+```
+
+## 🏃 Local Development
 - **Socket.IO**: Simplifies real-time bidirectional communication for live multiplayer games
 - **Prisma**: Type-safe database queries and excellent migration system
 - **Supabase**: Offers PostgreSQL with great developer tools and real-time capabilities
