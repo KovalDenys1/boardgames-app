@@ -100,8 +100,8 @@ export async function POST(
 
     // Update player scores
     await Promise.all(
-      gameEngine.getPlayers().map(async (player: any, index: number) => {
-        const dbPlayer = updatedGame.players[index]
+      gameEngine.getPlayers().map(async (player: any) => {
+        const dbPlayer = updatedGame.players.find((p: any) => p.userId === player.id)
         if (dbPlayer) {
           await prisma.player.update({
             where: { id: dbPlayer.id },
@@ -179,8 +179,8 @@ export async function POST(
 
                 // Update player scores
                 await Promise.all(
-                  botGameEngine.getPlayers().map(async (player: any, index: number) => {
-                    const dbPlayer = latestGame.players[index]
+                  botGameEngine.getPlayers().map(async (player: any) => {
+                    const dbPlayer = latestGame.players.find((p: any) => p.userId === player.id)
                     if (dbPlayer) {
                       await prisma.player.update({
                         where: { id: dbPlayer.id },

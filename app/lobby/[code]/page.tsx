@@ -188,12 +188,12 @@ export default function LobbyPage() {
           
           // Update game engine state
           if (gameEngine) {
-            gameEngine.restoreState(updatedState)
-            setGameEngine(new YahtzeeGame(gameEngine.getState().id)) // Create new instance to trigger re-render
-            gameEngine.restoreState(updatedState)
+            const newEngine = lobby?.gameType === 'chess' 
+              ? new ChessGame(gameEngine.getState().id)
+              : new YahtzeeGame(gameEngine.getState().id)
+            newEngine.restoreState(updatedState)
+            setGameEngine(newEngine)
           }
-          
-          console.log('🎲 Setting new game state:', updatedState)
           
           // Debounce lobby reload to avoid excessive API calls
           const timeout = setTimeout(() => {
@@ -436,9 +436,9 @@ export default function LobbyPage() {
         res.json().then(data => {
           // Update local game engine
           if (gameEngine) {
-            gameEngine.restoreState(data.game.state)
-            setGameEngine(new YahtzeeGame(gameEngine.getState().id))
-            gameEngine.restoreState(data.game.state)
+            const newEngine = new YahtzeeGame(gameEngine.getState().id)
+            newEngine.restoreState(data.game.state)
+            setGameEngine(newEngine)
           }
           
           soundManager.play('click')
@@ -500,40 +500,41 @@ export default function LobbyPage() {
 
       const data = await res.json()
       
-      // Update local game engine
+      // Update local game engine with new instance
       if (gameEngine) {
-        gameEngine.restoreState(data.game.state)
-        setGameEngine(new YahtzeeGame(gameEngine.getState().id))
-        gameEngine.restoreState(data.game.state)
-      }
-      
-      const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
-      toast.success(`Scored in ${categoryName}!`)
-      
-      soundManager.play('score')
-      
-      // Emit to other players
-      socket?.emit('game-action', {
-        lobbyCode: code,
-        action: 'state-change',
-        payload: data.game.state,
-      })
-
-      if (gameEngine.isGameFinished()) {
-        setTimerActive(false)
+        const newEngine = new YahtzeeGame(gameEngine.getState().id)
+        newEngine.restoreState(data.game.state)
+        setGameEngine(newEngine)
         
-        const winner = gameEngine.checkWinCondition()
-        if (winner) {
-          soundManager.play('win')
-          fireworks()
+        const categoryName = category.replace(/([A-Z])/g, ' $1').trim()
+        toast.success(`Scored in ${categoryName}!`)
+        
+        soundManager.play('score')
+        
+        // Emit to other players
+        socket?.emit('game-action', {
+          lobbyCode: code,
+          action: 'state-change',
+          payload: data.game.state,
+        })
+
+        // Use newEngine for checks after state update
+        if (newEngine.isGameFinished()) {
+          setTimerActive(false)
           
-          toast.success(`🎉 Game Over! ${winner.name} wins!`)
-        }
-      } else {
-        const nextPlayer = gameEngine.getCurrentPlayer()
-        if (nextPlayer) {
-          soundManager.play('turnChange')
-          toast.info(`${nextPlayer.name}'s turn!`)
+          const winner = newEngine.checkWinCondition()
+          if (winner) {
+            soundManager.play('win')
+            fireworks()
+            
+            toast.success(`🎉 Game Over! ${winner.name} wins!`)
+          }
+        } else {
+          const nextPlayer = newEngine.getCurrentPlayer()
+          if (nextPlayer) {
+            soundManager.play('turnChange')
+            toast.info(`${nextPlayer.name}'s turn!`)
+          }
         }
       }
     } catch (error: any) {
