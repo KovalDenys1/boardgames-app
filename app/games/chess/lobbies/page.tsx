@@ -50,7 +50,7 @@ export default function ChessLobbiesPage() {
 
       // Setup WebSocket for real-time updates
       if (!socket) {
-        const url = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
+        const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
         console.log('🔌 Connecting to Socket.IO for Chess lobby list:', url)
         
         socket = io(url, {

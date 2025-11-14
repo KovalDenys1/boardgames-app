@@ -7,8 +7,59 @@ import Header from '@/components/Header'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Boardly - Play Board Games Online',
-  description: 'Multiplayer board games platform',
+  metadataBase: new URL('https://www.boardly.online'),
+  title: {
+    default: 'Boardly - Play Board Games Online with Friends',
+    template: '%s | Boardly'
+  },
+  description: 'Play popular board games online with friends in real-time. Join Yahtzee, Chess, and more multiplayer games. Free, no download required. Create lobbies, invite friends, and start playing instantly!',
+  keywords: ['board games', 'online games', 'multiplayer games', 'yahtzee online', 'chess online', 'play with friends', 'browser games', 'free online games', 'real-time games', 'boardly'],
+  authors: [{ name: 'Boardly' }],
+  creator: 'Boardly',
+  publisher: 'Boardly',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://www.boardly.online',
+    title: 'Boardly - Play Board Games Online with Friends',
+    description: 'Play popular board games online with friends in real-time. Join Yahtzee, Chess, and more multiplayer games. Free, no download required.',
+    siteName: 'Boardly',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Boardly - Online Board Games',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Boardly - Play Board Games Online with Friends',
+    description: 'Play popular board games online with friends in real-time. Free, no download required.',
+    images: ['/og-image.png'],
+    creator: '@boardly',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+  },
 }
 
 export default function RootLayout({
@@ -16,8 +67,39 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Boardly',
+    description: 'Play popular board games online with friends in real-time',
+    url: 'https://www.boardly.online',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://www.boardly.online/lobby?search={search_term_string}'
+      },
+      'query-input': 'required name=search_term_string'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Boardly',
+      url: 'https://www.boardly.online',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.boardly.online/logo.png'
+      }
+    }
+  }
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={inter.className}>
         <Providers>
           <Header />

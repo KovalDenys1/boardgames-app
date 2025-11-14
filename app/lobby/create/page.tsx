@@ -48,7 +48,7 @@ export default function CreateLobbyPage() {
       }
 
       // Notify lobby list about new lobby via WebSocket
-      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
       const socket = io(socketUrl)
       socket.emit('lobby-created')
       socket.disconnect()
