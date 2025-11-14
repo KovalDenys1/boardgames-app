@@ -144,5 +144,6 @@ setup-*.*
 
 # Documentation (optional - uncomment if you want to ignore deployment docs)
 # DEPLOYMENT_*.md
-# *.md
-# !README.md
+*.md
+!README.md
+!CONTRIBUTING.md
