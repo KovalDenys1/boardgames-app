@@ -89,10 +89,12 @@ export default function LobbyPage() {
   }, [game?.players, session?.user?.id])
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | undefined
+    
     if (gameEngine && !gameEngine.isGameFinished() && timerActive) {
       setTimeLeft(60)
 
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (!isMyTurn()) return prev
           
@@ -103,8 +105,12 @@ export default function LobbyPage() {
           return prev - 1
         })
       }, 1000)
+    }
 
-      return () => clearInterval(timer)
+    return () => {
+      if (timer) {
+        clearInterval(timer)
+      }
     }
   }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished()])
 
@@ -172,8 +178,13 @@ export default function LobbyPage() {
       })
 
       socket.on('connect_error', (error) => {
-        // Don't show toast on every error - it's annoying
+        console.error('Socket connection error:', error.message)
         // Socket.IO will auto-retry with exponential backoff
+        // Only show error after multiple failed attempts
+        const retryCount = (socket as any).io.engine?.transport?.attempts || 0
+        if (retryCount > 5) {
+          toast.error('Connection issues. Retrying...')
+        }
       })
 
       socket.on('game-update', (data) => {
@@ -609,11 +620,19 @@ export default function LobbyPage() {
   const handleSendChatMessage = (message: string) => {
     if (!session?.user?.id || !session?.user?.name) return
 
+    // Basic sanitization to prevent XSS
+    const sanitizedMessage = message
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .slice(0, 500) // Limit message length
+
     const chatMessage = {
       id: Date.now().toString() + Math.random(),
       userId: session.user.id,
       username: session.user.name,
-      message: message,
+      message: sanitizedMessage,
       timestamp: Date.now(),
       type: 'message'
     }

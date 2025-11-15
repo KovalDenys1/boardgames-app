@@ -4,6 +4,17 @@ import next from 'next'
 import { Server as SocketIOServer } from 'socket.io'
 import jwt from 'jsonwebtoken'
 import { prisma } from './lib/db'
+import { validateEnv, printEnvInfo } from './lib/env'
+import { logger, socketLogger } from './lib/logger'
+
+// Validate environment variables on startup
+try {
+  validateEnv()
+  printEnvInfo()
+} catch (error) {
+  logger.error('Failed to start server due to environment validation error', error as Error)
+  process.exit(1)
+}
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = process.env.HOSTNAME || '0.0.0.0'

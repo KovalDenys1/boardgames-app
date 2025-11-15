@@ -162,8 +162,8 @@ export default function ChessLobbiesPage() {
         {/* Action Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Create Lobby Card - Made bigger and more prominent */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-2xl p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-4 border-white/20"
-               onClick={() => router.push('/lobby/create')}>
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-2xl p-8 text-white hover:shadow-3xl transition-all transform hover:scale-105 cursor-pointer border-4 border-white/20"
+               onClick={() => router.push('/lobby/create?gameType=chess')}>
             <div className="flex items-center justify-between mb-4">
               <div className="text-6xl">✨</div>
               <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
@@ -241,7 +241,7 @@ export default function ChessLobbiesPage() {
               <h3 className="text-xl font-bold text-white mb-2">No Active Lobbies</h3>
               <p className="text-white/80 mb-6">Be the first to create one and start playing!</p>
               <button
-                onClick={() => router.push('/lobby/create')}
+                onClick={() => router.push('/lobby/create?gameType=chess')}
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105"
               >
                 Create First Lobby

@@ -5,8 +5,17 @@ import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { ChessGame } from '@/lib/games/chess-game'
 import { GameConfig } from '@/lib/game-engine'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.game)
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) {
+    return rateLimitResult
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

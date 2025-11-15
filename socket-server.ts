@@ -1,6 +1,17 @@
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { parse } from 'url'
+import { socketLogger, logger } from './lib/logger'
+import { validateEnv, printEnvInfo } from './lib/env'
+
+// Validate environment variables on startup
+try {
+  validateEnv()
+  printEnvInfo()
+} catch (error) {
+  logger.error('Failed to start socket server due to environment validation error', error as Error)
+  process.exit(1)
+}
 
 const port = Number(process.env.PORT) || 3001
 const hostname = process.env.HOSTNAME || '0.0.0.0'
@@ -37,29 +48,40 @@ const io = new SocketIOServer(server, {
 })
 
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id)
+  logger.info('Client connected', { socketId: socket.id })
 
   socket.on('join-lobby', (lobbyCode: string) => {
+    // Basic validation
+    if (!lobbyCode || typeof lobbyCode !== 'string' || lobbyCode.length > 20) {
+      logger.warn('Invalid lobby code received', { lobbyCode, socketId: socket.id })
+      return
+    }
     socket.join(`lobby:${lobbyCode}`)
-    console.log(`Socket ${socket.id} joined lobby ${lobbyCode}`)
+    socketLogger('join-lobby').debug('Socket joined lobby', { socketId: socket.id, lobbyCode })
   })
 
   socket.on('leave-lobby', (lobbyCode: string) => {
     socket.leave(`lobby:${lobbyCode}`)
-    console.log(`Socket ${socket.id} left lobby ${lobbyCode}`)
+    socketLogger('leave-lobby').debug('Socket left lobby', { socketId: socket.id, lobbyCode })
   })
 
   socket.on('join-lobby-list', () => {
     socket.join('lobby-list')
-    console.log(`Socket ${socket.id} joined lobby-list`)
+    socketLogger('join-lobby-list').debug('Socket joined lobby-list', { socketId: socket.id })
   })
 
   socket.on('leave-lobby-list', () => {
     socket.leave('lobby-list')
-    console.log(`Socket ${socket.id} left lobby-list`)
+    socketLogger('leave-lobby-list').debug('Socket left lobby-list', { socketId: socket.id })
   })
 
   socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
+    // Validate input
+    if (!data?.lobbyCode || !data?.action || typeof data.lobbyCode !== 'string') {
+      logger.warn('Invalid game-action data received', { socketId: socket.id })
+      return
+    }
+    
     // Broadcast to all clients in the lobby EXCEPT the sender
     // This prevents the sender from processing their own update twice
     socket.to(`lobby:${data.lobbyCode}`).emit('game-update', {
@@ -74,24 +96,24 @@ io.on('connection', (socket) => {
   })
 
   socket.on('lobby-created', () => {
-    console.log('New lobby created, notifying lobby list')
+    socketLogger('lobby-created').info('New lobby created, notifying lobby list')
     io.to('lobby-list').emit('lobby-list-update')
   })
 
   socket.on('player-joined', () => {
-    console.log('Player joined lobby, notifying lobby list')
+    socketLogger('player-joined').info('Player joined lobby, notifying lobby list')
     io.to('lobby-list').emit('lobby-list-update')
   })
 
   socket.on('disconnect', (reason) => {
-    console.log('Client disconnected:', socket.id, 'Reason:', reason)
+    logger.info('Client disconnected', { socketId: socket.id, reason })
   })
 
   socket.on('error', (error) => {
-    console.error('Socket error:', socket.id, error)
+    logger.error('Socket error', error, { socketId: socket.id })
   })
 })
 
 server.listen(port, hostname, () => {
-  console.log(`Socket.IO server ready on http://${hostname}:${port}`)
+  logger.info(`Socket.IO server ready`, { url: `http://${hostname}:${port}` })
 })

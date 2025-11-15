@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { hashPassword, createToken } from '@/lib/auth'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { sendVerificationEmail } from '@/lib/email'
+import { nanoid } from 'nanoid'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -9,7 +12,15 @@ const registerSchema = z.object({
   password: z.string().min(6),
 })
 
+const limiter = rateLimit(rateLimitPresets.auth)
+
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) {
+    return rateLimitResult
+  }
+
   try {
     const body = await request.json()
     const { email, username, password } = registerSchema.parse(body)
@@ -49,19 +60,38 @@ export async function POST(request: NextRequest) {
         username,
         passwordHash,
         name: username,
-        emailVerified: new Date(),
+        // emailVerified will be set when user clicks verification link
       },
     })
 
-    const token = createToken({ userId: user.id, email: user.email ?? email })
+    // Generate verification token
+    const verificationToken = nanoid(32)
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expires: verificationExpiry,
+      },
+    })
+
+    // Send verification email
+    const emailResult = await sendVerificationEmail(email, verificationToken)
+    
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error)
+      // Continue anyway - user can request resend
+    }
 
     return NextResponse.json({
+      message: 'Registration successful! Please check your email to verify your account.',
       user: {
         id: user.id,
         email: user.email ?? email,
         username: user.username,
+        emailVerified: false,
       },
-      token,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

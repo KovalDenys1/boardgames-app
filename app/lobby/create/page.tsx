@@ -1,20 +1,57 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
 
+type GameType = 'yahtzee' | 'chess'
+
+const GAME_INFO = {
+  yahtzee: {
+    emoji: '🎲',
+    name: 'Yahtzee',
+    description: 'Set up your Yahtzee game and invite friends to join!',
+    defaultMaxPlayers: 4,
+    allowedPlayers: [2, 3, 4, 6, 8],
+    gradient: 'from-blue-500 via-purple-600 to-pink-500'
+  },
+  chess: {
+    emoji: '♟️',
+    name: 'Chess',
+    description: 'Create a chess match and challenge your opponent!',
+    defaultMaxPlayers: 2,
+    allowedPlayers: [2],
+    gradient: 'from-gray-800 via-gray-700 to-gray-900'
+  }
+}
+
 export default function CreateLobbyPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
+  
+  const gameType = (searchParams.get('gameType') || 'yahtzee') as GameType
+  const gameInfo = GAME_INFO[gameType]
+  
   const [formData, setFormData] = useState({
     name: '',
     password: '',
-    maxPlayers: 4,
+    maxPlayers: 4, // Will be updated by useEffect
+    gameType: 'yahtzee' as GameType, // Will be updated by useEffect
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Update formData when gameType changes from URL
+  useEffect(() => {
+    console.log('🎮 Game type from URL:', gameType)
+    setFormData(prev => ({
+      ...prev,
+      maxPlayers: gameInfo.defaultMaxPlayers,
+      gameType: gameType,
+    }))
+  }, [gameType, gameInfo.defaultMaxPlayers])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -33,6 +70,8 @@ export default function CreateLobbyPage() {
         return
       }
 
+      console.log('📤 Sending lobby creation request:', formData)
+
       const res = await fetch('/api/lobby', {
         method: 'POST',
         headers: {
@@ -42,6 +81,7 @@ export default function CreateLobbyPage() {
       })
 
       const data = await res.json()
+      console.log('📥 Received response:', { status: res.status, data })
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to create lobby')
@@ -53,9 +93,11 @@ export default function CreateLobbyPage() {
       socket.emit('lobby-created')
       socket.disconnect()
 
+      console.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
       // Redirect to the new lobby
       router.push(`/lobby/${data.lobby.code}`)
     } catch (err: any) {
+      console.error('❌ Lobby creation error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -75,7 +117,7 @@ export default function CreateLobbyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 py-12 px-4">
+    <div className={`min-h-screen bg-gradient-to-br ${gameInfo.gradient} py-12 px-4`}>
       <div className="max-w-2xl mx-auto">
         {/* Breadcrumbs */}
         <div className="mb-6 flex items-center gap-2 text-white/80 text-sm">
@@ -94,10 +136,10 @@ export default function CreateLobbyPage() {
           </button>
           <span>›</span>
           <button 
-            onClick={() => router.push('/games/yahtzee/lobbies')}
+            onClick={() => router.push(`/games/${gameType}/lobbies`)}
             className="hover:text-white transition-colors"
           >
-            🎲 Yahtzee
+            {gameInfo.emoji} {gameInfo.name}
           </button>
           <span>›</span>
           <span className="text-white font-semibold">Create Lobby</span>
@@ -106,10 +148,10 @@ export default function CreateLobbyPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
-            <span className="text-5xl">✨</span>
+            <span className="text-5xl">{gameInfo.emoji}</span>
           </div>
-          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Create New Lobby</h1>
-          <p className="text-xl text-white/90">Set up your Yahtzee game and invite friends to join!</p>
+          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Create {gameInfo.name} Lobby</h1>
+          <p className="text-xl text-white/90">{gameInfo.description}</p>
         </div>
 
         {/* Form Card */}
@@ -155,8 +197,8 @@ export default function CreateLobbyPage() {
               <label className="block text-sm font-bold text-white mb-2">
                 👥 Maximum Players *
               </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[2, 3, 4, 6, 8].map((num) => (
+              <div className={`grid gap-3 ${gameInfo.allowedPlayers.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                {gameInfo.allowedPlayers.map((num) => (
                   <button
                     key={num}
                     type="button"
@@ -190,7 +232,7 @@ export default function CreateLobbyPage() {
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => router.push('/games/yahtzee/lobbies')}
+                onClick={() => router.push(`/games/${gameType}/lobbies`)}
                 className="flex-1 px-6 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
               >
                 Cancel

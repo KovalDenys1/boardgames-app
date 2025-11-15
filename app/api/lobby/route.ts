@@ -4,14 +4,27 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { generateLobbyCode } from '@/lib/lobby'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { apiLogger } from '@/lib/logger'
+
+const log = apiLogger('/api/lobby')
 
 const createLobbySchema = z.object({
   name: z.string().min(1).max(50),
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(8).default(4),
+  gameType: z.enum(['yahtzee', 'chess']).default('yahtzee'),
 })
 
+const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
+
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for lobby creation
+  const rateLimitResult = await createLimiter(request)
+  if (rateLimitResult) {
+    return rateLimitResult
+  }
+
   try {
     // Verify authentication with NextAuth
     const session = await getServerSession(authOptions)
@@ -33,7 +46,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, password, maxPlayers } = createLobbySchema.parse(body)
+    const { name, password, maxPlayers, gameType } = createLobbySchema.parse(body)
+
+    log.info('Creating lobby', { gameType, maxPlayers })
 
     // Generate unique lobby code
     let code = generateLobbyCode()
@@ -46,25 +61,54 @@ export async function POST(request: NextRequest) {
     }
 
     // Create lobby with initial game and add creator as first player
+    // Initial state depends on game type
+    let initialState: any
+    
+    if (gameType === 'chess') {
+      // Chess initial state
+      initialState = {
+        gameType: 'chess',
+        players: [],
+        currentPlayerIndex: 0,
+        status: 'waiting',
+        data: {
+          board: null, // Will be initialized when game starts
+          currentPlayer: 'white',
+          moveHistory: [],
+          halfMoveClock: 0,
+          fullMoveNumber: 1,
+          gameStatus: 'waiting'
+        }
+      }
+    } else {
+      // Yahtzee initial state
+      initialState = {
+        gameType: 'yahtzee',
+        players: [],
+        currentPlayerIndex: 0,
+        status: 'waiting',
+        data: {
+          round: 0,
+          dice: [1, 1, 1, 1, 1],
+          held: [false, false, false, false, false],
+          rollsLeft: 3,
+          scores: [{}],
+        }
+      }
+    }
+    
     const lobby = await prisma.lobby.create({
       data: {
         code,
         name,
         password,
         maxPlayers,
+        gameType,
         creatorId: user.id,
         games: {
           create: {
             status: 'waiting',
-            state: JSON.stringify({
-              round: 0,
-              currentPlayerIndex: 0,
-              dice: [1, 1, 1, 1, 1],
-              held: [false, false, false, false, false],
-              rollsLeft: 3,
-              scores: [{}], // First player's empty scorecard
-              finished: false,
-            }),
+            state: JSON.stringify(initialState),
             players: {
               create: {
                 userId: user.id,
