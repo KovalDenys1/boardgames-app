@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
@@ -23,12 +23,18 @@ import { useConfetti } from '@/hooks/useConfetti'
 
 let socket: Socket
 
-export default function LobbyPage() {
+function LobbyPageContent() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const toast = useToast()
   const code = params.code as string
+  
+  // Guest mode support
+  const isGuest = searchParams.get('guest') === 'true'
+  const [guestName, setGuestName] = useState<string>('')
+  const [guestId, setGuestId] = useState<string>('')
 
   const [lobby, setLobby] = useState<any>(null)
   const [game, setGame] = useState<any>(null)
@@ -54,12 +60,40 @@ export default function LobbyPage() {
   // Debounce for game state updates to avoid excessive re-renders
   const [updateTimeout, setUpdateTimeout] = useState<NodeJS.Timeout | null>(null)
 
+  // Initialize guest user data
+  useEffect(() => {
+    if (isGuest && typeof window !== 'undefined') {
+      const storedGuestName = localStorage.getItem('guestName')
+      if (storedGuestName) {
+        setGuestName(storedGuestName)
+        // Generate or retrieve guest ID
+        let storedGuestId = localStorage.getItem('guestId')
+        if (!storedGuestId) {
+          storedGuestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          localStorage.setItem('guestId', storedGuestId)
+        }
+        setGuestId(storedGuestId)
+      } else {
+        // No guest name found, redirect back to join page
+        router.push(`/lobby/join/${code}`)
+      }
+    }
+  }, [isGuest, code, router])
+
+  const getCurrentUserId = () => {
+    if (isGuest) return guestId
+    return session?.user?.id
+  }
+
   const getCurrentPlayerIndex = () => {
-    if (!game?.players || !session?.user?.id) {
+    if (!game?.players) {
       return -1
     }
     
-    const index = game.players.findIndex((p: any) => p.userId === session.user.id)
+    const userId = getCurrentUserId()
+    if (!userId) return -1
+    
+    const index = game.players.findIndex((p: any) => p.userId === userId)
     return index
   }
 
@@ -70,23 +104,24 @@ export default function LobbyPage() {
   }
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isGuest && status === 'unauthenticated') {
       router.push('/auth/login')
       return
     }
-    if (status === 'authenticated') {
+    if (status === 'authenticated' || (isGuest && guestId)) {
       loadLobby()
     }
-  }, [code, status])
+  }, [code, status, isGuest, guestId])
 
   useEffect(() => {
-    if (game?.players && session?.user?.id) {
+    const userId = getCurrentUserId()
+    if (game?.players && userId) {
       const myIndex = getCurrentPlayerIndex()
       if (myIndex !== -1) {
         setViewingPlayerIndex(myIndex)
       }
     }
-  }, [game?.players, session?.user?.id])
+  }, [game?.players, session?.user?.id, guestId])
 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined
@@ -128,8 +163,12 @@ export default function LobbyPage() {
     if (!socket) {
       const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
 
-      // Get NextAuth session token from cookies
+      // Get authentication token (NextAuth for users, guest ID for guests)
       const getAuthToken = () => {
+        if (isGuest) {
+          return guestId
+        }
+        
         const cookies = document.cookie.split(';')
         for (const cookie of cookies) {
           const [name, value] = cookie.trim().split('=')
@@ -151,10 +190,14 @@ export default function LobbyPage() {
         timeout: 20000, // Connection timeout
         autoConnect: true,
         auth: {
-          token: token
+          token: token,
+          isGuest: isGuest,
+          guestName: isGuest ? guestName : undefined,
         },
         query: {
-          token: token
+          token: token,
+          isGuest: isGuest ? 'true' : 'false',
+          guestName: isGuest ? guestName : undefined,
         },
       })
 
@@ -214,7 +257,8 @@ export default function LobbyPage() {
           
         } else if (data.action === 'player-left') {
           // Don't show toast if it's the current user leaving (they get their own success message)
-          const isCurrentUser = data.payload.userId === session?.user?.id
+          const currentUserId = getCurrentUserId()
+          const isCurrentUser = data.payload.userId === currentUserId
           
           if (!isCurrentUser) {
             toast.info(`${data.payload.username || 'A player'} left the lobby`)
@@ -234,7 +278,8 @@ export default function LobbyPage() {
             if (messageExists) return prev
             
             // Play sound for new messages from other users
-            if (data.payload.userId !== session?.user?.id) {
+            const currentUserId = getCurrentUserId()
+            if (data.payload.userId !== currentUserId) {
               soundManager.play('message')
               
               // Increment unread count if chat is minimized
@@ -247,7 +292,8 @@ export default function LobbyPage() {
           })
           
           // Show notification for other users
-          if (data.payload.userId !== session?.user?.id) {
+          const currentUserId = getCurrentUserId()
+          if (data.payload.userId !== currentUserId) {
             // Optional: show toast for new messages if chat is minimized
             if (chatMinimized) {
               toast.info(`💬 ${data.payload.username}: ${data.payload.message}`)
@@ -274,7 +320,18 @@ export default function LobbyPage() {
 
   const loadLobby = async () => {
     try {
-      const res = await fetch(`/api/lobby/${code}`)
+      // Build headers with authentication
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      // Add guest authentication if in guest mode
+      if (isGuest && guestId && guestName) {
+        headers['X-Guest-Id'] = guestId
+        headers['X-Guest-Name'] = guestName
+      }
+      
+      const res = await fetch(`/api/lobby/${code}`, { headers })
       const data = await res.json()
 
       if (!res.ok) {
@@ -374,7 +431,7 @@ export default function LobbyPage() {
 
     // Create roll move
     const move: Move = {
-      playerId: session?.user?.id || '',
+      playerId: getCurrentUserId() || '',
       type: 'roll',
       data: {},
       timestamp: new Date(),
@@ -382,11 +439,17 @@ export default function LobbyPage() {
 
     // Send move to server
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (isGuest && guestId) {
+        headers['X-Guest-Id'] = guestId
+      }
+      
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ move }),
       })
 
@@ -397,11 +460,11 @@ export default function LobbyPage() {
 
       const data = await res.json()
       
-      // Update local game engine
+      // Update local game engine with new instance
       if (gameEngine) {
-        gameEngine.restoreState(data.game.state)
-        setGameEngine(new YahtzeeGame(gameEngine.getState().id))
-        gameEngine.restoreState(data.game.state)
+        const newEngine = new YahtzeeGame(gameEngine.getState().id)
+        newEngine.restoreState(data.game.state)
+        setGameEngine(newEngine)
       }
       
       soundManager.play('diceRoll')
@@ -429,25 +492,33 @@ export default function LobbyPage() {
 
     // Create hold move
     const move: Move = {
-      playerId: session?.user?.id || '',
+      playerId: getCurrentUserId() || '',
       type: 'hold',
       data: { diceIndex: index },
       timestamp: new Date(),
     }
 
     // Send move to server
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    
+    if (isGuest && guestId) {
+      headers['X-Guest-Id'] = guestId
+    }
+    
     fetch(`/api/game/${game?.id}/state`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ move }),
     }).then(res => {
       if (res.ok) {
         res.json().then(data => {
-          // Update local game engine
-          if (gameEngine) {
-            const newEngine = new YahtzeeGame(gameEngine.getState().id)
+          // Update local game engine with new instance
+          if (gameEngine && data.game && data.game.state) {
+            const newEngine = lobby?.gameType === 'chess' 
+              ? new ChessGame(gameEngine.getState().id)
+              : new YahtzeeGame(gameEngine.getState().id)
             newEngine.restoreState(data.game.state)
             setGameEngine(newEngine)
           }
@@ -489,18 +560,24 @@ export default function LobbyPage() {
 
     // Create score move
     const move: Move = {
-      playerId: session?.user?.id || '',
+      playerId: getCurrentUserId() || '',
       type: 'score',
       data: { category },
       timestamp: new Date(),
     }
 
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (isGuest && guestId) {
+        headers['X-Guest-Id'] = guestId
+      }
+      
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ move }),
       })
 
@@ -697,20 +774,33 @@ export default function LobbyPage() {
       setSelectedSquare(null)
       setPossibleMoves([])
     }
-  }, [gameEngine, game, selectedSquare, possibleMoves, chessCurrentPlayer])
+  }, [gameEngine, game, selectedSquare, possibleMoves, chessCurrentPlayer, isMyTurn])
 
   const handleChessMove = useCallback(async (move: ChessMove) => {
     if (!gameEngine || !(gameEngine instanceof ChessGame) || !game) return
 
     try {
-      const res = await fetch(`/api/game/${game.id}/move`, {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (isGuest && guestId) {
+        headers['X-Guest-Id'] = guestId
+      }
+      
+      const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          move: move,
-          playerId: session?.user?.id
+          move: {
+            playerId: getCurrentUserId() || '',
+            type: 'move',
+            data: {
+              from: move.from,
+              to: move.to,
+            },
+            timestamp: new Date(),
+          }
         }),
       })
 
@@ -724,28 +814,28 @@ export default function LobbyPage() {
       setSelectedSquare(null)
       setPossibleMoves([])
 
-      // Update local game state
-      if (data.game) {
-        setGame(data.game)
-        setGameEngine(data.gameEngine)
+      // Update local game engine with new instance
+      if (gameEngine && data.game && data.game.state) {
+        const newEngine = new ChessGame(gameEngine.getState().id)
+        newEngine.restoreState(data.game.state)
+        setGameEngine(newEngine)
+        setChessCurrentPlayer(newEngine.getState().data.currentPlayer)
       }
+      
+      soundManager.play('click')
 
       // Emit move to other players
       if (socket) {
         socket.emit('game-action', {
           lobbyCode: code,
-          action: 'move-made',
-          payload: {
-            gameId: game.id,
-            move: move,
-            playerId: session?.user?.id
-          },
+          action: 'state-change',
+          payload: data.game.state,
         })
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to make move')
     }
-  }, [gameEngine, game, session?.user?.id, socket, code])
+  }, [gameEngine, game, isGuest, guestId, socket, code, getCurrentUserId])
 
   const handleLeaveLobby = async () => {
 
@@ -1364,7 +1454,7 @@ export default function LobbyPage() {
                               </div>
                             ) : (
                               <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                                ⏳ Waiting for {game.players[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.username || 'player'}...
+                                ⏳ Waiting for {game?.players?.[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.username || game?.players?.[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.name || 'player'}...
                               </p>
                             )}
                           </div>
@@ -1495,7 +1585,7 @@ export default function LobbyPage() {
         <Chat
           messages={chatMessages}
           onSendMessage={handleSendChatMessage}
-          currentUserId={session?.user?.id}
+          currentUserId={getCurrentUserId()}
           isMinimized={chatMinimized}
           onToggleMinimize={handleToggleChat}
           onClearChat={clearChat}
@@ -1504,5 +1594,17 @@ export default function LobbyPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function LobbyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    }>
+      <LobbyPageContent />
+    </Suspense>
   )
 }

@@ -29,9 +29,17 @@ export class YahtzeeGame extends GameEngine {
 
     switch (move.type) {
       case 'roll':
+        // Check it's player's turn
+        const rollPlayerIndex = this.state.players.findIndex(p => p.id === move.playerId)
+        if (rollPlayerIndex !== this.state.currentPlayerIndex) return false
+        
         return gameData.rollsLeft > 0 && this.state.status === 'playing'
 
       case 'hold':
+        // Check it's player's turn
+        const holdPlayerIndex = this.state.players.findIndex(p => p.id === move.playerId)
+        if (holdPlayerIndex !== this.state.currentPlayerIndex) return false
+        
         const { diceIndex } = move.data
         return diceIndex >= 0 && diceIndex < 5 && gameData.rollsLeft < 3
 
@@ -39,6 +47,12 @@ export class YahtzeeGame extends GameEngine {
         const { category } = move.data as { category: YahtzeeCategory }
         const playerIndex = this.state.players.findIndex(p => p.id === move.playerId)
         if (playerIndex === -1) return false
+        
+        // Must be player's turn
+        if (playerIndex !== this.state.currentPlayerIndex) return false
+        
+        // Must have rolled at least once
+        if (gameData.rollsLeft === 3) return false
 
         const playerScorecard = gameData.scores[playerIndex] || {}
         return playerScorecard[category] === undefined
@@ -87,6 +101,8 @@ export class YahtzeeGame extends GameEngine {
         gameData.held = [false, false, false, false, false]
         gameData.rollsLeft = 3
         gameData.round++
+        
+        // Note: currentPlayerIndex is advanced by GameEngine.makeMove() after processMove
         break
     }
   }
@@ -144,9 +160,23 @@ export class YahtzeeGame extends GameEngine {
     return (this.state.data as YahtzeeGameData).round
   }
 
+  startGame(): boolean {
+    if (this.state.players.length < this.config.minPlayers) {
+      return false;
+    }
+    
+    // Initialize scorecards for all players
+    const gameData = this.state.data as YahtzeeGameData
+    gameData.scores = this.state.players.map(() => ({}))
+    
+    this.state.status = 'playing';
+    this.state.updatedAt = new Date();
+    return true;
+  }
+
   getScorecard(playerId: string): YahtzeeScorecard | null {
     const playerIndex = this.state.players.findIndex(p => p.id === playerId)
     if (playerIndex === -1) return null
-    return (this.state.data as YahtzeeGameData).scores[playerIndex] || null
+    return (this.state.data as YahtzeeGameData).scores[playerIndex] || {}
   }
 }

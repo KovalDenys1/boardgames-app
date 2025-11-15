@@ -12,9 +12,12 @@ export async function POST(
   { params }: { params: { gameId: string } }
 ) {
   try {
-    // Verify authentication
+    // Check for guest or authenticated user
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -42,7 +45,7 @@ export async function POST(
     }
 
     // Verify user is a player in this game
-    const playerRecord = game.players.find((p: any) => p.userId === session.user.id)
+    const playerRecord = game.players.find((p: any) => p.userId === userId)
     if (!playerRecord) {
       return NextResponse.json({ error: 'Not a player in this game' }, { status: 403 })
     }
@@ -68,7 +71,7 @@ export async function POST(
 
     // Create move object
     const gameMove: Move = {
-      playerId: session.user.id,
+      playerId: userId,
       type: move.type,
       data: move.data || {},
       timestamp: new Date(),
