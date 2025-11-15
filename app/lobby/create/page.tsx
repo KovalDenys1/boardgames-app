@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
@@ -26,7 +26,7 @@ const GAME_INFO = {
   }
 }
 
-export default function CreateLobbyPage() {
+function CreateLobbyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
@@ -281,3 +281,11 @@ export default function CreateLobbyPage() {
   )
 }
 
+// Wrap component with Suspense for useSearchParams
+export default function CreateLobbyPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600"><div className="text-white text-xl">Loading...</div></div>}>
+      <CreateLobbyPage />
+    </Suspense>
+  )
+}
