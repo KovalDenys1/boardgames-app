@@ -104,10 +104,18 @@ export abstract class GameEngine {
       this.state.status = 'finished';
       this.state.winner = winner.id;
     } else {
-      // Move to next player
-      this.nextPlayer();
+      // Move to next player (only if this type of move should advance turn)
+      if (this.shouldAdvanceTurn(move)) {
+        this.nextPlayer();
+      }
     }
 
+    return true;
+  }
+
+  // Override this in subclasses to control when turn advances
+  protected shouldAdvanceTurn(move: Move): boolean {
+    // By default, advance turn after every move (Chess behavior)
     return true;
   }
 

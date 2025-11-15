@@ -51,6 +51,7 @@ function LobbyPageContent() {
   const [chatMinimized, setChatMinimized] = useState(false)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
+  const [isMoveInProgress, setIsMoveInProgress] = useState(false) // Prevent double moves
 
   // Chess-specific state
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null)
@@ -417,6 +418,12 @@ function LobbyPageContent() {
   const handleRollDice = async () => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
 
+    // Prevent double-clicks
+    if (isMoveInProgress) {
+      console.log('Move already in progress, ignoring')
+      return
+    }
+
     // Validate that it's the current player's turn
     if (!isMyTurn()) {
       toast.error('🚫 It\'s not your turn to roll the dice!')
@@ -428,6 +435,8 @@ function LobbyPageContent() {
       toast.error('🚫 No rolls left! Choose a category to score.')
       return
     }
+
+    setIsMoveInProgress(true)
 
     // Create roll move
     const move: Move = {
@@ -461,8 +470,9 @@ function LobbyPageContent() {
       const data = await res.json()
       
       // Update local game engine with new instance
+      let newEngine: YahtzeeGame | null = null
       if (gameEngine) {
-        const newEngine = new YahtzeeGame(gameEngine.getState().id)
+        newEngine = new YahtzeeGame(gameEngine.getState().id)
         newEngine.restoreState(data.game.state)
         setGameEngine(newEngine)
       }
@@ -476,14 +486,15 @@ function LobbyPageContent() {
         payload: data.game.state,
       })
 
-      // Check if this was the last roll and only one category remains
-      const currentRollsLeft = gameEngine.getRollsLeft()
-      if (currentRollsLeft === 0) {
+      // Check if this was the last roll using the NEW engine state
+      if (newEngine && newEngine.getRollsLeft() === 0) {
         // Auto-score logic would go here
         toast.info('Last roll! Choose a category to score.')
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to roll dice')
+    } finally {
+      setIsMoveInProgress(false)
     }
   }
 
@@ -546,6 +557,12 @@ function LobbyPageContent() {
   const handleScoreSelection = async (category: YahtzeeCategory) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
 
+    // Prevent double-clicks
+    if (isMoveInProgress) {
+      console.log('Move already in progress, ignoring')
+      return
+    }
+
     // Validate that it's the current player's turn
     if (!isMyTurn()) {
       toast.error('🚫 It\'s not your turn to score!')
@@ -557,6 +574,8 @@ function LobbyPageContent() {
       toast.error('🚫 You must roll the dice at least once before scoring!')
       return
     }
+
+    setIsMoveInProgress(true)
 
     // Create score move
     const move: Move = {
@@ -627,6 +646,8 @@ function LobbyPageContent() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to score')
+    } finally {
+      setIsMoveInProgress(false)
     }
   }
 
@@ -1415,7 +1436,7 @@ function LobbyPageContent() {
                           dice={(gameEngine as YahtzeeGame).getDice()}
                           held={(gameEngine as YahtzeeGame).getHeld()}
                           onToggleHold={handleToggleHold}
-                          disabled={(gameEngine as YahtzeeGame).getRollsLeft() === 3 || !isMyTurn()}
+                          disabled={isMoveInProgress || (gameEngine as YahtzeeGame).getRollsLeft() === 3 || !isMyTurn()}
                         />
 
                         {/* Roll Button */}
@@ -1471,10 +1492,10 @@ function LobbyPageContent() {
                           </div>
                           <button
                             onClick={handleRollDice}
-                            disabled={(gameEngine as YahtzeeGame).getRollsLeft() === 0 || !isMyTurn()}
+                            disabled={isMoveInProgress || (gameEngine as YahtzeeGame).getRollsLeft() === 0 || !isMyTurn()}
                             className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2"
                           >
-                            🎲 Roll Dice
+                            🎲 {isMoveInProgress ? 'Rolling...' : 'Roll Dice'}
                           </button>
                         </div>
                       </div>

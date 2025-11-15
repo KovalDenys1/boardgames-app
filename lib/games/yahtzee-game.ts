@@ -17,7 +17,7 @@ export class YahtzeeGame extends GameEngine {
   getInitialGameData(): YahtzeeGameData {
     return {
       round: 1,
-      dice: rollDice(5),
+      dice: [1, 2, 3, 4, 5], // Initial dice values (not rolled yet)
       held: [false, false, false, false, false],
       rollsLeft: 3,
       scores: []
@@ -108,10 +108,18 @@ export class YahtzeeGame extends GameEngine {
   }
 
   checkWinCondition(): Player | null {
-    // Yahtzee is finished when all players have completed their scorecards
+    // Yahtzee is finished when all players have completed their scorecards (13 categories each)
+    const gameData = this.state.data as YahtzeeGameData
+    
+    // If not all players have scorecards, game not finished
+    if (gameData.scores.length !== this.state.players.length) {
+      return null
+    }
+    
+    // Check if all players have filled all categories
     for (let i = 0; i < this.state.players.length; i++) {
-      const scorecard = (this.state.data as YahtzeeGameData).scores[i]
-      if (scorecard && !isGameFinished(scorecard)) {
+      const scorecard = gameData.scores[i]
+      if (!scorecard || !isGameFinished(scorecard)) {
         return null // Game not finished
       }
     }
@@ -174,9 +182,17 @@ export class YahtzeeGame extends GameEngine {
     return true;
   }
 
+  // Only advance turn on score moves, not on roll or hold
+  protected shouldAdvanceTurn(move: Move): boolean {
+    return move.type === 'score';
+  }
+
   getScorecard(playerId: string): YahtzeeScorecard | null {
     const playerIndex = this.state.players.findIndex(p => p.id === playerId)
     if (playerIndex === -1) return null
-    return (this.state.data as YahtzeeGameData).scores[playerIndex] || {}
+    
+    const gameData = this.state.data as YahtzeeGameData
+    // Return empty object if scorecard doesn't exist yet
+    return gameData.scores[playerIndex] || {}
   }
 }
