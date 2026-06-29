@@ -69,6 +69,7 @@ interface MemoryGameBoardProps {
   onProfileClick?: (userId: string) => void
   isGuest?: boolean
   registerUrl?: string
+  isSpectator?: boolean
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
@@ -452,6 +453,7 @@ export default function MemoryGameBoard({
   onProfileClick,
   isGuest,
   registerUrl,
+  isSpectator = false,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -704,6 +706,7 @@ export default function MemoryGameBoard({
         const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
         const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
         const isDisabled =
+          isSpectator ||
           !isMyTurn ||
           parsedState.status !== 'playing' ||
           pendingMismatchCardIds.length > 0 ||
@@ -886,7 +889,7 @@ export default function MemoryGameBoard({
           <main className="memory-layout">
             <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               {cardGrid}
-              {isFinished && !overlayInspecting && (
+              {isFinished && !overlayInspecting && !isSpectator && (
                 <MemoryResultModal
                   winnerId={winnerId}
                   winnerName={winnerName}
@@ -1026,7 +1029,7 @@ export default function MemoryGameBoard({
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' }}>
               <div className="memory-mobile-board-wrap" style={{ position: 'relative' }}>
                 {cardGrid}
-                {isFinished && !overlayInspecting && (
+                {isFinished && !overlayInspecting && !isSpectator && (
                   <MemoryResultModal
                     winnerId={winnerId}
                     winnerName={winnerName}
@@ -1065,7 +1068,7 @@ export default function MemoryGameBoard({
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
                 {historyPanel}
               </div>
-              {isFinished && (
+              {isFinished && !isSpectator && (
                 <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
                   {canStartGame && onPlayAgain && (
                     <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
@@ -1103,7 +1106,7 @@ export default function MemoryGameBoard({
                   fullScreen
                 />
               </div>
-              {isFinished && (
+              {isFinished && !isSpectator && (
                 <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
                   {canStartGame && onPlayAgain && (
                     <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">

@@ -9,8 +9,11 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
+import type { GameState } from '@/lib/game-engine'
+import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { SPECTATOR_VIEWS } from './views'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
@@ -18,6 +21,10 @@ const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: f
 const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false })
 const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
 const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false })
+const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
+const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
+const YahtzeeGameBoard = dynamic(() => import('../components/YahtzeeGameBoard'), { ssr: false })
+const Scorecard = dynamic(() => import('@/components/Scorecard'), { ssr: false })
 
 const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party'])
 
@@ -153,6 +160,7 @@ export default function SpectatorLobbyPage() {
   const [isPlayerInGame, setIsPlayerInGame] = useState(false)
   const [isLimitReached, setIsLimitReached] = useState(false)
   const [isAdminView, setIsAdminView] = useState(false)
+  const [yahtzeeEngine, setYahtzeeEngine] = useState<YahtzeeGame | null>(null)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -321,6 +329,19 @@ export default function SpectatorLobbyPage() {
     [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView]
   )
 
+  // Restore Yahtzee engine whenever game state updates (for spectator board display)
+  useEffect(() => {
+    if (data?.lobby.gameType !== 'yahtzee' || !parsedState || !data?.activeGame?.id) {
+      setYahtzeeEngine(null)
+      return
+    }
+    let cancelled = false
+    void restoreGameEngineClient('yahtzee', data.activeGame.id, parsedState).then((engine) => {
+      if (!cancelled) setYahtzeeEngine(engine as YahtzeeGame)
+    })
+    return () => { cancelled = true }
+  }, [data?.lobby.gameType, data?.activeGame?.id, parsedState])
+
   const joinAsPlayer = useCallback(async () => {
     if (!data?.canJoinAsPlayer || joiningAsPlayer) return
     setJoiningAsPlayer(true)
@@ -436,6 +457,130 @@ export default function SpectatorLobbyPage() {
         {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
         {gameType === 'alias' && <AliasPage code={code} isSpectator />}
         {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
+      </>
+    )
+  }
+
+  // ── Memory: real board component, same UI as players ────────────────────────
+  if (data.lobby.gameType === 'memory') {
+    const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+        />
+        <MemoryGameBoard
+          gameId={data.activeGame?.id ?? ''}
+          lobbyCode={code}
+          players={(Array.isArray(data.activeGame?.players) ? data.activeGame.players : []) as any}
+          state={parsedState}
+          currentUserId={spectatorUserId}
+          turnTimerLimit={data.lobby.turnTimer ?? undefined}
+          isSpectator
+        />
+      </>
+    )
+  }
+
+  // ── Guess the Spy: real board component, same UI as players ─────────────────
+  if (data.lobby.gameType === 'guess_the_spy') {
+    const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+        />
+        <SpyGameBoard
+          gameId={data.activeGame?.id ?? ''}
+          lobbyCode={code}
+          lobbyCreatorId={data.lobby.creatorId ?? null}
+          players={(Array.isArray(data.activeGame?.players) ? data.activeGame.players : []) as GamePlayer[]}
+          state={(parsedState ?? { id: '', gameType: 'guess_the_spy', players: [], currentPlayerIndex: 0, status: 'playing', data: {}, createdAt: new Date(), updatedAt: new Date() }) as GameState<unknown>}
+          currentUserId={spectatorUserId}
+          isGuest={false}
+          guestId={null}
+          guestName={null}
+          guestToken={null}
+          onRefresh={loadSnapshot}
+          isSpectator
+        />
+      </>
+    )
+  }
+
+  // ── Yahtzee: real board + scorecard, same UI as players ─────────────────────
+  if (data.lobby.gameType === 'yahtzee') {
+    const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
+    const yahtzeeCurrentPlayerId = yahtzeeEngine?.getCurrentPlayer()?.id
+    const yahtzeeScorecard = yahtzeeEngine && yahtzeeCurrentPlayerId
+      ? yahtzeeEngine.getScorecard(yahtzeeCurrentPlayerId)
+      : null
+
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+        />
+        {yahtzeeEngine ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,6fr)', gap: 16, padding: '16px', height: 'calc(100dvh - 64px - 48px)', overflow: 'hidden' }}>
+            <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <YahtzeeGameBoard
+                gameEngine={yahtzeeEngine}
+                game={data.activeGame!}
+                isMyTurn={false}
+                isSpectator
+                timeLeft={0}
+                turnTimerLimit={data.lobby.turnTimer ?? 0}
+                isMoveInProgress={false}
+                isRolling={false}
+                isScoring={false}
+                isStateReverting={false}
+                celebrationEvent={null}
+                held={Array.isArray((parsedState?.data as Record<string, unknown> | undefined)?.held) ? (parsedState!.data as Record<string, unknown>).held as boolean[] : Array(5).fill(false)}
+                getCurrentUserId={() => spectatorUserId}
+                onRollDice={() => undefined}
+                onToggleHold={() => undefined}
+                onScore={() => undefined}
+                onCelebrationComplete={() => undefined}
+              />
+            </div>
+            <div style={{ minHeight: 0, overflow: 'auto' }}>
+              {yahtzeeScorecard && (
+                <Scorecard
+                  scorecard={yahtzeeScorecard}
+                  currentDice={yahtzeeEngine.getDice()}
+                  rollsLeft={yahtzeeEngine.getRollsLeft()}
+                  onSelectCategory={() => undefined}
+                  canSelectCategory={false}
+                  isCurrentPlayer={false}
+                  playerName={(() => {
+                    const p = data.activeGame?.players?.find(pl => pl.userId === yahtzeeCurrentPlayerId)
+                    return p?.user?.username || p?.name || undefined
+                  })()}
+                />
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-48">
+            <LoadingSpinner size="lg" />
+          </div>
+        )}
       </>
     )
   }
