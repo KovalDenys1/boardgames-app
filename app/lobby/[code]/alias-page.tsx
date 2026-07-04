@@ -13,6 +13,7 @@ import type { ChatMessagePayload, GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ConfirmModal from '@/components/ConfirmModal'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
@@ -354,6 +355,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -374,6 +376,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
+  const isLeavingRef = React.useRef(false)
   const minPlayersRequired = 4
 
   const getCurrentUserId = useCallback(() => {
@@ -572,6 +575,20 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       setIsMoveSubmitting(false)
     }
   }, [game, gameEngine, getCurrentUserId, isGuest, isMoveSubmitting, applyAuthoritativeState, loadLobby])
+
+  const handleLeave = useCallback(() => {
+    if (isLeavingRef.current) return
+    isLeavingRef.current = true
+    setShowLeaveConfirmModal(false)
+    void fetchWithGuest(`/api/lobby/${code}/leave`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+    }).catch((err) => {
+      clientLogger.warn('Alias leave API failed', { code, error: err })
+    })
+    router.push('/games')
+  }, [code, router])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id || isStarting) return
@@ -1027,7 +1044,25 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             )}
           </div>
+          {!isSpectator && (
+            <button style={{ ...linkBtn, alignSelf: 'center', marginTop: 12 }} onClick={() => setShowLeaveConfirmModal(true)}>
+              {t('lobby.game.leaveGame')}
+            </button>
+          )}
         </main>
+        {!isSpectator && (
+          <ConfirmModal
+            isOpen={showLeaveConfirmModal}
+            onClose={() => setShowLeaveConfirmModal(false)}
+            onConfirm={handleLeave}
+            title={t('game.ui.leave')}
+            message={t('game.ui.leaveConfirm')}
+            confirmText={t('common.confirm')}
+            cancelText={t('common.cancel')}
+            variant="danger"
+            icon="🚪"
+          />
+        )}
       </div>
     )
   }
@@ -1182,6 +1217,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
                 {t('alias.endTurn')}
               </button>
+              {!isSpectator && (
+                <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>
+                  {t('lobby.game.leaveGame')}
+                </button>
+              )}
             </div>
 
             {/* Chat panel — describer sees guesses read-only; hidden on mobile via CSS */}
@@ -1190,6 +1230,19 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </div>
           </main>
         </div>
+        {!isSpectator && (
+          <ConfirmModal
+            isOpen={showLeaveConfirmModal}
+            onClose={() => setShowLeaveConfirmModal(false)}
+            onConfirm={handleLeave}
+            title={t('game.ui.leave')}
+            message={t('game.ui.leaveConfirm')}
+            confirmText={t('common.confirm')}
+            cancelText={t('common.cancel')}
+            variant="danger"
+            icon="🚪"
+          />
+        )}
       </>
     )
   }
@@ -1279,12 +1332,30 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   )}
                 </div>
               </div>
+              {!isSpectator && (
+                <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>
+                  {t('lobby.game.leaveGame')}
+                </button>
+              )}
             </div>
 
             {/* Chat panel — guessers type here; spectators are read-only */}
             <GuessChatPanel {...chatProps} canType={!isSpectator} />
           </main>
         </div>
+        {!isSpectator && (
+          <ConfirmModal
+            isOpen={showLeaveConfirmModal}
+            onClose={() => setShowLeaveConfirmModal(false)}
+            onConfirm={handleLeave}
+            title={t('game.ui.leave')}
+            message={t('game.ui.leaveConfirm')}
+            confirmText={t('common.confirm')}
+            cancelText={t('common.cancel')}
+            variant="danger"
+            icon="🚪"
+          />
+        )}
       </>
     )
   }
@@ -1425,12 +1496,27 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   ⏳ Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
                 </div>
               ))}
-              <button style={{ ...linkBtn, textAlign: 'center' }} onClick={() => router.push('/games')}>
-                {t('lobby.game.leaveGame')}
-              </button>
+              {!isSpectator && (
+                <button style={{ ...linkBtn, textAlign: 'center' }} onClick={() => setShowLeaveConfirmModal(true)}>
+                  {t('lobby.game.leaveGame')}
+                </button>
+              )}
             </section>
           </main>
         </div>
+        {!isSpectator && (
+          <ConfirmModal
+            isOpen={showLeaveConfirmModal}
+            onClose={() => setShowLeaveConfirmModal(false)}
+            onConfirm={handleLeave}
+            title={t('game.ui.leave')}
+            message={t('game.ui.leaveConfirm')}
+            confirmText={t('common.confirm')}
+            cancelText={t('common.cancel')}
+            variant="danger"
+            icon="🚪"
+          />
+        )}
       </>
     )
   }
@@ -1531,7 +1617,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 {t('game.ui.waitingForHost')}
               </div>
             )}
-            <button style={linkBtn} onClick={() => router.push('/games')}>Leave game</button>
+            <button style={linkBtn} onClick={() => setShowLeaveConfirmModal(true)}>{t('lobby.game.leaveGame')}</button>
           </div>
 
           {isGuest && (
@@ -1540,6 +1626,17 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </div>
           )}
         </main>
+        <ConfirmModal
+          isOpen={showLeaveConfirmModal}
+          onClose={() => setShowLeaveConfirmModal(false)}
+          onConfirm={handleLeave}
+          title={t('game.ui.leave')}
+          message={t('game.ui.leaveConfirm')}
+          confirmText={t('common.confirm')}
+          cancelText={t('common.cancel')}
+          variant="danger"
+          icon="🚪"
+        />
       </div>
     )
   }
