@@ -103,7 +103,10 @@ const ru = {
       sent: 'Приглашён {{count}} друг!',
       sent_other: 'Приглашено {{count}} друзей!',
       linkCopied: 'Ссылка на лобби скопирована! Отправьте её {{count}} другу',
-      linkCopied_other: 'Ссылка на лобби скопирована! Отправьте её {{count}} друзьям'
+      linkCopied_other: 'Ссылка на лобби скопирована! Отправьте её {{count}} друзьям',
+      inviteButton: 'Пригласить',
+      invited: 'Приглашён',
+      sentToFriend: 'Приглашение отправлено {{name}}!',
     },
     filters: {
       title: 'Фильтры',
@@ -184,6 +187,7 @@ const ru = {
       playerCountHelperRange: 'Эта игра поддерживает {{min}}-{{max}} игроков',
       playerCountHelper: 'Эта игра требует ровно {{count}} игрока',
       playerCountHelper_other: 'Эта игра поддерживает {{min}}-{{max}} игроков',
+      bestOf: 'До победы в',
       roundsToPlay: 'Количество раундов',
       roundsHelper: 'Выберите фиксированное число раундов или бесконечный режим',
       unlimitedRounds: 'Без лимита',
@@ -638,6 +642,8 @@ const ru = {
         playerTurn: 'Ход {{player}}',
         moveNum: '· ход {{num}}',
         roundOver: 'Раунд окончен',
+        seriesComplete: 'Серия завершена!',
+        returningToLobby: 'Возвращение в лобби…',
         playerWins: '{{player}} побеждает!',
         cleanRun: 'Чистая победа.',
         itsADraw: 'Ничья',
@@ -1780,6 +1786,11 @@ const ru = {
       emailVerificationRequired: 'Требуется подтверждение эл. почты',
       emailVerificationRequiredDesc: 'Пожалуйста, подтвердите эл. почту, чтобы получить доступ к коду друга и подключаться к друзьям.',
       verifyEmail: 'Подтвердить эл. почту',
+      presence: {
+        inGame: 'В игре',
+        inLobby: 'В лобби',
+        online: 'Онлайн',
+      },
       errors: {
         loadFailed: 'Не удалось загрузить друзей',
         usernameRequired: 'Требуется имя пользователя',

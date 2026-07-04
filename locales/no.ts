@@ -103,7 +103,10 @@ const no = {
       sent: 'Inviterte {{count}} venn!',
       sent_other: 'Inviterte {{count}} venner!',
       linkCopied: 'Lobbylenke kopiert! Send den til {{count}} venn',
-      linkCopied_other: 'Lobbylenke kopiert! Send den til {{count}} venner'
+      linkCopied_other: 'Lobbylenke kopiert! Send den til {{count}} venner',
+      inviteButton: 'Inviter',
+      invited: 'Invitert',
+      sentToFriend: 'Invitasjon sendt til {{name}}!',
     },
     filters: {
       title: 'Filtre',
@@ -184,6 +187,7 @@ const no = {
       playerCountHelperRange: 'Dette spillet støtter {{min}}-{{max}} spillere',
       playerCountHelper: 'Dette spillet krever nøyaktig {{count}} spiller',
       playerCountHelper_other: 'Dette spillet støtter {{min}}-{{max}} spillere',
+      bestOf: 'Best av',
       roundsToPlay: 'Antall runder',
       roundsHelper: 'Velg et fast antall runder eller ubegrenset modus',
       unlimitedRounds: 'Ubegrenset',
@@ -638,6 +642,8 @@ const no = {
         playerTurn: '{{player}}s tur',
         moveNum: '· trekk {{num}}',
         roundOver: 'Runden er over',
+        seriesComplete: 'Serien er over!',
+        returningToLobby: 'Returnerer til lobbyen…',
         playerWins: '{{player}} vinner!',
         cleanRun: 'Klar seier.',
         itsADraw: 'Uavgjort',
@@ -1780,6 +1786,11 @@ const no = {
       emailVerificationRequired: 'E-postbekreftelse kreves',
       emailVerificationRequiredDesc: 'Vennligst bekreft e-posten din for å få tilgang til vennekoden og koble til venner.',
       verifyEmail: 'Bekreft e-post',
+      presence: {
+        inGame: 'I spill',
+        inLobby: 'I lobby',
+        online: 'Pålogget',
+      },
       errors: {
         loadFailed: 'Kunne ikke laste venner',
         usernameRequired: 'Brukernavn er påkrevd',

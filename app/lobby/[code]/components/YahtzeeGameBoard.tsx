@@ -26,6 +26,7 @@ interface GameBoardProps {
   onCelebrationComplete: () => void
   onReviewScorecard?: () => void
   showReviewScorecardButton?: boolean
+  isSpectator?: boolean
 }
 
 export default function GameBoard({
@@ -47,6 +48,7 @@ export default function GameBoard({
   onCelebrationComplete,
   onReviewScorecard,
   showReviewScorecardButton = false,
+  isSpectator = false,
 }: GameBoardProps) {
   const { t } = useTranslation()
   const percentage = turnTimerLimit > 0 ? (timeLeft / turnTimerLimit) * 100 : 100
@@ -111,10 +113,10 @@ export default function GameBoard({
           <DiceGroup
             dice={gameEngine.getDice()}
             held={isMyTurn ? held : gameEngine.getHeld()}
-            onToggleHold={onToggleHold}
-            disabled={!isMyTurn || isMoveInProgress || gameEngine.getRollsLeft() === 3}
+            onToggleHold={isSpectator ? () => undefined : onToggleHold}
+            disabled={isSpectator || !isMyTurn || isMoveInProgress || gameEngine.getRollsLeft() === 3}
             isRolling={isRolling}
-            isMyTurn={isMyTurn}
+            isMyTurn={isMyTurn && !isSpectator}
           />
         </div>
 
@@ -195,7 +197,7 @@ export default function GameBoard({
           )}
 
           {/* Roll Button */}
-          <button
+          {!isSpectator && <button
             onClick={() => {
               sounds.play('click', { force: true })
               onRollDice()
@@ -245,7 +247,7 @@ export default function GameBoard({
                 </span>
               </span>
             )}
-          </button>
+          </button>}
         </div>
       </div>
 

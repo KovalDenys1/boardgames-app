@@ -113,6 +113,9 @@ const uk: Translation = {
       sent_other: 'Запрошено {{count}} друзів!',
       linkCopied: 'Посилання на лобі скопійовано! Надішліть його {{count}} другу',
       linkCopied_other: 'Посилання на лобі скопійовано! Надішліть його {{count}} друзям',
+      inviteButton: 'Запросити',
+      invited: 'Запрошено',
+      sentToFriend: 'Запрошення надіслано {{name}}!',
     },
     stats: {
       total: 'Всього лобі',
@@ -193,6 +196,7 @@ const uk: Translation = {
       playerCountHelperRange: 'Ця гра підтримує {{min}}-{{max}} гравців',
       playerCountHelper: 'Ця гра вимагає рівно {{count}} гравця',
       playerCountHelper_other: 'Ця гра підтримує {{min}}-{{max}} гравців',
+      bestOf: 'До перемоги в',
       roundsToPlay: 'Кількість раундів',
       roundsHelper: 'Оберіть фіксовану кількість раундів або нескінченний режим',
       unlimitedRounds: 'Без обмежень',
@@ -640,6 +644,8 @@ const uk: Translation = {
         playerTurn: 'Хід {{player}}',
         moveNum: '· хід {{num}}',
         roundOver: 'Раунд завершено',
+        seriesComplete: 'Серію завершено!',
+        returningToLobby: 'Повернення до лобі…',
         playerWins: '{{player}} перемагає!',
         cleanRun: 'Чиста перемога.',
         itsADraw: 'Нічия',
@@ -1793,6 +1799,11 @@ const uk: Translation = {
       emailVerificationRequired: 'Потрібна верифікація електронної пошти',
       emailVerificationRequiredDesc: 'Будь ласка, підтвердіть вашу електронну пошту, щоб отримати доступ до коду друга та зв\'язатися з друзями.',
       verifyEmail: 'Підтвердити пошту',
+      presence: {
+        inGame: 'У грі',
+        inLobby: 'У лобі',
+        online: 'Онлайн',
+      },
       errors: {
         loadFailed: 'Не вдалося завантажити друзів',
         usernameRequired: 'Ім\'я користувача обов\'язкове',

@@ -1190,6 +1190,7 @@ export default function ProfilePage() {
       }
 
       setAccountPreferences(nextPreferences)
+      window.dispatchEvent(new CustomEvent('boardly:account-preferences-updated', { detail: nextPreferences }))
       setAccountPreferencesSaving(true)
 
       try {
@@ -1204,6 +1205,7 @@ export default function ProfilePage() {
         }
       } catch {
         setAccountPreferences(previousPreferences)
+        window.dispatchEvent(new CustomEvent('boardly:account-preferences-updated', { detail: previousPreferences }))
         showToast.error('profile.settings.error')
       } finally {
         setAccountPreferencesSaving(false)

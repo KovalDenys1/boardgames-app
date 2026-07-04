@@ -8,6 +8,13 @@ import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
 import { buildPublicProfilePath, extractPublicProfileId } from '@/lib/public-profile'
+import {
+  useOnlinePresence,
+  mergeFriendPresence,
+  sortFriendsByPresence,
+  getFriendPresenceLabel,
+  type FriendPresence,
+} from '@/hooks/useFriendPresence'
 
 interface Friend {
   id: string
@@ -18,7 +25,7 @@ interface Friend {
   friendshipId: string
   friendsSince: string
   isPremium?: boolean
-  presence?: 'offline' | 'online' | 'in_lobby' | 'in_game'
+  presence?: FriendPresence
   statistics?: {
     totalGames: number
     totalWins: number
@@ -203,6 +210,7 @@ export default function Friends() {
   const { t } = useTranslation()
   const { data: session, status } = useSession()
   const router = useRouter()
+  const onlineUserIds = useOnlinePresence()
   const [activeTab, setActiveTab] = useState<TabType>('friends')
   const [friends, setFriends] = useState<Friend[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -548,16 +556,8 @@ export default function Friends() {
     })
   }
 
-  const resolvePresence = (friend: Friend): 'offline' | 'online' | 'in_lobby' | 'in_game' => {
-    return friend.presence || 'offline'
-  }
-
-  const presencePriority: Record<'offline' | 'online' | 'in_lobby' | 'in_game', number> = {
-    in_game: 0,
-    in_lobby: 1,
-    online: 2,
-    offline: 3,
-  }
+  const resolvePresence = (friend: Friend): FriendPresence =>
+    mergeFriendPresence(friend.presence, onlineUserIds.has(friend.id))
 
   const openFriendPublicProfile = useCallback(
     (friend: Friend) => {
@@ -758,27 +758,23 @@ export default function Friends() {
             })
           ) : (
             <div className="grid gap-4">
-              {[...friends]
-                .sort((a, b) => {
-                  const aPresence = resolvePresence(a)
-                  const bPresence = resolvePresence(b)
-                  const priorityDiff = presencePriority[aPresence] - presencePriority[bPresence]
-                  if (priorityDiff !== 0) return priorityDiff
-                  const aName = a.username ?? ''
-                  const bName = b.username ?? ''
-                  return aName.localeCompare(bName)
-                })
+              {sortFriendsByPresence(friends, resolvePresence, (friend) => friend.username ?? '')
                 .map((friend) => {
                   const presence = resolvePresence(friend)
                   const isOnline = presence !== 'offline'
+                  const presenceBadgeLabel = getFriendPresenceLabel(presence, t)
                   const presenceBadge =
-                    presence === 'in_game'
-                      ? { label: 'In game', className: 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav' }
-                      : presence === 'in_lobby'
-                        ? { label: 'In lobby', className: 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun' }
-                        : presence === 'online'
-                          ? { label: 'Online', className: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint' }
-                          : null
+                    presenceBadgeLabel === null
+                      ? null
+                      : {
+                          label: presenceBadgeLabel,
+                          className:
+                            presence === 'in_game'
+                              ? 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
+                              : presence === 'in_lobby'
+                                ? 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun'
+                                : 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
+                        }
                   const presenceStripClassName =
                     presence === 'in_game'
                       ? 'bg-bd-lav'

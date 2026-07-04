@@ -10,9 +10,9 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
-import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { getGameMetadata } from '@/lib/game-catalog'
+import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -723,6 +723,21 @@ export async function POST(
         })
       }
     })
+
+    maybeAutoTransitionCompletedSeries(
+      gameEngine,
+      game.lobby.gameType,
+      authoritativeState.status,
+      {
+        lobbyId: game.lobby.id,
+        lobbyCode: game.lobby.code,
+        gameType: game.lobby.gameType,
+        players: gamePlayers,
+      },
+      (err) => {
+        log.error('Failed to auto-transition completed tic-tac-toe series', err, { gameId })
+      }
+    )
 
     const response = {
       game: {

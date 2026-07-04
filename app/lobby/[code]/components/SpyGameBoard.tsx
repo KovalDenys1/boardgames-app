@@ -68,6 +68,7 @@ interface SpyGameBoardProps {
   onBackToLobby?: () => void
   onLeave?: () => void
   registerUrl?: string
+  isSpectator?: boolean
 }
 
 function computeVoteLeader(votes: Record<string, string>): string {
@@ -110,6 +111,7 @@ export default function SpyGameBoard({
   onBackToLobby,
   onLeave,
   registerUrl = '/auth/register',
+  isSpectator = false,
 }: SpyGameBoardProps) {
   const { t } = useTranslation()
   const showActionError = React.useCallback((message: string) => {
@@ -327,13 +329,15 @@ export default function SpyGameBoard({
   }, [guessLocation, roleInfo])
 
   React.useEffect(() => {
+    if (isSpectator) return
     if (!currentUserId) return
     if (phase === SpyGamePhase.WAITING) return
 
     void fetchRoleInfo()
-  }, [currentUserId, fetchRoleInfo, phase, state.updatedAt])
+  }, [currentUserId, fetchRoleInfo, isSpectator, phase, state.updatedAt])
 
   React.useEffect(() => {
+    if (isSpectator) return
     if (!isCreator || phase !== SpyGamePhase.WAITING) return
 
     const key = `${gameId}:${String(state.updatedAt || '')}`
@@ -341,7 +345,7 @@ export default function SpyGameBoard({
     autoInitKeyRef.current = key
 
     void initializeRound({ silent: true })
-  }, [gameId, initializeRound, isCreator, phase, state.updatedAt])
+  }, [gameId, initializeRound, isCreator, isSpectator, phase, state.updatedAt])
 
   React.useEffect(() => {
     const resolveRemaining = () => {
@@ -388,7 +392,7 @@ export default function SpyGameBoard({
               >
                 {t('spy.refresh')}
               </button>
-              {onLeave && phase !== SpyGamePhase.RESULTS && (
+              {onLeave && phase !== SpyGamePhase.RESULTS && !isSpectator && (
                 <button
                   type="button"
                   onClick={onLeave}
@@ -428,11 +432,13 @@ export default function SpyGameBoard({
             <p className="bd-kicker">{t('spy.phases.waiting')}</p>
             <h3 className="mt-2 text-2xl font-black text-[var(--bd-ink)]">{t('spy.gameTitle')}</h3>
             <p className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
-              {isCreator
-                ? t('spy.initializingRound')
-                : t('spy.waitingForCreator')}
+              {isSpectator
+                ? t('spy.waitingForCreator')
+                : isCreator
+                  ? t('spy.initializingRound')
+                  : t('spy.waitingForCreator')}
             </p>
-            {isCreator && (
+            {isCreator && !isSpectator && (
               <button
                 type="button"
                 disabled={isActionLoading}
@@ -445,7 +451,7 @@ export default function SpyGameBoard({
           </div>
         )}
 
-        {phase === SpyGamePhase.ROLE_REVEAL && roleInfo && (
+        {phase === SpyGamePhase.ROLE_REVEAL && !isSpectator && roleInfo && (
           <SpyRoleReveal
             role={roleInfo.role}
             location={roleInfo.location}
@@ -458,9 +464,13 @@ export default function SpyGameBoard({
           />
         )}
 
-        {phase === SpyGamePhase.ROLE_REVEAL && !roleInfo && (
+        {phase === SpyGamePhase.ROLE_REVEAL && (isSpectator || !roleInfo) && (
           <div className="spy-panel p-6 text-center">
-            <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">{isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}</p>
+            <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">
+              {isSpectator
+                ? `${playersReady.length}/${normalizedPlayers.length} ${t('spy.phases.roleReveal').toLowerCase()}`
+                : isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}
+            </p>
           </div>
         )}
 
@@ -480,7 +490,7 @@ export default function SpyGameBoard({
                   <span className="spy-timer-pill">{t('spy.timeRemaining', { time: formattedTime })}</span>
                 </div>
 
-                {isMyQuestionTurn && !data.currentTargetId && (
+                {isMyQuestionTurn && !data.currentTargetId && !isSpectator && (
                   <div className="mt-5 space-y-3">
                     <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.targetPlayer')}</label>
                     <div className="relative">
@@ -536,7 +546,7 @@ export default function SpyGameBoard({
                   </div>
                 )}
 
-                {shouldAnswerNow && (
+                {shouldAnswerNow && !isSpectator && (
                   <div className="mt-5 space-y-3">
                     <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-soft)]">
                       <strong className="text-[var(--bd-ink)]">{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
@@ -563,7 +573,7 @@ export default function SpyGameBoard({
                   </div>
                 )}
 
-                {!isMyQuestionTurn && !shouldAnswerNow && (
+                {(!isMyQuestionTurn || isSpectator) && !shouldAnswerNow && (
                   <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
                     {currentQuestioner
                       ? t('spy.decidingQuestion', { player: currentQuestioner.name })
@@ -572,14 +582,14 @@ export default function SpyGameBoard({
                   </div>
                 )}
 
-                {isMyQuestionTurn && data.currentTargetId && (
+                {isMyQuestionTurn && data.currentTargetId && !isSpectator && (
                   <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
                     {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
                   </div>
                 )}
 
 
-                {isCreator && (
+                {isCreator && !isSpectator && (
                   <div className="mt-4">
                     <button
                       type="button"
@@ -613,7 +623,7 @@ export default function SpyGameBoard({
             </div>
 
             <aside className="space-y-4">
-              {roleInfo && (
+              {roleInfo && !isSpectator && (
                 <section className="spy-panel p-4">
                   <p className="bd-kicker">{t('spy.yourRole')}</p>
                   <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
@@ -714,7 +724,7 @@ export default function SpyGameBoard({
           </div>
         )}
 
-        {phase === SpyGamePhase.VOTING && currentUserId && (
+        {phase === SpyGamePhase.VOTING && currentUserId && !isSpectator && (
           <SpyVoting
             players={normalizedPlayers}
             currentUserId={currentUserId}
@@ -723,6 +733,15 @@ export default function SpyGameBoard({
             votesSubmitted={votesSubmitted}
             timeRemaining={timeRemaining}
           />
+        )}
+
+        {phase === SpyGamePhase.VOTING && isSpectator && (
+          <div className="spy-panel p-5 text-center">
+            <p className="bd-kicker">{t('spy.phases.voting')}</p>
+            <p className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
+              {votesSubmitted}/{normalizedPlayers.length} {t('spy.phases.voting').toLowerCase()}
+            </p>
+          </div>
         )}
 
         {phase === SpyGamePhase.RESULTS && (
@@ -737,16 +756,16 @@ export default function SpyGameBoard({
             currentRound={data.currentRound || 1}
             totalRounds={data.totalRounds || 3}
             onNextRound={
-              isCreator && (data.currentRound || 1) < (data.totalRounds || 3)
+              !isSpectator && isCreator && (data.currentRound || 1) < (data.totalRounds || 3)
                 ? () => void initializeRound()
                 : undefined
             }
-            onPlayAgain={onPlayAgain}
-            isHost={isCreator}
-            onRequestRematch={onRequestRematch}
+            onPlayAgain={isSpectator ? undefined : onPlayAgain}
+            isHost={!isSpectator && isCreator}
+            onRequestRematch={isSpectator ? undefined : onRequestRematch}
             isRequestRematchPending={isRequestingRematch}
-            onBackToLobby={onBackToLobby}
-            isGuest={isGuest}
+            onBackToLobby={isSpectator ? undefined : onBackToLobby}
+            isGuest={isSpectator ? false : isGuest}
             registerUrl={registerUrl}
           />
         )}
