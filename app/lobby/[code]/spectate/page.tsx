@@ -14,7 +14,6 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 import type { GameState } from '@/lib/game-engine'
 import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { SPECTATOR_VIEWS } from './views'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
 const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false })
@@ -119,23 +118,15 @@ function SpectatorTopBar({
 }
 
 function ReadOnlySpectatorBoard({
-  gameType,
   parsedState,
-  players,
 }: {
-  gameType: string
   parsedState: Record<string, any> | null
-  players: GamePlayer[]
 }) {
   const { t } = useTranslation()
   if (!parsedState) {
     return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.gameUnavailable')}</div>
   }
-  const View = SPECTATOR_VIEWS[gameType]
-  if (!View) {
-    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.noViewForGame')}</div>
-  }
-  return <View state={parsedState} players={players} />
+  return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.noViewForGame')}</div>
 }
 
 export default function SpectatorLobbyPage() {
@@ -461,9 +452,11 @@ export default function SpectatorLobbyPage() {
     )
   }
 
+  const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
+  const activeGamePlayers = (Array.isArray(data.activeGame?.players) ? data.activeGame.players : []) as GamePlayer[]
+
   // ── Memory: real board component, same UI as players ────────────────────────
   if (data.lobby.gameType === 'memory') {
-    const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
     return (
       <>
         <SpectatorTopBar
@@ -477,7 +470,7 @@ export default function SpectatorLobbyPage() {
         <MemoryGameBoard
           gameId={data.activeGame?.id ?? ''}
           lobbyCode={code}
-          players={(Array.isArray(data.activeGame?.players) ? data.activeGame.players : []) as any}
+          players={activeGamePlayers}
           state={parsedState}
           currentUserId={spectatorUserId}
           turnTimerLimit={data.lobby.turnTimer ?? undefined}
@@ -489,7 +482,6 @@ export default function SpectatorLobbyPage() {
 
   // ── Guess the Spy: real board component, same UI as players ─────────────────
   if (data.lobby.gameType === 'guess_the_spy') {
-    const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
     return (
       <>
         <SpectatorTopBar
@@ -504,7 +496,7 @@ export default function SpectatorLobbyPage() {
           gameId={data.activeGame?.id ?? ''}
           lobbyCode={code}
           lobbyCreatorId={data.lobby.creatorId ?? null}
-          players={(Array.isArray(data.activeGame?.players) ? data.activeGame.players : []) as GamePlayer[]}
+          players={activeGamePlayers}
           state={(parsedState ?? { id: '', gameType: 'guess_the_spy', players: [], currentPlayerIndex: 0, status: 'playing', data: {}, createdAt: new Date(), updatedAt: new Date() }) as GameState<unknown>}
           currentUserId={spectatorUserId}
           isGuest={false}
@@ -520,7 +512,6 @@ export default function SpectatorLobbyPage() {
 
   // ── Yahtzee: real board + scorecard, same UI as players ─────────────────────
   if (data.lobby.gameType === 'yahtzee') {
-    const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
     const yahtzeeCurrentPlayerId = yahtzeeEngine?.getCurrentPlayer()?.id
     const yahtzeeScorecard = yahtzeeEngine && yahtzeeCurrentPlayerId
       ? yahtzeeEngine.getScorecard(yahtzeeCurrentPlayerId)
@@ -585,8 +576,8 @@ export default function SpectatorLobbyPage() {
     )
   }
 
-  // ── Legacy games (memory, yahtzee, spy): existing spectator view ────────────
-  const players = Array.isArray(data.activeGame?.players) ? data.activeGame.players : []
+  // ── Fallback: game types with no dedicated spectator board (e.g. experimental/in-development games) ──
+  const players = activeGamePlayers
   const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
 
   return (
@@ -645,11 +636,7 @@ export default function SpectatorLobbyPage() {
 
           {/* Game board */}
           <section className="bd-card overflow-hidden p-4 sm:p-6">
-            <ReadOnlySpectatorBoard
-              gameType={String(data.lobby.gameType || '')}
-              parsedState={parsedState}
-              players={players}
-            />
+            <ReadOnlySpectatorBoard parsedState={parsedState} />
           </section>
 
           {/* Sidebar */}

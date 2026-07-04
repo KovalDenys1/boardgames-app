@@ -1,9 +1,10 @@
 // @ts-nocheck
 
-import { transitionLobbyToWaitingRoom } from '@/lib/lobby-series-transition'
+import { transitionLobbyToWaitingRoom, maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
 import { prisma } from '@/lib/db'
 import { createGameEngine } from '@/lib/game-registry'
 import { broadcastToLobby } from '@/lib/supabase-server'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -95,5 +96,59 @@ describe('transitionLobbyToWaitingRoom', () => {
 
     const createManyArg = mockTx.players.createMany.mock.calls[0][0]
     expect(createManyArg.data).toEqual([])
+  })
+})
+
+describe('maybeAutoTransitionCompletedSeries', () => {
+  const mockTx = {
+    games: { create: jest.fn() },
+    players: { createMany: jest.fn() },
+  }
+  const baseParams = { lobbyId: 'lobby-1', lobbyCode: 'ABCD', gameType: 'tic_tac_toe', players: [] }
+
+  const makeEngine = (seriesComplete: boolean) => {
+    const engine = new TicTacToeGame('game-1', { maxPlayers: 2, minPlayers: 2, rules: { targetRounds: 3 } })
+    jest.spyOn(engine, 'isSeriesComplete').mockReturnValue(seriesComplete)
+    return engine
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(createGameEngine as jest.Mock).mockReturnValue({
+      getState: () => ({ id: 'temp', status: 'waiting', data: {} }),
+    })
+    ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => cb(mockTx))
+    mockTx.games.create.mockResolvedValue({ id: 'new-game-id' })
+    mockTx.players.createMany.mockResolvedValue({ count: 0 })
+    ;(prisma.lobbies.update as jest.Mock).mockResolvedValue({})
+    ;(broadcastToLobby as jest.Mock).mockResolvedValue(true)
+  })
+
+  it('triggers the transition once a tic-tac-toe series is complete on a finished game', () => {
+    maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'finished', baseParams, jest.fn())
+    expect(prisma.$transaction).toHaveBeenCalled()
+  })
+
+  it('does not trigger when the series is not yet complete', () => {
+    maybeAutoTransitionCompletedSeries(makeEngine(false), 'tic_tac_toe', 'finished', baseParams, jest.fn())
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('does not trigger for a non-tic-tac-toe game type', () => {
+    maybeAutoTransitionCompletedSeries(makeEngine(true), 'connect_four', 'finished', baseParams, jest.fn())
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('does not trigger when the game status is not finished', () => {
+    maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'playing', baseParams, jest.fn())
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('reports transition failures via onError instead of throwing', async () => {
+    ;(prisma.$transaction as jest.Mock).mockRejectedValueOnce(new Error('boom'))
+    const onError = jest.fn()
+    maybeAutoTransitionCompletedSeries(makeEngine(true), 'tic_tac_toe', 'finished', baseParams, onError)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(onError).toHaveBeenCalledWith(expect.any(Error))
   })
 })

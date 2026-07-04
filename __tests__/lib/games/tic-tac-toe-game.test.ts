@@ -612,6 +612,45 @@ describe('TicTacToeGame', () => {
                 expect(getGameData(bo5).match.roundsPlayed).toBe(3)
             })
 
+            it('does not end a best-of-4 series at 2-0 (majority of an even target is N/2 + 1, not N/2)', () => {
+                const bo4 = new TicTacToeGame('bo4-not-yet', {
+                    maxPlayers: 2,
+                    minPlayers: 2,
+                    rules: { targetRounds: 4 },
+                })
+                testPlayers.forEach(player => bo4.addPlayer(player))
+                bo4.startGame()
+
+                playRoundStarterWins(bo4) // round 1: X starts and wins -> X:1
+                playNextRound(bo4)
+                playRoundOtherWins(bo4) // round 2: O starts, X (other) wins -> X:2
+
+                expect(bo4.isSeriesComplete()).toBe(false)
+                expect(getGameData(bo4).match.roundsPlayed).toBe(2)
+
+                const nextRoundMove = { playerId: 'player-x', type: 'next-round', data: {}, timestamp: new Date() }
+                expect(bo4.validateMove(nextRoundMove)).toBe(true)
+            })
+
+            it('ends a best-of-4 series once one symbol reaches the true majority (3 wins)', () => {
+                const bo4 = new TicTacToeGame('bo4-sweep', {
+                    maxPlayers: 2,
+                    minPlayers: 2,
+                    rules: { targetRounds: 4 },
+                })
+                testPlayers.forEach(player => bo4.addPlayer(player))
+                bo4.startGame()
+
+                playRoundStarterWins(bo4) // round 1: X starts and wins -> X:1
+                playNextRound(bo4)
+                playRoundOtherWins(bo4) // round 2: O starts, X (other) wins -> X:2
+                playNextRound(bo4)
+                playRoundStarterWins(bo4) // round 3: X starts and wins -> X:3
+
+                expect(bo4.isSeriesComplete()).toBe(true)
+                expect(getGameData(bo4).match.roundsPlayed).toBe(3)
+            })
+
             it('does not early-stop a single-game match (targetRounds=1)', () => {
                 const single = new TicTacToeGame('single-game', {
                     maxPlayers: 2,

@@ -8,6 +8,7 @@ import {
   useOnlinePresence,
   mergeFriendPresence,
   sortFriendsByPresence,
+  getFriendPresenceLabel,
   type FriendPresence,
 } from '@/hooks/useFriendPresence'
 import LoadingSpinner from './LoadingSpinner'
@@ -97,7 +98,11 @@ export default function FriendsListModal({
   const resolvePresence = (friend: Friend): FriendPresence =>
     mergeFriendPresence(friend.presence, onlineUserIds.has(friend.id))
 
+  // Only ever called from the `mode === 'select-multi'` confirm button, which
+  // (per `mode`'s derivation below) only renders when `onSelect` is set — the
+  // `onInvite` (single-invite) mode uses `handleInviteSingle` instead.
   const handleInvite = async () => {
+    if (!onSelect) return
     if (selectedFriends.size === 0) {
       showToast.error('lobby.invite.selectFriends')
       return
@@ -106,25 +111,7 @@ export default function FriendsListModal({
     setInviting(true)
     try {
       const selectedIds = Array.from(selectedFriends)
-
-      if (onSelect) {
-        await onSelect(selectedIds)
-        setSelectedFriends(new Set())
-        onClose()
-        return
-      }
-
-      if (!onInvite) {
-        throw new Error('Invite handler is not configured')
-      }
-
-      const result = await onInvite(Array.from(selectedFriends))
-      if (result.skippedCount > 0) {
-        showToast.info('toast.inviteSkippedUsers', undefined, { count: result.skippedCount })
-      }
-      if (result.invitedCount > 0) {
-        showToast.success('lobby.invite.sent', undefined, { count: result.invitedCount })
-      }
+      await onSelect(selectedIds)
       setSelectedFriends(new Set())
       onClose()
     } catch (error) {
@@ -175,12 +162,7 @@ export default function FriendsListModal({
 
   if (!isOpen) return null
 
-  const presenceLabel = (presence: FriendPresence): string | null => {
-    if (presence === 'in_game') return t('profile.friends.presence.inGame')
-    if (presence === 'in_lobby') return t('profile.friends.presence.inLobby')
-    if (presence === 'online') return t('profile.friends.presence.online')
-    return null
-  }
+  const presenceLabel = (presence: FriendPresence): string | null => getFriendPresenceLabel(presence, t)
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

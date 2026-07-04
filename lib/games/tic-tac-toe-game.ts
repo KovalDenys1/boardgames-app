@@ -24,7 +24,7 @@ export function isTicTacToeMatchComplete(match: TicTacToeMatchState): boolean {
   if (match.roundsPlayed >= match.targetRounds) {
     return true
   }
-  const winsNeeded = Math.ceil(match.targetRounds / 2)
+  const winsNeeded = Math.floor(match.targetRounds / 2) + 1
   return match.winsBySymbol.X >= winsNeeded || match.winsBySymbol.O >= winsNeeded
 }
 

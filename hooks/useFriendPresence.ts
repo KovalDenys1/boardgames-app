@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 export type FriendPresence = 'offline' | 'online' | 'in_lobby' | 'in_game'
 
@@ -121,9 +122,32 @@ export function useAnnouncePresence(userId: string | undefined, enabled: boolean
 
     return () => {
       active = false
+      // Explicit untrack (not just ref-count teardown): the shared channel
+      // often stays open because other read-only consumers (useOnlinePresence)
+      // are still mounted, so releaseChannel() alone would leave this user's
+      // presence entry visible even after they disable "Show online status"
+      // or this component unmounts.
+      void channel.untrack()
       releaseChannel()
     }
   }, [userId, enabled])
+}
+
+/** Translated label for a friend's presence status, or `null` for offline (no badge shown). */
+export function getFriendPresenceLabel(
+  presence: FriendPresence,
+  t: (key: TranslationKeys, options?: string | Record<string, unknown>) => string
+): string | null {
+  switch (presence) {
+    case 'in_game':
+      return t('profile.friends.presence.inGame')
+    case 'in_lobby':
+      return t('profile.friends.presence.inLobby')
+    case 'online':
+      return t('profile.friends.presence.online')
+    default:
+      return null
+  }
 }
 
 /** Combine server-derived presence (in_game/in_lobby/offline) with the live online-channel signal. */

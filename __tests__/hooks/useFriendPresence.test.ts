@@ -36,6 +36,7 @@ function createFakeSupabaseClient() {
         return chan
       },
       track: jest.fn().mockResolvedValue(undefined),
+      untrack: jest.fn().mockResolvedValue(undefined),
       presenceState: () => ({}),
       _fireSync() {
         listeners.forEach((l) => l())
@@ -107,6 +108,37 @@ describe('useFriendPresence shared channel', () => {
     })
     const chan = fakeClient.channel('online-users')
     expect(chan.track).not.toHaveBeenCalled()
+  })
+
+  it('untracks presence when the announcer disables mid-session, even while another consumer keeps the channel alive', async () => {
+    renderHook(() => useOnlinePresence()) // keeps refCount > 0 throughout
+    const announcer = renderHook(
+      ({ enabled }) => useAnnouncePresence('user-1', enabled),
+      { initialProps: { enabled: true } }
+    )
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const chan = fakeClient.channel('online-users')
+    expect(chan.track).toHaveBeenCalledWith({ userId: 'user-1' })
+
+    announcer.rerender({ enabled: false })
+
+    expect(chan.untrack).toHaveBeenCalledTimes(1)
+    // The channel itself must survive — useOnlinePresence is still mounted.
+    expect(fakeClient.removeChannel).not.toHaveBeenCalled()
+  })
+
+  it('untracks presence on unmount', async () => {
+    const announcer = renderHook(() => useAnnouncePresence('user-1', true))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const chan = fakeClient.channel('online-users')
+
+    announcer.unmount()
+
+    expect(chan.untrack).toHaveBeenCalledTimes(1)
   })
 
   it('removes the channel only after the last consumer unmounts (deferred teardown)', () => {

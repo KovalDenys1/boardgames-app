@@ -32,6 +32,19 @@ export function PresenceTracker() {
     }
   }, [userId])
 
+  // Picks up "Show online status" toggled at runtime on /profile — without
+  // this, the preference fetched once above only takes effect on reload.
+  useEffect(() => {
+    const handlePreferencesUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ showOnlineStatus?: boolean }>).detail
+      if (typeof detail?.showOnlineStatus === 'boolean') {
+        setShowOnlineStatus(detail.showOnlineStatus)
+      }
+    }
+    window.addEventListener('boardly:account-preferences-updated', handlePreferencesUpdated)
+    return () => window.removeEventListener('boardly:account-preferences-updated', handlePreferencesUpdated)
+  }, [])
+
   useAnnouncePresence(userId, showOnlineStatus)
 
   return null

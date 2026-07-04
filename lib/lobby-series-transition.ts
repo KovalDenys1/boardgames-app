@@ -3,6 +3,8 @@ import type { GameType } from '@/prisma/client'
 import { createGameEngine } from '@/lib/game-registry'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { broadcastToLobby } from '@/lib/supabase-server'
+import type { GameEngine } from '@/lib/game-engine'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 interface TransitionPlayer {
   userId: string
@@ -63,4 +65,27 @@ export async function transitionLobbyToWaitingRoom(params: TransitionParams): Pr
   await broadcastToLobby(lobbyCode, 'game-reset', { lobbyCode, gameId: newGame.id })
 
   return { gameId: newGame.id }
+}
+
+/**
+ * Fire-and-forget auto-transition trigger, shared by the human-move and
+ * bot-move processing routes: once a tic-tac-toe series is mathematically
+ * decided, immediately reset the lobby to a fresh waiting room instead of
+ * requiring a manual "Return to Lobby" click.
+ */
+export function maybeAutoTransitionCompletedSeries(
+  gameEngine: GameEngine,
+  gameType: string,
+  gameStatus: string,
+  transitionParams: TransitionParams,
+  onError: (error: Error) => void
+): void {
+  if (
+    gameType === 'tic_tac_toe' &&
+    gameStatus === 'finished' &&
+    gameEngine instanceof TicTacToeGame &&
+    gameEngine.isSeriesComplete()
+  ) {
+    void transitionLobbyToWaitingRoom(transitionParams).catch(onError)
+  }
 }

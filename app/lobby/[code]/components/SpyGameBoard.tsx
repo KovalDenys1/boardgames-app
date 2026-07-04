@@ -337,6 +337,7 @@ export default function SpyGameBoard({
   }, [currentUserId, fetchRoleInfo, isSpectator, phase, state.updatedAt])
 
   React.useEffect(() => {
+    if (isSpectator) return
     if (!isCreator || phase !== SpyGamePhase.WAITING) return
 
     const key = `${gameId}:${String(state.updatedAt || '')}`
@@ -344,7 +345,7 @@ export default function SpyGameBoard({
     autoInitKeyRef.current = key
 
     void initializeRound({ silent: true })
-  }, [gameId, initializeRound, isCreator, phase, state.updatedAt])
+  }, [gameId, initializeRound, isCreator, isSpectator, phase, state.updatedAt])
 
   React.useEffect(() => {
     const resolveRemaining = () => {

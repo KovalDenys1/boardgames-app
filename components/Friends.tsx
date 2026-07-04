@@ -12,6 +12,7 @@ import {
   useOnlinePresence,
   mergeFriendPresence,
   sortFriendsByPresence,
+  getFriendPresenceLabel,
   type FriendPresence,
 } from '@/hooks/useFriendPresence'
 
@@ -761,14 +762,19 @@ export default function Friends() {
                 .map((friend) => {
                   const presence = resolvePresence(friend)
                   const isOnline = presence !== 'offline'
+                  const presenceBadgeLabel = getFriendPresenceLabel(presence, t)
                   const presenceBadge =
-                    presence === 'in_game'
-                      ? { label: t('profile.friends.presence.inGame'), className: 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav' }
-                      : presence === 'in_lobby'
-                        ? { label: t('profile.friends.presence.inLobby'), className: 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun' }
-                        : presence === 'online'
-                          ? { label: t('profile.friends.presence.online'), className: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint' }
-                          : null
+                    presenceBadgeLabel === null
+                      ? null
+                      : {
+                          label: presenceBadgeLabel,
+                          className:
+                            presence === 'in_game'
+                              ? 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
+                              : presence === 'in_lobby'
+                                ? 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun'
+                                : 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
+                        }
                   const presenceStripClassName =
                     presence === 'in_game'
                       ? 'bg-bd-lav'
