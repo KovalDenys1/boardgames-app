@@ -1,3 +1,5 @@
+import { sanitizeRpsStateForBroadcast } from '@/lib/games/rock-paper-scissors-game'
+
 type JsonObject = Record<string, unknown>
 
 function parseGameState(raw: unknown): unknown {
@@ -68,6 +70,11 @@ export function sanitizeGameStateForSpectator(
   // Reveal spy identity once the game is finished — spectators can discuss who was the spy
   if (gameType === 'guess_the_spy' && gameStatus !== 'finished') {
     return scrubSpyIdentity(parsed)
+  }
+
+  // Spectators never own a choice, so always redact a still-pending one (no viewer exception)
+  if (gameType === 'rock_paper_scissors' && typeof parsed === 'object' && parsed !== null) {
+    return sanitizeRpsStateForBroadcast(parsed as { data?: unknown; status?: string })
   }
 
   return parsed

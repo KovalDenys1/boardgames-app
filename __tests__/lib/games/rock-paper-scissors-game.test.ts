@@ -2,6 +2,7 @@ import {
   RockPaperScissorsGame,
   RockPaperScissorsGameData,
   RPSChoice,
+  sanitizeRpsStateForBroadcast,
 } from '@/lib/games/rock-paper-scissors-game'
 import { Move } from '@/lib/game-engine'
 
@@ -231,6 +232,60 @@ describe('RockPaperScissorsGame', () => {
       expect(dataOfState(restoredState).scores).toEqual(dataOfState(originalState).scores)
       expect(dataOfState(restoredState).rounds).toEqual(dataOfState(originalState).rounds)
       expect(dataOfState(restoredState).gameWinner).toEqual(dataOfState(originalState).gameWinner)
+    })
+  })
+
+  describe('sanitizeRpsStateForBroadcast (#652 choice-leak fix)', () => {
+    it('hides the first submitter\'s choice from other viewers while the opponent has not yet moved', () => {
+      game.startGame()
+      submitChoice(game, 'player1', 'rock')
+
+      const sanitized = sanitizeRpsStateForBroadcast(game.getState()) as ReturnType<RockPaperScissorsGame['getState']>
+      expect(dataOfState(sanitized).playerChoices.player1).toBeNull()
+      expect(dataOfState(sanitized).playerChoices.player2).toBeNull()
+      // playersReady (the safe "submitted" signal) is untouched
+      expect(dataOfState(sanitized).playersReady).toEqual(['player1'])
+    })
+
+    it('keeps the submitting viewer\'s own pending choice visible to themselves', () => {
+      game.startGame()
+      submitChoice(game, 'player1', 'rock')
+
+      const sanitized = sanitizeRpsStateForBroadcast(
+        game.getState(),
+        'player1'
+      ) as ReturnType<RockPaperScissorsGame['getState']>
+      expect(dataOfState(sanitized).playerChoices.player1).toBe('rock')
+      expect(dataOfState(sanitized).playerChoices.player2).toBeNull()
+    })
+
+    it('does not redact once both players have submitted and the round resolved', () => {
+      game.startGame()
+      submitChoice(game, 'player1', 'rock')
+      submitChoice(game, 'player2', 'scissors')
+
+      const state = game.getState()
+      const sanitized = sanitizeRpsStateForBroadcast(state) as ReturnType<RockPaperScissorsGame['getState']>
+      // Round resolved and reset for the next round — nothing sensitive left to hide
+      expect(sanitized).toEqual(state)
+    })
+
+    it('does not redact the final round once the game has finished', () => {
+      game.startGame()
+      submitChoice(game, 'player1', 'rock')
+      submitChoice(game, 'player2', 'scissors')
+      submitChoice(game, 'player1', 'paper')
+      submitChoice(game, 'player2', 'rock')
+
+      const state = game.getState()
+      expect(state.status).toBe('finished')
+      const sanitized = sanitizeRpsStateForBroadcast(state) as ReturnType<RockPaperScissorsGame['getState']>
+      expect(sanitized).toEqual(state)
+    })
+
+    it('passes through untouched state with no data', () => {
+      const bare = { status: 'waiting' }
+      expect(sanitizeRpsStateForBroadcast(bare)).toBe(bare)
     })
   })
 

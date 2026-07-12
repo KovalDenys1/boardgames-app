@@ -12,6 +12,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { type BaseBotActionEvent } from '@/lib/bots/core/bot-types'
 import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
+import { sanitizeRpsStateForBroadcast } from '@/lib/games/rock-paper-scissors-game'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -513,9 +514,12 @@ export async function POST(
             log.info('Player scores updated')
 
           const currentState = gameEngine.getState()
+          const broadcastState = gameType === 'rock_paper_scissors'
+            ? sanitizeRpsStateForBroadcast(currentState)
+            : currentState
           void broadcastToLobby(resolvedLobbyCode, 'game-update', {
             action: 'state-change',
-            payload: currentState,
+            payload: broadcastState,
           })
 
           maybeAutoTransitionCompletedSeries(

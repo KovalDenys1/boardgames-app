@@ -11,6 +11,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
+import { sanitizeRpsStateForBroadcast } from '@/lib/games/rock-paper-scissors-game'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
 
@@ -708,7 +709,16 @@ export async function POST(
 
     const broadcastState = game.lobby.gameType === 'guess_the_spy'
       ? sanitizeSpyStateForBroadcast(authoritativeState)
-      : authoritativeState
+      : game.lobby.gameType === 'rock_paper_scissors'
+        ? sanitizeRpsStateForBroadcast(authoritativeState)
+        : authoritativeState
+
+    // RPS's sanitizer is viewer-aware: the direct response to the submitting
+    // player keeps their own just-submitted choice visible, while the shared
+    // broadcast above hides it from the opponent until both are locked in.
+    const responseState = game.lobby.gameType === 'rock_paper_scissors'
+      ? sanitizeRpsStateForBroadcast(authoritativeState, userId)
+      : broadcastState
 
     void replaySnapshotPromise
     void broadcastToLobby(game.lobby.code, 'game-update', {
@@ -743,7 +753,7 @@ export async function POST(
       game: {
         id: game.id,
         status: authoritativeState.status,
-        state: broadcastState,
+        state: responseState,
         players: enginePlayers.map((player: Player) => {
           const dbPlayer = dbPlayersByUserId.get(player.id)
           return {
