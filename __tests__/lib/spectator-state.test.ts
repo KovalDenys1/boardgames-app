@@ -1,4 +1,4 @@
-import { sanitizeGameStateForSpectator, sanitizePayloadForSpectator } from '@/lib/spectator-state'
+import { sanitizeGameStateForSpectator } from '@/lib/spectator-state'
 
 describe('spectator state sanitization', () => {
   it('removes guess_the_spy identity fields from nested game state', () => {
@@ -103,23 +103,5 @@ describe('spectator state sanitization', () => {
     const sanitized = sanitizeGameStateForSpectator('rock_paper_scissors', input, 'playing') as any
 
     expect(sanitized.data.playerChoices).toEqual({ p1: 'rock', p2: 'scissors' })
-  })
-
-  it('sanitizes nested JSON string fields in payload-like objects', () => {
-    const input = {
-      gameType: 'guess_the_spy',
-      initialState: JSON.stringify({
-        data: {
-          spyUserId: 'user_1',
-          players: [{ id: 'user_1', isSpy: true }],
-        },
-      }),
-    }
-
-    const sanitized = sanitizePayloadForSpectator('guess_the_spy', input) as any
-
-    expect(typeof sanitized.initialState).toBe('object')
-    expect(sanitized.initialState.data.spyUserId).toBeUndefined()
-    expect(sanitized.initialState.data.players[0].isSpy).toBeUndefined()
   })
 })

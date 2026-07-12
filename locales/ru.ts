@@ -2093,6 +2093,7 @@ const ru = {
   spectate: {
     watchingCount: '👁 Наблюдение · {{count}} зрителей',
     joinAsPlayer: 'Войти как игрок',
+    joinNextGame: 'Войти в следующую игру',
     joining: 'Вхожу...',
     backToLobbies: '← Лобби',
     gameUnavailable: 'Состояние игры недоступно',

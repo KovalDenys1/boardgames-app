@@ -2093,6 +2093,7 @@ const no = {
   spectate: {
     watchingCount: '👁 Ser på · {{count}} ser',
     joinAsPlayer: 'Bli med som spiller',
+    joinNextGame: 'Bli med i neste spill',
     joining: 'Blir med...',
     backToLobbies: '← Lobbier',
     gameUnavailable: 'Spilltilstand ikke tilgjengelig',

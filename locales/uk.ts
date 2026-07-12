@@ -2107,6 +2107,7 @@ const uk: Translation = {
   spectate: {
     watchingCount: '👁 Спостереження · {{count}} глядачів',
     joinAsPlayer: 'Приєднатись як гравець',
+    joinNextGame: 'Приєднатись до наступної гри',
     joining: 'Приєднуюсь...',
     backToLobbies: '← Лобі',
     gameUnavailable: 'Стан гри недоступний',

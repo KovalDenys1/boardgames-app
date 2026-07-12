@@ -2105,6 +2105,7 @@ const en = {
   spectate: {
     watchingCount: '👁 Spectating · {{count}} watching',
     joinAsPlayer: 'Join as Player',
+    joinNextGame: 'Join Next Game',
     joining: 'Joining...',
     backToLobbies: '← Lobbies',
     gameUnavailable: 'Game state unavailable',
