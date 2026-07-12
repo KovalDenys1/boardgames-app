@@ -620,8 +620,6 @@ html.dark {
 }
 
 :root {
-  --foreground-rgb: 31, 27, 22;
-  --background-rgb: 251, 246, 238;
   --primary-500: 59, 130, 246;
   --primary-600: 37, 99, 235;
   --primary-700: 29, 78, 216;
@@ -634,8 +632,6 @@ html.dark {
 }
 
 html.dark {
-  --foreground-rgb: 255, 255, 255;
-  --background-rgb: 18, 18, 18;
   color-scheme: dark;
 }
 
@@ -646,8 +642,8 @@ html.dark {
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  color: var(--bd-ink);
+  background: var(--bd-bg);
 }
 
 /* Accessibility: Respect user's motion preference */
