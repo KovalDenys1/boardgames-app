@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -990,6 +990,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
     }, [localChat])
 
+    // Hoisted above the early returns below so this hook always runs, regardless
+    // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
+    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as ConnectFourGameData).moveHistory : undefined
+    const reversedMoveHistory = useMemo(
+        () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
+        [earlyMoveHistory]
+    )
+
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
@@ -1171,7 +1179,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div className="ttt-history-list">
                 {moveHistory.length === 0
                     ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.connect_four.game.noMovesYet')}</div>
-                    : moveHistory.slice().reverse().map((m: ConnectFourMoveRecord, index) => (
+                    : reversedMoveHistory.map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}

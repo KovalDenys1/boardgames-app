@@ -2237,12 +2237,10 @@ const en = {
     startFailed: 'Failed to start guest mode',
   },
   maintenance: {
-    title: 'Site Maintenance',
     heading: 'We\'ll be back soon!',
     message: 'Boardly is currently undergoing scheduled maintenance to improve your gaming experience.',
     estimate: 'Estimated completion: within 24 hours',
     contact: 'Questions or concerns?',
-    github: 'Email support',
     apology: 'We apologize for any inconvenience.',
   },
   errorPage: {
@@ -2269,29 +2267,6 @@ const en = {
   },
   celebration: {
     scorePoints: '+{{count}} points',
-  },
-  showcase: {
-    title: 'Play Now — Free',
-    subtitle: 'No download. No account required.',
-    browseAll: 'Browse all games →',
-    games: {
-      yahtzee: {
-        description: 'Roll dice, score combinations, beat your friends.',
-        players: '1–4 players',
-      },
-      ticTacToe: {
-        description: 'Classic 3×3 strategy. Match mode available.',
-        players: '2 players',
-      },
-      memory: {
-        description: 'Flip cards, find pairs. Three difficulty levels.',
-        players: '2–4 players',
-      },
-      spy: {
-        description: 'One spy, one secret location. Can you find them?',
-        players: '3–10 players',
-      },
-    },
   },
   faq: {
     title: 'Frequently Asked Questions',
@@ -2327,9 +2302,6 @@ const en = {
       question: 'Is there anything to download or install?',
       answer: 'Nothing to download. Boardly runs entirely in your browser. Just open the site and start playing.',
     },
-  },
-  homeFooter: {
-    copyright: '© {{year}} Boardly. Built with Next.js, Supabase, and Prisma.',
   },
   footer: {
     tagline: 'Play board games online with friends in real-time. Free, no download required.',

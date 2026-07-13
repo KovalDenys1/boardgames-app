@@ -4,7 +4,6 @@
 
 // Core exports
 export { BaseBot } from './core/base-bot'
-export { UniversalBotExecutor } from './core/bot-executor'
 export { createBot, executeBotTurn, getAvailableDifficulties } from './core/bot-factory'
 export type {
     BaseBotActionEvent,

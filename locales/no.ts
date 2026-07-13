@@ -2225,12 +2225,10 @@ const no = {
     startFailed: 'Kunne ikke starte gjestemodus'
   },
   maintenance: {
-    title: 'Vedlikehold pågår',
     heading: 'Vi er snart tilbake!',
     message: 'Boardly er for øyeblikket utilgjengelig grunnet planlagt vedlikehold for å forbedre spillopplevelsen.',
     estimate: 'Estimert ferdig: innen 24 timer',
     contact: 'Spørsmål eller tilbakemeldinger?',
-    github: 'Send e-post',
     apology: 'Beklager ulempen.',
   },
   errorPage: {
@@ -2257,29 +2255,6 @@ const no = {
   },
   celebration: {
     scorePoints: '+{{count}} poeng',
-  },
-  showcase: {
-    title: 'Spill nå — Gratis',
-    subtitle: 'Ingen nedlasting. Ingen konto nødvendig.',
-    browseAll: 'Se alle spill →',
-    games: {
-      yahtzee: {
-        description: 'Kast terninger, samle kombinasjoner, slå vennene dine.',
-        players: '1–4 spillere',
-      },
-      ticTacToe: {
-        description: 'Klassisk 3×3-strategi. Kampusmodus tilgjengelig.',
-        players: '2 spillere',
-      },
-      memory: {
-        description: 'Snu kort, finn par. Tre vanskelighetsgrader.',
-        players: '2–4 spillere',
-      },
-      spy: {
-        description: 'Én spion, ett hemmelig sted. Kan du finne dem?',
-        players: '3–10 spillere',
-      },
-    },
   },
   faq: {
     title: 'Ofte stilte spørsmål',
@@ -2315,9 +2290,6 @@ const no = {
       question: 'Er det noe å laste ned eller installere?',
       answer: 'Ingenting å laste ned. Boardly kjører helt i nettleseren din. Bare åpne siden og begynn å spille.',
     },
-  },
-  homeFooter: {
-    copyright: '© {{year}} Boardly. Bygget med Next.js, Supabase og Prisma.',
   },
   footer: {
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',

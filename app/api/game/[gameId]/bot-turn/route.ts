@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine, hasBotSupport } from '@/lib/game-registry'
 import type { RegisteredGameType } from '@/lib/game-registry'
-import { Move } from '@/lib/game-engine'
+import { Move, hasScorecard } from '@/lib/game-engine'
 import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
@@ -413,10 +413,7 @@ export async function POST(
               })
             }
 
-            const getScorecard =
-              typeof (gameEngine as unknown as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
-                ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
-                : null
+            const getScorecard = hasScorecard(gameEngine) ? gameEngine.getScorecard.bind(gameEngine) : null
             const changedPlayerUpdates: Array<{
               id: string
               score: number
