@@ -140,7 +140,7 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
-      return this.resolveResponderId(move.playerId) !== null
+      return this.getOpponent(move.playerId) !== null
     }
 
     if (move.type === 'respond-undo') {
@@ -165,7 +165,7 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
-      return this.resolveResponderId(move.playerId) !== null
+      return this.getOpponent(move.playerId) !== null
     }
 
     if (move.type === 'respond-draw') {
@@ -262,7 +262,7 @@ export class TicTacToeGame extends GameEngine {
     }
 
     if (move.type === 'request-undo' || move.type === 'request-draw') {
-      const responderId = this.resolveResponderId(move.playerId)
+      const responderId = this.getOpponent(move.playerId)
       if (!responderId) {
         return
       }
@@ -504,11 +504,6 @@ export class TicTacToeGame extends GameEngine {
     if (this.state.players[1]) {
       this.state.players[1].score = match.winsBySymbol.O
     }
-  }
-
-  private resolveResponderId(requesterId: string): string | null {
-    const responder = this.state.players.find((player) => player.id !== requesterId)
-    return responder?.id ?? null
   }
 
   private captureSnapshot(gameData: TicTacToeGameData): TicTacToeUndoSnapshot {

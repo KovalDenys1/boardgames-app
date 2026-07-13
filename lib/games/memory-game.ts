@@ -227,11 +227,11 @@ export class MemoryGame extends GameEngine {
 
   checkWinCondition(): Player | null {
     const data = this.state.data as MemoryGameData
-    if (this.state.status !== 'finished' || !data.winnerId) {
+    if (this.state.status !== 'finished') {
       return null
     }
 
-    return this.state.players.find((player) => player.id === data.winnerId) || null
+    return this.resolvePlayerWinner(data.winnerId)
   }
 
   getGameRules(): string[] {

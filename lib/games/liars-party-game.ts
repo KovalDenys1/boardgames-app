@@ -1,4 +1,5 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
+import { resolveBoundedRuleNumber, getStringField } from './shared-helpers'
 
 export type LiarsPartyPhase = 'claim' | 'challenge' | 'reveal'
 export type LiarsPartyChallengeDecision = 'challenge' | 'believe'
@@ -185,7 +186,7 @@ export class LiarsPartyGame extends GameEngine {
         return false
       }
 
-      const claimText = this.getStringField(move.data, 'claim')
+      const claimText = getStringField(move.data, 'claim')
       const isBluff = move.data.isBluff
       if (typeof claimText !== 'string' || typeof isBluff !== 'boolean') {
         return false
@@ -206,7 +207,7 @@ export class LiarsPartyGame extends GameEngine {
         return false
       }
 
-      const decision = this.getStringField(move.data, 'decision')
+      const decision = getStringField(move.data, 'decision')
       return decision === 'challenge' || decision === 'believe'
     }
 
@@ -222,7 +223,7 @@ export class LiarsPartyGame extends GameEngine {
     const nowMs = Date.now()
 
     if (data.phase === 'claim' && move.type === 'submit-claim') {
-      const claimText = this.getStringField(move.data, 'claim')
+      const claimText = getStringField(move.data, 'claim')
       const isBluff = move.data.isBluff
       if (typeof claimText !== 'string' || typeof isBluff !== 'boolean') {
         return
@@ -245,7 +246,7 @@ export class LiarsPartyGame extends GameEngine {
     }
 
     if (data.phase === 'challenge' && move.type === 'submit-challenge') {
-      const decision = this.getStringField(move.data, 'decision')
+      const decision = getStringField(move.data, 'decision')
       if (decision !== 'challenge' && decision !== 'believe') {
         return
       }
@@ -276,11 +277,7 @@ export class LiarsPartyGame extends GameEngine {
     }
 
     const data = this.state.data as LiarsPartyGameData
-    if (!data.winnerId) {
-      return null
-    }
-
-    return this.state.players.find((player) => player.id === data.winnerId) || null
+    return this.resolvePlayerWinner(data.winnerId)
   }
 
   getGameRules(): string[] {
@@ -708,27 +705,19 @@ export class LiarsPartyGame extends GameEngine {
   }
 
   private resolveMaxRounds(): number {
-    const rawMaxRounds = (this.config.rules as { maxRounds?: unknown } | undefined)?.maxRounds
-    if (typeof rawMaxRounds === 'number' && Number.isFinite(rawMaxRounds) && rawMaxRounds > 0) {
-      return Math.min(MAX_MAX_ROUNDS, Math.max(MIN_MAX_ROUNDS, Math.floor(rawMaxRounds)))
-    }
-    return DEFAULT_MAX_ROUNDS
+    return resolveBoundedRuleNumber(this.config.rules, 'maxRounds', {
+      min: MIN_MAX_ROUNDS,
+      max: MAX_MAX_ROUNDS,
+      fallback: DEFAULT_MAX_ROUNDS,
+    })
   }
 
   private resolveEliminationThreshold(): number {
-    const rawThreshold = (this.config.rules as { eliminationStrikes?: unknown } | undefined)?.eliminationStrikes
-    if (typeof rawThreshold === 'number' && Number.isFinite(rawThreshold) && rawThreshold > 0) {
-      return Math.min(
-        MAX_ELIMINATION_THRESHOLD,
-        Math.max(MIN_ELIMINATION_THRESHOLD, Math.floor(rawThreshold))
-      )
-    }
-    return DEFAULT_ELIMINATION_THRESHOLD
-  }
-
-  private getStringField(data: Record<string, unknown>, key: string): string | null {
-    const value = data[key]
-    return typeof value === 'string' ? value : null
+    return resolveBoundedRuleNumber(this.config.rules, 'eliminationStrikes', {
+      min: MIN_ELIMINATION_THRESHOLD,
+      max: MAX_ELIMINATION_THRESHOLD,
+      fallback: DEFAULT_ELIMINATION_THRESHOLD,
+    })
   }
 
   private buildTimeoutFallbackClaim(playerId: string, round: number): string {
