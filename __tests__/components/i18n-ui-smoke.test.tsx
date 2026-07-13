@@ -1,5 +1,5 @@
 import { act, render, screen } from '@testing-library/react'
-import i18n from '@/i18n'
+import i18n, { changeLanguageLazy } from '@/i18n'
 import YahtzeeResults from '@/components/YahtzeeResults'
 import SpyResults from '@/components/SpyResults'
 
@@ -14,7 +14,7 @@ describe('i18n UI smoke checks', () => {
     'renders Yahtzee results actions in %s without English fallback text',
     async (locale) => {
       await act(async () => {
-        await i18n.changeLanguage(locale)
+        await changeLanguageLazy(locale)
       })
 
       render(
@@ -68,7 +68,7 @@ describe('i18n UI smoke checks', () => {
     'renders Spy results counters in %s without English hardcoded labels',
     async (locale) => {
       await act(async () => {
-        await i18n.changeLanguage(locale)
+        await changeLanguageLazy(locale)
       })
 
       render(

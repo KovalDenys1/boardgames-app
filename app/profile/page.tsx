@@ -23,6 +23,7 @@ import {
   normalizeAppearanceLocale,
   setStoredAppearanceLocale,
 } from '@/lib/appearance-preferences'
+import { changeLanguageLazy, type Locale } from '@/i18n'
 
 interface LinkedAccount {
   provider: string
@@ -1071,7 +1072,7 @@ export default function ProfilePage() {
       setSettings((prev) => ({ ...prev, language: normalizedLanguage }))
 
       if (normalizeAppearanceLocale(i18n.language) !== normalizedLanguage) {
-        void i18n.changeLanguage(normalizedLanguage)
+        void changeLanguageLazy(normalizedLanguage as Locale)
       }
 
       return

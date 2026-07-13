@@ -2,9 +2,15 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
-// Import translation files from TypeScript modules
-import { locales, defaultLocale, availableLocales } from './locales'
-import type { Locale } from './locales'
+// Only 'en' loads eagerly: the server always renders <html lang="en"> (see
+// app/layout.tsx) and htmlTag detection keeps the first client render aligned
+// with that SSR output, so 'en' resources are the only ones ever needed
+// before hydration. The other 3 locales (~340KB combined) are fetched on
+// demand by changeLanguageLazy, below, the moment a user's stored preference
+// actually needs them.
+import en from './locales/en'
+import { defaultLocale, availableLocales } from './locales/meta'
+import type { Locale } from './locales/meta'
 
 type TranslationRecord = Record<string, unknown>
 
@@ -38,27 +44,9 @@ function deepMergeWithFallback(
   return merged
 }
 
-const fallbackLocale = locales.en as unknown as TranslationRecord
+const fallbackLocale = en as unknown as TranslationRecord
 const resources = {
   en: { translation: fallbackLocale },
-  uk: {
-    translation: deepMergeWithFallback(
-      fallbackLocale,
-      locales.uk as unknown as TranslationRecord
-    ),
-  },
-  no: {
-    translation: deepMergeWithFallback(
-      fallbackLocale,
-      locales.no as unknown as TranslationRecord
-    ),
-  },
-  ru: {
-    translation: deepMergeWithFallback(
-      fallbackLocale,
-      locales.ru as unknown as TranslationRecord
-    ),
-  },
 }
 
 // Initialize i18next
@@ -84,6 +72,46 @@ i18n
       useSuspense: false, // Disable suspense to avoid hydration issues
     },
   })
+
+const loadedLocales = new Set<Locale>(['en'])
+
+async function loadLocaleResource(locale: Locale): Promise<void> {
+  if (loadedLocales.has(locale)) return
+
+  let mod: { default: TranslationRecord }
+  switch (locale) {
+    case 'uk':
+      mod = await import('./locales/uk')
+      break
+    case 'no':
+      mod = await import('./locales/no')
+      break
+    case 'ru':
+      mod = await import('./locales/ru')
+      break
+    default:
+      return
+  }
+
+  i18n.addResourceBundle(
+    locale,
+    'translation',
+    deepMergeWithFallback(fallbackLocale, mod.default),
+    true,
+    true
+  )
+  loadedLocales.add(locale)
+}
+
+/**
+ * Switches the active language, fetching that locale's translation bundle
+ * first if it hasn't been loaded yet. Use this instead of calling
+ * `i18n.changeLanguage` directly for any locale that isn't 'en'.
+ */
+export async function changeLanguageLazy(locale: Locale): Promise<void> {
+  await loadLocaleResource(locale)
+  await i18n.changeLanguage(locale)
+}
 
 export default i18n
 export { availableLocales, defaultLocale }
