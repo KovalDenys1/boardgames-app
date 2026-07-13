@@ -364,6 +364,7 @@ export async function POST(
 
             // Advance optimistic-lock state so sequential moves within the same bot turn
             // (e.g. Memory requires two flips per turn) use the correct WHERE clause values.
+            const committedTurnNumber = lockTurn + 1
             lockTurn += 1
             lockUpdatedAt = newUpdatedAt
 
@@ -391,6 +392,7 @@ export async function POST(
 
             const replaySnapshotPromise = appendGameReplaySnapshot({
               gameId: game.id,
+              turnNumber: committedTurnNumber,
               playerId: botUserId,
               actionType: `bot:${botMove.type}`,
               actionPayload: botMove.data,

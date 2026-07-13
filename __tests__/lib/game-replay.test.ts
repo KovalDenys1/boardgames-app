@@ -2,7 +2,10 @@
 
 jest.mock('@/lib/db', () => ({
   prisma: {
-    $transaction: jest.fn(),
+    gameStateSnapshots: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
   },
 }))
 
@@ -23,16 +26,8 @@ describe('game replay helpers', () => {
   })
 
   it('compresses replay state asynchronously and keeps snapshots decodable', async () => {
-    const tx = {
-      gameStateSnapshots: {
-        findFirst: jest.fn().mockResolvedValue({ turnNumber: 2 }),
-        create: jest.fn().mockResolvedValue({ id: 'snapshot-3' }),
-        findMany: jest.fn().mockResolvedValue([{ id: 'snapshot-0' }]),
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-    }
-
-    mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(tx))
+    mockPrisma.gameStateSnapshots.findFirst.mockResolvedValue({ turnNumber: 2 })
+    mockPrisma.gameStateSnapshots.create.mockResolvedValue({ id: 'snapshot-3' })
 
     await appendGameReplaySnapshot({
       gameId: 'game-1',
@@ -45,16 +40,10 @@ describe('game replay helpers', () => {
       },
     })
 
-    expect(tx.gameStateSnapshots.create).toHaveBeenCalledTimes(1)
-    expect(tx.gameStateSnapshots.deleteMany).toHaveBeenCalledWith({
-      where: {
-        id: {
-          in: ['snapshot-0'],
-        },
-      },
-    })
+    expect(mockPrisma.gameStateSnapshots.findFirst).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.gameStateSnapshots.create).toHaveBeenCalledTimes(1)
 
-    const createArgs = tx.gameStateSnapshots.create.mock.calls[0][0]
+    const createArgs = mockPrisma.gameStateSnapshots.create.mock.calls[0][0]
     expect(createArgs.data.turnNumber).toBe(3)
     expect(createArgs.data.stateEncoding).toBe('gzip-base64')
     expect(createArgs.data.stateSize).toBeGreaterThan(0)
@@ -83,5 +72,20 @@ describe('game replay helpers', () => {
         currentPlayerIndex: 1,
       },
     })
+  })
+
+  it('skips the findFirst lookup when the caller already knows the turn number', async () => {
+    mockPrisma.gameStateSnapshots.create.mockResolvedValue({ id: 'snapshot-6' })
+
+    await appendGameReplaySnapshot({
+      gameId: 'game-1',
+      turnNumber: 5,
+      actionType: 'bot:place',
+      state: { board: [] },
+    })
+
+    expect(mockPrisma.gameStateSnapshots.findFirst).not.toHaveBeenCalled()
+    expect(mockPrisma.gameStateSnapshots.create).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.gameStateSnapshots.create.mock.calls[0][0].data.turnNumber).toBe(5)
   })
 })

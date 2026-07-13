@@ -6,7 +6,7 @@ import { apiLogger } from '@/lib/logger'
 
 const log = apiLogger('game-replay')
 const DEFAULT_STATE_ENCODING = 'gzip-base64'
-const MAX_SNAPSHOTS_PER_GAME = 500
+export const MAX_SNAPSHOTS_PER_GAME = 500
 const gzipAsync = promisify(gzip)
 
 export interface ReplaySnapshotWriteInput {
@@ -79,6 +79,17 @@ function resolveTurnNumber(inputTurnNumber: number | undefined, fallbackTurnNumb
   return Math.max(0, fallbackTurnNumber)
 }
 
+/**
+ * Appends one replay snapshot. When the caller already tracks an
+ * authoritative turn counter (state/route.ts and bot-turn/route.ts both do —
+ * it's the same value they just wrote to Games.currentTurn), pass it as
+ * `turnNumber` to skip the extra findFirst lookup this used to run on every
+ * single move. Callers without one (the per-game-type action routes) fall
+ * back to querying the latest snapshot, same as before. The per-game
+ * snapshot cap is enforced by `cleanupOversizedReplaySnapshots` in the daily
+ * maintenance cron instead of inline here — <1% of games ever approach it,
+ * so checking on every move wasn't worth the extra round trip.
+ */
 export async function appendGameReplaySnapshot(input: ReplaySnapshotWriteInput): Promise<void> {
   if (!input.gameId || !input.actionType) return
 
@@ -86,47 +97,29 @@ export async function appendGameReplaySnapshot(input: ReplaySnapshotWriteInput):
     const encodedState = await encodeState(input.state)
     const safeActionPayload = toReplayActionPayload(input.actionPayload)
 
-    await prisma.$transaction(async (tx) => {
-      const latestSnapshot = await tx.gameStateSnapshots.findFirst({
+    let nextTurnNumber: number
+    if (typeof input.turnNumber === 'number' && Number.isFinite(input.turnNumber)) {
+      nextTurnNumber = resolveTurnNumber(input.turnNumber, 0)
+    } else {
+      const latestSnapshot = await prisma.gameStateSnapshots.findFirst({
         where: { gameId: input.gameId },
         orderBy: [{ turnNumber: 'desc' }, { createdAt: 'desc' }],
         select: { turnNumber: true },
       })
+      nextTurnNumber = (latestSnapshot?.turnNumber ?? -1) + 1
+    }
 
-      const nextTurnNumber = resolveTurnNumber(
-        input.turnNumber,
-        (latestSnapshot?.turnNumber ?? -1) + 1
-      )
-
-      await tx.gameStateSnapshots.create({
-        data: {
-          gameId: input.gameId,
-          turnNumber: nextTurnNumber,
-          playerId: input.playerId ?? null,
-          actionType: input.actionType,
-          actionPayload: safeActionPayload,
-          stateCompressed: encodedState.stateCompressed,
-          stateEncoding: encodedState.stateEncoding,
-          stateSize: encodedState.stateSize,
-        },
-      })
-
-      const overflowSnapshots = await tx.gameStateSnapshots.findMany({
-        where: { gameId: input.gameId },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        select: { id: true },
-        skip: MAX_SNAPSHOTS_PER_GAME,
-      })
-
-      if (overflowSnapshots.length > 0) {
-        await tx.gameStateSnapshots.deleteMany({
-          where: {
-            id: {
-              in: overflowSnapshots.map((snapshot) => snapshot.id),
-            },
-          },
-        })
-      }
+    await prisma.gameStateSnapshots.create({
+      data: {
+        gameId: input.gameId,
+        turnNumber: nextTurnNumber,
+        playerId: input.playerId ?? null,
+        actionType: input.actionType,
+        actionPayload: safeActionPayload,
+        stateCompressed: encodedState.stateCompressed,
+        stateEncoding: encodedState.stateEncoding,
+        stateSize: encodedState.stateSize,
+      },
     })
   } catch (error) {
     log.warn('Failed to append replay snapshot', {

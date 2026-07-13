@@ -581,6 +581,7 @@ export async function POST(
     const authoritativeState = gameEngine.getState()
     const replaySnapshotPromise = appendGameReplaySnapshot({
       gameId,
+      turnNumber: game.currentTurn + 1,
       playerId: userId,
       actionType: move.type,
       actionPayload: move.data,

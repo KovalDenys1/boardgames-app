@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GET } from '@/app/api/cron/maintenance/route'
 import { warnUnverifiedAccounts, cleanupUnverifiedAccounts } from '@/lib/cleanup-unverified'
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
-import { cleanupOldReplaySnapshots } from '@/lib/cleanup-replays'
+import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/lib/cleanup-replays'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 
@@ -22,6 +22,7 @@ jest.mock('@/scripts/cleanup-old-guests', () => ({
 
 jest.mock('@/lib/cleanup-replays', () => ({
   cleanupOldReplaySnapshots: jest.fn(),
+  cleanupOversizedReplaySnapshots: jest.fn(),
 }))
 
 jest.mock('@/lib/lobby-health', () => ({
@@ -47,6 +48,9 @@ const mockCleanupUnverifiedAccounts = cleanupUnverifiedAccounts as jest.MockedFu
 const mockCleanupOldGuests = cleanupOldGuests as jest.MockedFunction<typeof cleanupOldGuests>
 const mockCleanupOldReplaySnapshots = cleanupOldReplaySnapshots as jest.MockedFunction<
   typeof cleanupOldReplaySnapshots
+>
+const mockCleanupOversizedReplaySnapshots = cleanupOversizedReplaySnapshots as jest.MockedFunction<
+  typeof cleanupOversizedReplaySnapshots
 >
 const mockCleanupStaleLobbiesAndGames = cleanupStaleLobbiesAndGames as jest.MockedFunction<
   typeof cleanupStaleLobbiesAndGames
@@ -80,6 +84,10 @@ describe('GET /api/cron/maintenance', () => {
       retentionDays: 90,
       cutoffDate: '2026-01-01T00:00:00.000Z',
     })
+    mockCleanupOversizedReplaySnapshots.mockResolvedValue({
+      deletedSnapshots: 12,
+      affectedGames: 2,
+    })
     mockCleanupStaleLobbiesAndGames.mockResolvedValue({
       deactivatedLobbies: 6,
       cancelledWaitingGames: 7,
@@ -102,6 +110,8 @@ describe('GET /api/cron/maintenance', () => {
     expect(payload.abandonedPlayingGames).toBe(8)
     expect(payload.replayRetentionDays).toBe(90)
     expect(payload.replayCutoffDate).toBe('2026-01-01T00:00:00.000Z')
+    expect(payload.deletedOversizedReplaySnapshots).toBe(12)
+    expect(payload.oversizedReplayGames).toBe(2)
     expect(payload.timestamp).toEqual(expect.any(String))
 
     expect(mockCleanupOldGuests).toHaveBeenCalledWith({ disconnect: false })

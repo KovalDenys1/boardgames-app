@@ -1,10 +1,12 @@
 import { prisma } from '@/lib/db'
-import { cleanupOldReplaySnapshots } from '@/lib/cleanup-replays'
+import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/lib/cleanup-replays'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
     gameStateSnapshots: {
       deleteMany: jest.fn(),
+      groupBy: jest.fn(),
+      findMany: jest.fn(),
     },
   },
 }))
@@ -60,5 +62,41 @@ describe('cleanupOldReplaySnapshots', () => {
 
     expect(result.retentionDays).toBe(90)
     expect(result.deleted).toBe(1)
+  })
+})
+
+describe('cleanupOversizedReplaySnapshots', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('deletes snapshots beyond the per-game cap for affected games only', async () => {
+    ;(prisma.gameStateSnapshots.groupBy as jest.Mock).mockResolvedValue([
+      { gameId: 'game-1', _count: { id: 501 } },
+    ])
+    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockResolvedValue([{ id: 'snapshot-old' }])
+    ;(prisma.gameStateSnapshots.deleteMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    const result = await cleanupOversizedReplaySnapshots()
+
+    expect(result.deletedSnapshots).toBe(1)
+    expect(result.affectedGames).toBe(1)
+    const findManyArgs = (prisma.gameStateSnapshots.findMany as jest.Mock).mock.calls[0][0]
+    expect(findManyArgs.where.gameId).toBe('game-1')
+    expect(findManyArgs.skip).toBe(500)
+    expect(prisma.gameStateSnapshots.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['snapshot-old'] } },
+    })
+  })
+
+  it('does nothing when no game exceeds the cap', async () => {
+    ;(prisma.gameStateSnapshots.groupBy as jest.Mock).mockResolvedValue([])
+
+    const result = await cleanupOversizedReplaySnapshots()
+
+    expect(result.deletedSnapshots).toBe(0)
+    expect(result.affectedGames).toBe(0)
+    expect(prisma.gameStateSnapshots.findMany).not.toHaveBeenCalled()
+    expect(prisma.gameStateSnapshots.deleteMany).not.toHaveBeenCalled()
   })
 })
