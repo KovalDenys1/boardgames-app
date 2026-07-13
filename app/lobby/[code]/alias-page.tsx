@@ -9,6 +9,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import type { ChatMessagePayload, GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
@@ -376,7 +377,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
-  const isLeavingRef = React.useRef(false)
+  const { isLeavingLobbyRef: isLeavingRef, leaveLobby } = useLeaveLobby(code, 'Alias')
   const minPlayersRequired = 4
 
   const getCurrentUserId = useCallback(() => {
@@ -578,17 +579,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   const handleLeave = useCallback(() => {
     if (isLeavingRef.current) return
-    isLeavingRef.current = true
     setShowLeaveConfirmModal(false)
-    void fetchWithGuest(`/api/lobby/${code}/leave`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-    }).catch((err) => {
-      clientLogger.warn('Alias leave API failed', { code, error: err })
-    })
+    leaveLobby()
     router.push('/games')
-  }, [code, router])
+  }, [isLeavingRef, leaveLobby, router])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id || isStarting) return

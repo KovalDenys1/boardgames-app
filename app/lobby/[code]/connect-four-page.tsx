@@ -15,6 +15,7 @@ import {
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -487,10 +488,8 @@ interface ConnectFourLobbyPageProps {
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
 
-const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
-type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 interface AutoActionContext {
     source: 'turn-timeout'
@@ -540,13 +539,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const [hoverCol, setHoverCol] = useState<number | null>(null)
-    const isLeavingLobbyRef = React.useRef(false)
+    const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Connect Four')
     const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
-    const leaveStartedAtRef = React.useRef<number | null>(null)
-    const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
-    const leaveApiStatusCodeRef = React.useRef<number | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
@@ -572,7 +568,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 gameType: 'connect_four',
             })
         },
-        [isGuest]
+        [isGuest, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveStartedAtRef]
     )
 
     const navigateAfterLeave = useCallback(() => {
@@ -600,7 +596,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 if (window.location.pathname.startsWith(`/lobby/${code}`)) window.location.assign('/games')
             }, LIFECYCLE_REDIRECT_FALLBACK_MS)
         }
-    }, [router, code])
+    }, [router, code, isLeavingLobbyRef])
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -677,7 +673,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         if (isLeavingLobbyRef.current) return
         void loadLobby()
         triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`)
-    }, [loadLobby, triggerLifecycleRedirect])
+    }, [loadLobby, triggerLifecycleRedirect, isLeavingLobbyRef])
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
@@ -700,7 +696,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             return
         }
         void loadLobby()
-    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id])
+    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id, isLeavingLobbyRef])
 
     useEffect(() => {
         if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
@@ -887,36 +883,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         isSpectator,
     })
 
-    const handleLeave = async () => {
+    const handleLeave = () => {
         if (isLeavingLobbyRef.current) return
-        isLeavingLobbyRef.current = true
         setShowLeaveConfirmModal(false)
-        leaveStartedAtRef.current = Date.now()
-        leaveApiOutcomeRef.current = 'pending'
-        leaveApiStatusCodeRef.current = null
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
-        void fetchWithGuest(`/api/lobby/${code}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, signal: controller.signal })
-            .then(async (response) => {
-                clearTimeout(timeoutId)
-                leaveApiStatusCodeRef.current = response.status
-                if (!response.ok) {
-                    leaveApiOutcomeRef.current = 'non_ok'
-                    const payload = await response.json().catch(() => null)
-                    clientLogger.warn('Connect Four leave API returned non-ok status', { code, status: response.status, payload })
-                } else {
-                    leaveApiOutcomeRef.current = 'ok'
-                }
-            })
-            .catch((error) => {
-                clearTimeout(timeoutId)
-                if ((error as Error)?.name === 'AbortError') {
-                    leaveApiOutcomeRef.current = 'timeout'
-                    return
-                }
-                leaveApiOutcomeRef.current = 'error'
-                clientLogger.warn('Connect Four leave API failed after redirect', { code, error })
-            })
+        leaveLobby()
         navigateAfterLeave()
     }
 

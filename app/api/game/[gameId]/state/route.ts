@@ -10,10 +10,10 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
-import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
-import { sanitizeRpsStateForBroadcast } from '@/lib/games/rock-paper-scissors-game'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
+import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -508,94 +508,15 @@ export async function POST(
     const enginePlayers = gameEngine.getPlayers()
     const gamePlayers = game.players as GamePlayer[]
     const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
-    const TERMINAL_STATUSES = new Set(['finished', 'abandoned', 'cancelled'])
-    const isTerminal = TERMINAL_STATUSES.has(newState.status)
-    const terminalFields = statusChanged && isTerminal
-      ? (() => {
-          const now = new Date()
-          const startedAt = game.startedAt
-          const durationSeconds =
-            startedAt instanceof Date
-              ? Math.floor((now.getTime() - startedAt.getTime()) / 1000)
-              : null
-          const winnerPlayer = newState.winner
-            ? (gamePlayers.find((p) => {
-                const ep = (enginePlayers as Player[]).find((e) => e.id === p.userId)
-                return ep?.id === newState.winner
-              }) ?? null)
-            : null
-          const terminalMetadata = {
-            outcome: newState.winner ? 'winner' : newState.status === 'finished' ? 'draw' : newState.status,
-            winnerUserId: winnerPlayer?.userId ?? null,
-            isDraw: newState.status === 'finished' && !newState.winner,
-            playerResults: (enginePlayers as Player[]).map((ep, i) => ({
-              userId: dbPlayersByUserId.get(ep.id)?.userId ?? gamePlayers[i]?.userId ?? ep.id,
-              placement: typeof (ep as { placement?: number }).placement === 'number' ? (ep as { placement?: number }).placement : i + 1,
-              finalScore: typeof ep.score === 'number' ? ep.score : null,
-              isWinner: ep.id === newState.winner,
-            })),
-          }
-          return { endedAt: now, durationSeconds, terminalMetadata }
-        })()
-      : {}
-    const terminalPlayerResultsByUserId = new Map(
-      (terminalFields as {
-        terminalMetadata?: {
-          playerResults?: Array<{
-            userId: string
-            placement: number
-            finalScore: number | null
-            isWinner: boolean
-          }>
-        }
-      }).terminalMetadata?.playerResults?.map((result) => [result.userId, result]) ?? []
-    )
-    const changedPlayerUpdates: Array<{
-      id: string
-      score: number
-      scorecard: string
-      finalScore?: number | null
-      placement?: number | null
-      isWinner?: boolean
-    }> = []
-
-    for (const player of enginePlayers as Player[]) {
-      const dbPlayer = dbPlayersByUserId.get(player.id)
-      if (!dbPlayer) continue
-
-      const nextScore = typeof player.score === 'number' ? player.score : 0
-      const nextScorecard = JSON.stringify(
-        getScorecard ? getScorecard(player.id) : {}
-      )
-      const terminalResult = terminalPlayerResultsByUserId.get(player.id)
-      const nextFinalScore = terminalResult?.finalScore
-      const nextPlacement = terminalResult?.placement
-      const nextIsWinner = terminalResult?.isWinner
-
-      if (
-        dbPlayer.score === nextScore &&
-        dbPlayer.scorecard === nextScorecard &&
-        (terminalResult == null ||
-          (dbPlayer.finalScore === nextFinalScore &&
-            dbPlayer.placement === nextPlacement &&
-            dbPlayer.isWinner === nextIsWinner))
-      ) {
-        continue
-      }
-
-      changedPlayerUpdates.push({
-        id: dbPlayer.id,
-        score: nextScore,
-        scorecard: nextScorecard,
-        ...(terminalResult != null
-          ? {
-              finalScore: nextFinalScore,
-              placement: nextPlacement,
-              isWinner: nextIsWinner,
-            }
-          : {}),
-      })
-    }
+    const { terminalFields, changedPlayerUpdates } = buildTerminalFieldsAndPlayerUpdates({
+      statusChanged,
+      status: newState.status,
+      winner: newState.winner,
+      startedAt: game.startedAt,
+      enginePlayers: enginePlayers as Player[],
+      dbPlayersByUserId,
+      getScorecard,
+    })
 
     const gameUpdateResult = await prisma.$transaction(async (tx) => {
       // Optimistic concurrency control:
@@ -707,18 +628,12 @@ export async function POST(
       })
     }
 
-    const broadcastState = game.lobby.gameType === 'guess_the_spy'
-      ? sanitizeSpyStateForBroadcast(authoritativeState)
-      : game.lobby.gameType === 'rock_paper_scissors'
-        ? sanitizeRpsStateForBroadcast(authoritativeState)
-        : authoritativeState
+    const broadcastState = sanitizeStateForBroadcast(game.lobby.gameType, authoritativeState)
 
-    // RPS's sanitizer is viewer-aware: the direct response to the submitting
-    // player keeps their own just-submitted choice visible, while the shared
-    // broadcast above hides it from the opponent until both are locked in.
-    const responseState = game.lobby.gameType === 'rock_paper_scissors'
-      ? sanitizeRpsStateForBroadcast(authoritativeState, userId)
-      : broadcastState
+    // Viewer-aware sanitizers (currently just RPS) keep the requesting
+    // player's own not-yet-revealed data visible in the direct response,
+    // while the shared broadcast above hides it from everyone else.
+    const responseState = sanitizeStateForBroadcast(game.lobby.gameType, authoritativeState, userId)
 
     void replaySnapshotPromise
     void broadcastToLobby(game.lobby.code, 'game-update', {
