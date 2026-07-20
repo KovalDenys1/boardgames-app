@@ -80,7 +80,7 @@ export default function RockPaperScissorsGamePage() {
         primaryCtaLabel="Play now"
         playVsBotGameType="rock_paper_scissors"
         facts={[
-          { label: 'Players', value: '2' },
+          { label: 'Players', value: '1–2' },
           { label: 'Price', value: 'Free' },
           { label: 'Download', value: 'None' },
           { label: 'Game type', value: 'Casual' },

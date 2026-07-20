@@ -19,7 +19,7 @@ export default function ConnectFourDetailContent() {
       accent="var(--bd-sun)"
       lobbiesHref="/games/connect-four/lobbies"
       facts={[
-        { label: t('games.detail.labels.players'), value: '2' },
+        { label: t('games.detail.labels.players'), value: '1–2' },
         { label: t('games.detail.labels.price'), value: t('games.detail.values.free') },
         { label: t('games.detail.labels.download'), value: t('games.detail.values.none') },
         { label: t('games.detail.labels.botSupport'), value: t('games.detail.values.yes') },

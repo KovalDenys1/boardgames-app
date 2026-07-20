@@ -14,10 +14,8 @@ const BOT_SUPPORTED_GAMES = getBotSupportedGameTypes()
   .filter((type) => !isTemporarilyUnavailableGameType(type))
   .map((type) => {
     const meta = getGameMetadata(type)!
-    const playerRange =
-      meta.minPlayers === meta.maxPlayers
-        ? String(meta.minPlayers)
-        : `${meta.minPlayers}–${meta.maxPlayers}`
+    // All games here support bots, so a solo player can always start (bot fills the rest).
+    const playerRange = meta.maxPlayers === 1 ? '1' : `1–${meta.maxPlayers}`
     return { type, svgId: meta.svgId, label: meta.name, players: playerRange }
   })
 
