@@ -107,9 +107,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     const cellRef = useRef<HTMLButtonElement>(null)
 
     const getDropRow = (col: number): number | null => {
-        if (board[0][col] !== null) return null
+        if (board[0]?.[col] !== null) return null
         for (let r = ROWS - 1; r >= 0; r--) {
-            if (board[r][col] === null) return r
+            if (board[r]?.[col] === null) return r
         }
         return null
     }
@@ -127,7 +127,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 {Array.from({ length: COLS }, (_, c) => (
                     <div key={c} style={{
                         height: 20, display: 'grid', placeItems: 'center',
-                        opacity: hoverCol === c && !disabled && board[0][c] === null ? 1 : 0,
+                        opacity: hoverCol === c && !disabled && board[0]?.[c] === null ? 1 : 0,
                         transition: 'opacity 0.12s',
                     }}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -151,9 +151,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
             }}>
                 {Array.from({ length: ROWS }, (_, r) =>
                     Array.from({ length: COLS }, (_, c) => {
-                        const cell = board[r][c]
+                        const cell = board[r]?.[c] ?? null
                         const win = isWin(r, c)
-                        const colFull = board[0][c] !== null
+                        const colFull = board[0]?.[c] !== null
                         const isHoveredCol = hoverCol === c && !disabled && !colFull
                         const isGhost = isHoveredCol && r === ghostRow && !cell
                         const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
@@ -207,7 +207,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 pointerEvents: disabled ? 'none' : 'auto',
             }}>
                 {Array.from({ length: COLS }, (_, c) => {
-                    const colFull = board[0][c] !== null
+                    const colFull = board[0]?.[c] !== null
                     return (
                         <div
                             key={c}
