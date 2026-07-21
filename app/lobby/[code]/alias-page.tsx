@@ -1062,6 +1062,18 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   }
 
   // ── Phases 2-5 helpers ─────────────────────────────────────────────────────
+  // data.teams can arrive briefly unset during a realtime reconcile (e.g. a
+  // game-reset/switch broadcast landing before the full snapshot) even though
+  // phase has already moved past team_assignment — fall back to the same
+  // loading state used while data itself is still unset, instead of crashing.
+  if (!data.teams || data.teams.length === 0) {
+    return (
+      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
   const currentTeam = data.teams[data.currentTeamIndex]
   const describerId = currentTeam?.playerIds[currentTeam?.describerIndex ?? 0]
   const isDescriber = describerId === currentUserId
