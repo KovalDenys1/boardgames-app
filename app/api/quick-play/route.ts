@@ -8,7 +8,7 @@ import { apiLogger } from '@/lib/logger'
 import { createGameEngine } from '@/lib/game-registry'
 import { hasBotSupport, getBotSupportedGameTypes, isSupportedGameType } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
-import { generateLobbyCode } from '@/lib/lobby'
+import { generateLobbyCode, isLobbyCodeConflict } from '@/lib/lobby'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -262,11 +262,7 @@ export async function POST(req: NextRequest) {
       gameId = created.games[0]?.id ?? null
       break
     } catch (err) {
-      const prismaErr = err as { code?: string; meta?: { target?: unknown } }
-      if (
-        prismaErr?.code === 'P2002' &&
-        String(prismaErr?.meta?.target).toLowerCase().includes('code')
-      ) {
+      if (isLobbyCodeConflict(err)) {
         continue
       }
       throw err
