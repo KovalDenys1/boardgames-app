@@ -1,4 +1,5 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
+import { resolveBoundedRuleNumber } from './shared-helpers'
 
 export type TelephoneDoodlePhase = 'prompt' | 'drawing' | 'caption' | 'reveal'
 export type TelephoneDoodleStepPhase = Exclude<TelephoneDoodlePhase, 'reveal'>
@@ -229,11 +230,7 @@ export class TelephoneDoodleGame extends GameEngine {
     }
 
     const data = this.state.data as TelephoneDoodleGameData
-    if (!data.winnerId) {
-      return null
-    }
-
-    return this.state.players.find((player) => player.id === data.winnerId) || null
+    return this.resolvePlayerWinner(data.winnerId)
   }
 
   getGameRules(): string[] {
@@ -624,10 +621,10 @@ export class TelephoneDoodleGame extends GameEngine {
   }
 
   private resolveMaxRounds(): number {
-    const rawMaxRounds = (this.config.rules as { maxRounds?: unknown } | undefined)?.maxRounds
-    if (typeof rawMaxRounds === 'number' && Number.isFinite(rawMaxRounds) && rawMaxRounds > 0) {
-      return Math.min(MAX_ROUNDS, Math.max(MIN_ROUNDS, Math.floor(rawMaxRounds)))
-    }
-    return DEFAULT_MAX_ROUNDS
+    return resolveBoundedRuleNumber(this.config.rules, 'maxRounds', {
+      min: MIN_ROUNDS,
+      max: MAX_ROUNDS,
+      fallback: DEFAULT_MAX_ROUNDS,
+    })
   }
 }

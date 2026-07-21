@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -15,6 +15,7 @@ import {
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -106,9 +107,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     const cellRef = useRef<HTMLButtonElement>(null)
 
     const getDropRow = (col: number): number | null => {
-        if (board[0][col] !== null) return null
+        if (board[0]?.[col] !== null) return null
         for (let r = ROWS - 1; r >= 0; r--) {
-            if (board[r][col] === null) return r
+            if (board[r]?.[col] === null) return r
         }
         return null
     }
@@ -126,7 +127,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 {Array.from({ length: COLS }, (_, c) => (
                     <div key={c} style={{
                         height: 20, display: 'grid', placeItems: 'center',
-                        opacity: hoverCol === c && !disabled && board[0][c] === null ? 1 : 0,
+                        opacity: hoverCol === c && !disabled && board[0]?.[c] === null ? 1 : 0,
                         transition: 'opacity 0.12s',
                     }}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -150,9 +151,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
             }}>
                 {Array.from({ length: ROWS }, (_, r) =>
                     Array.from({ length: COLS }, (_, c) => {
-                        const cell = board[r][c]
+                        const cell = board[r]?.[c] ?? null
                         const win = isWin(r, c)
-                        const colFull = board[0][c] !== null
+                        const colFull = board[0]?.[c] !== null
                         const isHoveredCol = hoverCol === c && !disabled && !colFull
                         const isGhost = isHoveredCol && r === ghostRow && !cell
                         const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
@@ -206,7 +207,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 pointerEvents: disabled ? 'none' : 'auto',
             }}>
                 {Array.from({ length: COLS }, (_, c) => {
-                    const colFull = board[0][c] !== null
+                    const colFull = board[0]?.[c] !== null
                     return (
                         <div
                             key={c}
@@ -487,10 +488,8 @@ interface ConnectFourLobbyPageProps {
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
 
-const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
-type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 interface AutoActionContext {
     source: 'turn-timeout'
@@ -540,13 +539,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const [hoverCol, setHoverCol] = useState<number | null>(null)
-    const isLeavingLobbyRef = React.useRef(false)
+    const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Connect Four')
     const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
-    const leaveStartedAtRef = React.useRef<number | null>(null)
-    const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
-    const leaveApiStatusCodeRef = React.useRef<number | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
@@ -572,7 +568,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 gameType: 'connect_four',
             })
         },
-        [isGuest]
+        [isGuest, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveStartedAtRef]
     )
 
     const navigateAfterLeave = useCallback(() => {
@@ -600,7 +596,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 if (window.location.pathname.startsWith(`/lobby/${code}`)) window.location.assign('/games')
             }, LIFECYCLE_REDIRECT_FALLBACK_MS)
         }
-    }, [router, code])
+    }, [router, code, isLeavingLobbyRef])
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -677,7 +673,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         if (isLeavingLobbyRef.current) return
         void loadLobby()
         triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`)
-    }, [loadLobby, triggerLifecycleRedirect])
+    }, [loadLobby, triggerLifecycleRedirect, isLeavingLobbyRef])
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
@@ -700,7 +696,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             return
         }
         void loadLobby()
-    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id])
+    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id, isLeavingLobbyRef])
 
     useEffect(() => {
         if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
@@ -887,36 +883,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         isSpectator,
     })
 
-    const handleLeave = async () => {
+    const handleLeave = () => {
         if (isLeavingLobbyRef.current) return
-        isLeavingLobbyRef.current = true
         setShowLeaveConfirmModal(false)
-        leaveStartedAtRef.current = Date.now()
-        leaveApiOutcomeRef.current = 'pending'
-        leaveApiStatusCodeRef.current = null
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
-        void fetchWithGuest(`/api/lobby/${code}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, signal: controller.signal })
-            .then(async (response) => {
-                clearTimeout(timeoutId)
-                leaveApiStatusCodeRef.current = response.status
-                if (!response.ok) {
-                    leaveApiOutcomeRef.current = 'non_ok'
-                    const payload = await response.json().catch(() => null)
-                    clientLogger.warn('Connect Four leave API returned non-ok status', { code, status: response.status, payload })
-                } else {
-                    leaveApiOutcomeRef.current = 'ok'
-                }
-            })
-            .catch((error) => {
-                clearTimeout(timeoutId)
-                if ((error as Error)?.name === 'AbortError') {
-                    leaveApiOutcomeRef.current = 'timeout'
-                    return
-                }
-                leaveApiOutcomeRef.current = 'error'
-                clientLogger.warn('Connect Four leave API failed after redirect', { code, error })
-            })
+        leaveLobby()
         navigateAfterLeave()
     }
 
@@ -989,6 +959,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
     }, [localChat])
+
+    // Hoisted above the early returns below so this hook always runs, regardless
+    // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
+    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as ConnectFourGameData).moveHistory : undefined
+    const reversedMoveHistory = useMemo(
+        () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
+        [earlyMoveHistory]
+    )
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -1171,7 +1149,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div className="ttt-history-list">
                 {moveHistory.length === 0
                     ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.connect_four.game.noMovesYet')}</div>
-                    : moveHistory.slice().reverse().map((m: ConnectFourMoveRecord, index) => (
+                    : reversedMoveHistory.map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}

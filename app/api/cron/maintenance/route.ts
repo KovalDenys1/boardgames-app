@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup-unverified'
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
-import { cleanupOldReplaySnapshots } from '@/lib/cleanup-replays'
+import { cleanupOldReplaySnapshots, cleanupOversizedReplaySnapshots } from '@/lib/cleanup-replays'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 
@@ -18,6 +18,7 @@ async function handleCronRequest(request: NextRequest) {
     const cleanupUnverifiedResult = await cleanupUnverifiedAccounts(7)
     const guestCleanupResult = await cleanupOldGuests({ disconnect: false })
     const replayCleanupResult = await cleanupOldReplaySnapshots()
+    const replayOverflowResult = await cleanupOversizedReplaySnapshots()
     const lobbyCleanupResult = await cleanupStaleLobbiesAndGames()
 
     return NextResponse.json({
@@ -31,6 +32,8 @@ async function handleCronRequest(request: NextRequest) {
       abandonedPlayingGames: lobbyCleanupResult.abandonedPlayingGames,
       replayRetentionDays: replayCleanupResult.retentionDays,
       replayCutoffDate: replayCleanupResult.cutoffDate,
+      deletedOversizedReplaySnapshots: replayOverflowResult.deletedSnapshots,
+      oversizedReplayGames: replayOverflowResult.affectedGames,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {

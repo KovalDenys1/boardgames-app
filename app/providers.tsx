@@ -7,7 +7,7 @@ import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
-import i18n from '@/i18n'
+import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
 import { getStoredAppearanceLocale } from '@/lib/appearance-preferences'
 
 const OnboardingModal = dynamic(
@@ -21,10 +21,10 @@ const GlobalToaster = dynamic(
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    const nextLanguage = getStoredAppearanceLocale(localStorage)
+    const nextLanguage = getStoredAppearanceLocale(localStorage) as Locale
 
     if (i18n.language !== nextLanguage) {
-      void i18n.changeLanguage(nextLanguage)
+      void changeLanguageLazy(nextLanguage)
     }
   }, [])
 

@@ -85,11 +85,6 @@ jest.mock('@/lib/analytics', () => ({
   trackMoveSubmitApplied: jest.fn(),
 }))
 
-jest.mock('@/components/TicTacToeGameBoard', () => ({
-  __esModule: true,
-  default: () => <div data-testid="ttt-board" />,
-}))
-
 jest.mock('@/components/LoadingSpinner', () => ({
   __esModule: true,
   default: () => <div data-testid="loading-spinner" />,

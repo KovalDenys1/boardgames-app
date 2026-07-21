@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { Prisma, GameType } from '@/prisma/client'
 import { prisma } from '@/lib/db'
-import { generateLobbyCode } from '@/lib/lobby'
+import { generateLobbyCode, isLobbyCodeConflict } from '@/lib/lobby'
 import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
@@ -37,31 +37,6 @@ const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
 const NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK = 10
 const MAX_LOBBY_CODE_ATTEMPTS = 20
 const UNLIMITED_SPECTATORS_VALUE = 0
-
-function isLobbyCodeConflict(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false
-
-  const prismaCode = (error as { code?: unknown }).code
-  if (prismaCode !== 'P2002') return false
-
-  const target = (error as { meta?: { target?: unknown } }).meta?.target
-  if (Array.isArray(target)) {
-    return target.some((entry) => String(entry).toLowerCase().includes('code'))
-  }
-
-  if (typeof target === 'string') {
-    return target.toLowerCase().includes('code')
-  }
-
-  // Prisma 7 may omit meta.target — fall back to message string
-  const message = (error as { message?: unknown }).message
-  if (typeof message === 'string') {
-    const msg = message.toLowerCase()
-    return msg.includes('unique constraint') && msg.includes('code')
-  }
-
-  return true // P2002 on lobbies.create must be a code collision
-}
 
 const FREE_MAX_PLAYERS = 10
 
@@ -150,8 +125,10 @@ export async function POST(request: NextRequest) {
 
     // Deactivate any previous waiting lobbies owned by this creator so they don't
     // ghost in the Active Lobbies list when the creator navigates away without leaving.
+    // Independent of the new lobby being created below — fire-and-forget instead of
+    // serializing it in front of the create-lobby retry loop (2500ms latency budget).
     if (!requestUser.isGuest) {
-      await prisma.lobbies.updateMany({
+      void prisma.lobbies.updateMany({
         where: {
           creatorId: requestUser.id,
           isActive: true,
@@ -162,6 +139,11 @@ export async function POST(request: NextRequest) {
           },
         },
         data: { isActive: false },
+      }).catch((error) => {
+        log.warn('Failed to deactivate creator\'s stale waiting lobbies', {
+          creatorId: requestUser.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
       })
     }
 

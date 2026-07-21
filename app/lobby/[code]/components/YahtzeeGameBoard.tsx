@@ -181,7 +181,7 @@ export default function GameBoard({
               <div className="bd-pulse text-center px-3 py-2 rounded-2xl shadow-sm text-bd-ink transition-all duration-200" style={{ background: 'rgba(79,201,166,0.2)', border: '1px solid rgba(79,201,166,0.28)' }}>
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                   <span className="text-base sm:text-xl">🎯</span>
-                  <p className="text-xs sm:text-sm font-bold">{t('yahtzee.ui.yourTurn')}</p>
+                  <p className="text-xs sm:text-sm font-bold">{t('game.ui.yourTurn')}</p>
                 </div>
               </div>
             )
@@ -190,7 +190,7 @@ export default function GameBoard({
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <span className="text-base sm:text-xl">⏳</span>
                 <p className="text-sm text-bd-ink-muted font-medium">
-                  {t('yahtzee.ui.waiting')}
+                  {t('game.ui.waiting')}
                 </p>
               </div>
             </div>

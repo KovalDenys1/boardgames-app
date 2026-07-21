@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import i18n from '@/i18n'
+import i18n, { changeLanguageLazy } from '@/i18n'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 type LocaleTree = Record<string, unknown>
@@ -15,12 +15,16 @@ function flattenKeys(node: LocaleTree, prefix = ''): string[] {
 }
 
 describe('i18n locale coverage', () => {
-  it('provides all English keys for every configured locale at runtime', () => {
-    const resources = i18n.options.resources as Record<string, { translation: LocaleTree }>
-    const enKeys = new Set(flattenKeys(resources.en.translation))
+  it('provides all English keys for every configured locale at runtime', async () => {
+    // Non-'en' locales load lazily (see i18n.ts) — fetch each one before
+    // checking its resource bundle for key parity against English.
+    const enResources = i18n.getResourceBundle('en', 'translation') as LocaleTree
+    const enKeys = new Set(flattenKeys(enResources))
 
-    for (const locale of ['uk', 'no', 'ru']) {
-      const localeKeys = new Set(flattenKeys(resources[locale].translation))
+    for (const locale of ['uk', 'no', 'ru'] as const) {
+      await changeLanguageLazy(locale)
+      const localeResources = i18n.getResourceBundle(locale, 'translation') as LocaleTree
+      const localeKeys = new Set(flattenKeys(localeResources))
       const missing = Array.from(enKeys).filter((key) => !localeKeys.has(key))
       expect(missing).toEqual([])
     }

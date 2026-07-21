@@ -107,36 +107,6 @@ export function verifyCsrfToken(request: NextRequest): boolean {
 }
 
 /**
- * Middleware to add CSRF protection to API routes
- */
-export async function withCsrfProtection(
-  handler: (req: NextRequest) => Promise<Response>,
-  request: NextRequest
-): Promise<Response> {
-  if (!verifyCsrfToken(request)) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid origin. Possible CSRF attack.' }),
-      { 
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-  }
-
-  return handler(request)
-}
-
-/**
- * Generate CSRF token (for token-based implementation)
- * This is a more robust approach for future enhancement
- */
-export function generateCsrfToken(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-/**
  * Set security headers to prevent CSRF and other attacks
  */
 export function getSecurityHeaders() {

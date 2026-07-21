@@ -87,7 +87,7 @@ export class ConnectFourGame extends GameEngine {
       if (gameData.pendingRequest || (gameData.undoSnapshots?.length ?? 0) === 0) return false
       const playerIndex = this.state.players.findIndex((p) => p.id === move.playerId)
       if (playerIndex === -1) return false
-      return this.resolveResponderId(move.playerId) !== null
+      return this.getOpponent(move.playerId) !== null
     }
 
     if (move.type === 'respond-undo') {
@@ -139,7 +139,7 @@ export class ConnectFourGame extends GameEngine {
     }
 
     if (move.type === 'request-undo') {
-      const responderId = this.resolveResponderId(move.playerId)
+      const responderId = this.getOpponent(move.playerId)
       if (!responderId) return
       gameData.pendingRequest = {
         type: 'undo',
@@ -266,11 +266,6 @@ export class ConnectFourGame extends GameEngine {
       if (gameData.board[0][c] === null) cols.push(c)
     }
     return cols
-  }
-
-  private resolveResponderId(requesterId: string): string | null {
-    const responder = this.state.players.find((p) => p.id !== requesterId)
-    return responder?.id ?? null
   }
 
   private captureSnapshot(gameData: ConnectFourGameData): ConnectFourUndoSnapshot {

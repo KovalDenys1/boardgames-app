@@ -10,9 +10,8 @@ export const locales = {
   ru,
 } as const
 
-export const availableLocales = ['en', 'uk', 'no', 'ru'] as const
-export type Locale = (typeof availableLocales)[number]
-export const defaultLocale: Locale = 'en'
+export { availableLocales, defaultLocale } from './meta'
+export type { Locale } from './meta'
 
 export { default as en } from './en'
 export { default as uk } from './uk'

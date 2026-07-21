@@ -91,6 +91,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
+import { useLeaveLobby } from './hooks/useLeaveLobby'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
@@ -152,12 +153,10 @@ const ConnectFourLobbyPage = dynamic(
   { loading: () => <CenteredLoadingFallback /> }
 )
 
-const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
 const YAHTZEE_RESULTS_HOLD_MS = 12000
-type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -315,7 +314,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
-  const isLeavingLobbyRef = React.useRef(false)
+  const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Leave lobby')
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
@@ -330,9 +329,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     rollsLeft: null,
   })
   const hasLobbyPageInteractionRef = React.useRef(false)
-  const leaveStartedAtRef = React.useRef<number | null>(null)
-  const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
-  const leaveApiStatusCodeRef = React.useRef<number | null>(null)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -401,7 +397,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         ...(typeof lobby?.gameType === 'string' ? { gameType: lobby.gameType } : {}),
       })
     },
-    [isGuest, lobby?.gameType]
+    [isGuest, lobby?.gameType, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveStartedAtRef]
   )
 
   const navigateAfterLeave = React.useCallback(() => {
@@ -452,7 +448,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         }, LIFECYCLE_REDIRECT_FALLBACK_MS)
       }
     },
-    [router, lifecycleRedirectTarget, code]
+    [router, lifecycleRedirectTarget, code, isLeavingLobbyRef]
   )
 
   // Helper functions
@@ -844,7 +840,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
 
     setGameInterruptedInfo({ reason: 'abandoned' })
-  }, [triggerLifecycleRedirect])
+  }, [isLeavingLobbyRef])
 
   const minPlayersRequired = React.useMemo(() => {
     return getLobbyPlayerRequirements(lobby?.gameType as string | undefined).minPlayersRequired
@@ -928,7 +924,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (loadLobbyRef.current) {
       void loadLobbyRef.current()
     }
-  }, [isGuest, guestId, session?.user?.id, minPlayersRequired, triggerLifecycleRedirect, playAmbientSound])
+  }, [isGuest, guestId, session?.user?.id, minPlayersRequired, triggerLifecycleRedirect, playAmbientSound, isLeavingLobbyRef])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
   const canJoinSocketLobbyRoom = React.useMemo(() => {
@@ -1103,7 +1099,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       window.removeEventListener('focus', syncFromServer)
       document.removeEventListener('visibilitychange', syncFromServer)
     }
-  }, [error, game?.status, lobby?.id, startingGame])
+  }, [error, game?.status, lobby?.id, startingGame, isLeavingLobbyRef])
 
   // Bot turn automation hook
   const { triggerBotTurn } = useBotTurn({
@@ -1457,70 +1453,22 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
-  const handleLeaveLobby = async () => {
+  const handleLeaveLobby = () => {
     if (isLeavingLobbyRef.current) {
       return
     }
 
-    isLeavingLobbyRef.current = true
     setShowLeaveConfirmModal(false)
-    leaveStartedAtRef.current = Date.now()
-    leaveApiOutcomeRef.current = 'pending'
-    leaveApiStatusCodeRef.current = null
 
-
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
-
-    void fetchWithGuest(`/api/lobby/${code}/leave`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      keepalive: true,
-      signal: controller.signal,
+    leaveLobby((result) => {
+      if (result.outcome !== 'ok') return
+      const data = result.payload as { gameAbandoned?: boolean } | null
+      if (data?.gameAbandoned) {
+        showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
+        return
+      }
+      showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
     })
-      .then(async (res) => {
-        clearTimeout(timeoutId)
-        leaveApiStatusCodeRef.current = res.status
-        const data = await res.json().catch(() => null)
-
-        if (!res.ok) {
-          leaveApiOutcomeRef.current = 'non_ok'
-          clientLogger.warn('Leave lobby API returned non-ok status; using local redirect fallback', {
-            code,
-            status: res.status,
-            error: data,
-          })
-          return
-        }
-
-        leaveApiOutcomeRef.current = 'ok'
-        if (data?.gameAbandoned) {
-          showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
-          return
-        }
-
-        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId)
-        if ((error as Error)?.name === 'AbortError') {
-          leaveApiOutcomeRef.current = 'timeout'
-          clientLogger.warn('Leave lobby API timed out; local redirect already performed', {
-            code,
-            timeoutMs: LEAVE_REQUEST_TIMEOUT_MS,
-          })
-          return
-        }
-
-        leaveApiOutcomeRef.current = 'error'
-        clientLogger.warn('Leave lobby API failed; local redirect fallback used', {
-          code,
-          error,
-        })
-      })
 
     navigateAfterLeave()
   }
@@ -1701,7 +1649,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         toastKey: 'lobby.gameAbandoned',
       })
     }
-  }, [game?.status, lobby, triggerLifecycleRedirect])
+  }, [game?.status, lobby, triggerLifecycleRedirect, isLeavingLobbyRef])
 
   // Reset mobile-only UI state when a new Yahtzee game starts without a page reload
   // (e.g. host starts game, rematch starts, or socket-driven transition).

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -15,6 +15,7 @@ import {
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -371,10 +372,8 @@ interface TicTacToeLobbyPageProps {
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
 
-const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
-type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 interface AutoActionContext {
     source: 'turn-timeout'
@@ -425,13 +424,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
-    const isLeavingLobbyRef = React.useRef(false)
+    const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Tic-Tac-Toe')
     const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
-    const leaveStartedAtRef = React.useRef<number | null>(null)
-    const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
-    const leaveApiStatusCodeRef = React.useRef<number | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'tic_tac_toe').minPlayersRequired
 
     // Design states
@@ -458,7 +454,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 gameType: 'tic_tac_toe',
             })
         },
-        [isGuest]
+        [isGuest, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveStartedAtRef]
     )
 
     const navigateAfterLeave = useCallback(() => {
@@ -486,7 +482,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 if (window.location.pathname.startsWith(`/lobby/${code}`)) window.location.assign('/games')
             }, LIFECYCLE_REDIRECT_FALLBACK_MS)
         }
-    }, [router, code])
+    }, [router, code, isLeavingLobbyRef])
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -561,7 +557,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         if (isLeavingLobbyRef.current) return
         void loadLobby()
         triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`)
-    }, [loadLobby, triggerLifecycleRedirect])
+    }, [loadLobby, triggerLifecycleRedirect, isLeavingLobbyRef])
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
@@ -584,7 +580,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             return
         }
         void loadLobby()
-    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id])
+    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id, isLeavingLobbyRef])
 
   useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest && !isSpectator)) return
@@ -804,37 +800,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         isSpectator,
     })
 
-    const handleLeave = async () => {
+    const handleLeave = () => {
         if (isLeavingLobbyRef.current) return
-        isLeavingLobbyRef.current = true
         setShowLeaveConfirmModal(false)
-        leaveStartedAtRef.current = Date.now()
-        leaveApiOutcomeRef.current = 'pending'
-        leaveApiStatusCodeRef.current = null
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
-        void fetchWithGuest(`/api/lobby/${code}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, signal: controller.signal })
-            .then(async (response) => {
-                clearTimeout(timeoutId)
-                leaveApiStatusCodeRef.current = response.status
-                if (!response.ok) {
-                    leaveApiOutcomeRef.current = 'non_ok'
-                    const payload = await response.json().catch(() => null)
-                    clientLogger.warn('Tic-Tac-Toe leave API returned non-ok status', { code, status: response.status, payload })
-                } else {
-                    leaveApiOutcomeRef.current = 'ok'
-                }
-            })
-            .catch((error) => {
-                clearTimeout(timeoutId)
-                if ((error as Error)?.name === 'AbortError') {
-                    leaveApiOutcomeRef.current = 'timeout'
-                    clientLogger.warn('Tic-Tac-Toe leave API timed out after redirect', { code, timeoutMs: LEAVE_REQUEST_TIMEOUT_MS })
-                    return
-                }
-                leaveApiOutcomeRef.current = 'error'
-                clientLogger.warn('Tic-Tac-Toe leave API failed after redirect', { code, error })
-            })
+        leaveLobby()
         navigateAfterLeave()
     }
 
@@ -919,6 +888,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
     }, [localChat])
+
+    // Hoisted above the early returns below so this hook always runs, regardless
+    // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
+    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as TicTacToeGameData).moveHistory : undefined
+    const reversedMoveHistory = useMemo(
+        () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
+        [earlyMoveHistory]
+    )
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -1278,7 +1255,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div className="ttt-history-list">
                 {moveHistory.length === 0
                     ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
-                    : moveHistory.slice().reverse().map((m: TicTacToeMoveRecord, index) => (
+                    : reversedMoveHistory.map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(moveHistory.length - index).padStart(2, '0')}

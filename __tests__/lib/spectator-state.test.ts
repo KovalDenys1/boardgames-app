@@ -1,4 +1,4 @@
-import { sanitizeGameStateForSpectator, sanitizePayloadForSpectator } from '@/lib/spectator-state'
+import { sanitizeGameStateForSpectator } from '@/lib/spectator-state'
 
 describe('spectator state sanitization', () => {
   it('removes guess_the_spy identity fields from nested game state', () => {
@@ -69,26 +69,39 @@ describe('spectator state sanitization', () => {
     expect(sanitized.data.players[0].isSpy).toBe(true)
   })
 
-  it('leaves non-spy games unchanged', () => {
+  it('leaves non-spy, non-RPS games unchanged', () => {
     const input = { currentPlayerIndex: 0, data: { rollsLeft: 2 } }
     expect(sanitizeGameStateForSpectator('yahtzee', input)).toEqual(input)
   })
 
-  it('sanitizes nested JSON string fields in payload-like objects', () => {
+  it('hides a still-pending rock_paper_scissors choice from spectators (#652)', () => {
     const input = {
-      gameType: 'guess_the_spy',
-      initialState: JSON.stringify({
-        data: {
-          spyUserId: 'user_1',
-          players: [{ id: 'user_1', isSpy: true }],
-        },
-      }),
+      status: 'playing',
+      data: {
+        playerChoices: { p1: 'rock', p2: null },
+        playersReady: ['p1'],
+      },
     }
 
-    const sanitized = sanitizePayloadForSpectator('guess_the_spy', input) as any
+    const sanitized = sanitizeGameStateForSpectator('rock_paper_scissors', input, 'playing') as any
 
-    expect(typeof sanitized.initialState).toBe('object')
-    expect(sanitized.initialState.data.spyUserId).toBeUndefined()
-    expect(sanitized.initialState.data.players[0].isSpy).toBeUndefined()
+    expect(sanitized.data.playerChoices.p1).toBeNull()
+    expect(sanitized.data.playerChoices.p2).toBeNull()
+    expect(sanitized.data.playersReady).toEqual(['p1'])
+  })
+
+  it('does not hide rock_paper_scissors choices once both are in (round resolved)', () => {
+    const input = {
+      status: 'playing',
+      data: {
+        playerChoices: { p1: 'rock', p2: 'scissors' },
+        playersReady: [],
+        rounds: [{ choices: { p1: 'rock', p2: 'scissors' }, winner: 'p1' }],
+      },
+    }
+
+    const sanitized = sanitizeGameStateForSpectator('rock_paper_scissors', input, 'playing') as any
+
+    expect(sanitized.data.playerChoices).toEqual({ p1: 'rock', p2: 'scissors' })
   })
 })

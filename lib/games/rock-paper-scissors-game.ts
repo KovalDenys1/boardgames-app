@@ -226,3 +226,38 @@ export class RockPaperScissorsGame extends GameEngine {
         return 'draw'
     }
 }
+
+/**
+ * Hide a still-pending (submitted-but-not-yet-revealed) choice from anyone
+ * but the player who made it — otherwise a poll, realtime broadcast, or the
+ * opponent's own page reload between the two submissions would leak the
+ * first player's committed choice, defeating simultaneous reveal.
+ *
+ * Once both players have submitted, `revealRound()` runs synchronously in
+ * the same move and either resets `playerChoices` to null (round continues)
+ * or leaves the final round's choices intact with `status: 'finished'` —
+ * both are safe to show as-is, so this only ever redacts the narrow window
+ * where exactly one player has locked in and the other hasn't.
+ *
+ * `viewerUserId` lets the direct HTTP response to the submitting player keep
+ * their own just-submitted choice visible (they already know what they
+ * picked); pass `null` for the broadcast payload shared with everyone else.
+ */
+export function sanitizeRpsStateForBroadcast<T extends { data?: unknown; status?: string }>(
+    state: T,
+    viewerUserId: string | null = null
+): T {
+    const data = state.data as RockPaperScissorsGameData | undefined
+    if (!data) return state
+
+    const playersReady = Array.isArray(data.playersReady) ? data.playersReady : []
+    const hasPendingUnrevealedChoice = playersReady.length === 1 && state.status !== 'finished'
+    if (!hasPendingUnrevealedChoice) return state
+
+    const sanitizedChoices: Record<string, RPSChoice | null> = {}
+    for (const [playerId, choice] of Object.entries(data.playerChoices ?? {})) {
+        sanitizedChoices[playerId] = playerId === viewerUserId ? choice : null
+    }
+
+    return { ...state, data: { ...data, playerChoices: sanitizedChoices } }
+}

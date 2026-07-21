@@ -1,6 +1,7 @@
 import { GameStatus } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { MAX_SNAPSHOTS_PER_GAME } from '@/lib/game-replay'
 
 const log = apiLogger('cleanup-replays')
 const DEFAULT_REPLAY_RETENTION_DAYS = 90
@@ -50,4 +51,47 @@ export async function cleanupOldReplaySnapshots(
     retentionDays,
     cutoffDate: cutoffDate.toISOString(),
   }
+}
+
+export interface ReplayOverflowCleanupResult {
+  deletedSnapshots: number
+  affectedGames: number
+}
+
+/**
+ * Enforces the per-game snapshot cap (MAX_SNAPSHOTS_PER_GAME). Used to run
+ * inline on every single move write; moved here since <1% of games ever
+ * approach the cap, so it doesn't need to be on the per-move hot path.
+ */
+export async function cleanupOversizedReplaySnapshots(): Promise<ReplayOverflowCleanupResult> {
+  const overflowGames = await prisma.gameStateSnapshots.groupBy({
+    by: ['gameId'],
+    _count: { id: true },
+    having: { id: { _count: { gt: MAX_SNAPSHOTS_PER_GAME } } },
+  })
+
+  let deletedSnapshots = 0
+
+  for (const { gameId } of overflowGames) {
+    const overflow = await prisma.gameStateSnapshots.findMany({
+      where: { gameId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { id: true },
+      skip: MAX_SNAPSHOTS_PER_GAME,
+    })
+
+    if (overflow.length === 0) continue
+
+    const result = await prisma.gameStateSnapshots.deleteMany({
+      where: { id: { in: overflow.map((snapshot) => snapshot.id) } },
+    })
+    deletedSnapshots += result.count
+  }
+
+  log.info('Oversized replay snapshot cleanup completed', {
+    deletedSnapshots,
+    affectedGames: overflowGames.length,
+  })
+
+  return { deletedSnapshots, affectedGames: overflowGames.length }
 }

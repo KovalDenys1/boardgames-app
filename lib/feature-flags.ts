@@ -18,13 +18,6 @@ export function isSketchAndGuessEnabled(): boolean {
   )
 }
 
-export function isLiarsPartyEnabled(): boolean {
-  return (
-    parseBooleanFlag(process.env.ENABLE_LIARS_PARTY) ||
-    parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_LIARS_PARTY)
-  )
-}
-
 export function isFakeArtistEnabled(): boolean {
   return (
     parseBooleanFlag(process.env.ENABLE_FAKE_ARTIST) ||

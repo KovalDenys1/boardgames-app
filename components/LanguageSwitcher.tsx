@@ -3,8 +3,9 @@
 import { Fragment, useMemo } from 'react'
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { availableLocales, type Locale } from '@/locales'
+import { availableLocales, type Locale } from '@/locales/meta'
 import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
+import { changeLanguageLazy } from '@/i18n'
 
 interface LanguageSwitcherProps {
   variant?: 'header' | 'panel'
@@ -71,7 +72,7 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
       return
     }
 
-    void i18n.changeLanguage(setStoredAppearanceLocale(localStorage, nextLanguage))
+    void changeLanguageLazy(setStoredAppearanceLocale(localStorage, nextLanguage) as Locale)
   }
 
   return (

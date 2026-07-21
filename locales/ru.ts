@@ -1157,9 +1157,7 @@ const ru = {
       scoring: 'Выбирает категорию...'
     },
     ui: {
-      yourTurn: 'Ваш ход',
       hurry: 'Поторопитесь!',
-      waiting: 'Ожидание...',
       moveReverted: 'Ход не применился. Состояние восстановлено с сервера.',
       waitTurnHint: 'Дождитесь своего хода...',
       rollFirstHint: 'Сначала бросьте кости',
@@ -1171,38 +1169,21 @@ const ru = {
       startingGame: 'Начинаем игру...',
       readyToPlay: 'Готовы играть в Ятзи?',
       rollTheDice: 'Бросайте кости, набирайте очки и получайте удовольствие!',
-      playersInLobby: '{{count}} игрок в лобби',
-      playersInLobby_other: '{{count}} игроков в лобби',
       addBotOrWait: 'Добавьте бота или ждите присоединения других',
-      readyToStart: '✅ Готово к началу игры!',
-      playersInLobbyTitle: 'Игроки в лобби',
       preparingDice: '🎲 Подготовка костей...',
       addingBot: '🤖 Добавление бота...',
       willTakeAMoment: 'Это займёт всего мгновение',
-      aiBot: '🤖 ИИ-бот',
-      player: 'Игрок',
-      you: '(Вы)',
-      round: 'Раунд',
-      turn: 'Ход',
       leave: 'Покинуть',
       leaveConfirm: 'Вы уверены, что хотите покинуть игру?',
       soundOn: '🔊 Звук включён',
       soundOff: '🔇 Звук выключен',
-      enableSound: 'Включить звуковые эффекты',
-      disableSound: 'Выключить звуковые эффекты',
-      playerFallback: 'Игрок',
       startYahtzeeGame: 'Начать игру в Ятзи',
       addBotPlayer: 'Добавить бота',
-      inviteFriends: 'Пригласить друзей',
-      lobbyFull: 'Лобби заполнено',
       addAiOpponent: 'Добавить ИИ-противника',
-      inviteFriendsToJoin: 'Пригласите друзей присоединиться',
       botAutoAddTip: 'Бот будет автоматически добавлен, если вы начнёте игру в одиночку',
       tip: 'Совет',
       waitingForHost: 'Ожидание запуска хостом...',
-      host: 'Хост',
       perTurn: 'на ход',
-      timeLimit: 'Лимит времени',
       scored: 'Набрано',
       notAvailable: 'Недоступно',
       bonusProgress: '{{current}}/63 для бонуса',
@@ -2093,6 +2074,7 @@ const ru = {
   spectate: {
     watchingCount: '👁 Наблюдение · {{count}} зрителей',
     joinAsPlayer: 'Войти как игрок',
+    joinNextGame: 'Войти в следующую игру',
     joining: 'Вхожу...',
     backToLobbies: '← Лобби',
     gameUnavailable: 'Состояние игры недоступно',
@@ -2224,12 +2206,10 @@ const ru = {
     startFailed: 'Не удалось запустить гостевой режим'
   },
   maintenance: {
-    title: 'Технические работы',
     heading: 'Скоро вернемся!',
     message: 'Boardly сейчас проходит плановое техническое обслуживание для улучшения игрового опыта.',
     estimate: 'Ориентировочное завершение: в течение 24 часов',
     contact: 'Вопросы или предложения?',
-    github: 'Написать на почту',
     apology: 'Извините за неудобства.',
   },
   errorPage: {
@@ -2256,29 +2236,6 @@ const ru = {
   },
   celebration: {
     scorePoints: '+{{count}} очков',
-  },
-  showcase: {
-    title: 'Играть сейчас — Бесплатно',
-    subtitle: 'Без скачивания. Без регистрации.',
-    browseAll: 'Все игры →',
-    games: {
-      yahtzee: {
-        description: 'Бросай кости, собирай комбинации, побеждай друзей.',
-        players: '1–4 игрока',
-      },
-      ticTacToe: {
-        description: 'Классическая стратегия 3×3. Доступен режим матча.',
-        players: '2 игрока',
-      },
-      memory: {
-        description: 'Переворачивай карточки, находи пары. Три уровня сложности.',
-        players: '2–4 игрока',
-      },
-      spy: {
-        description: 'Один шпион, одно секретное место. Сможешь найти?',
-        players: '3–10 игроков',
-      },
-    },
   },
   faq: {
     title: 'Часто задаваемые вопросы',
@@ -2314,9 +2271,6 @@ const ru = {
       question: 'Нужно ли что-то скачивать?',
       answer: 'Ничего скачивать не нужно. Boardly работает полностью в браузере. Просто открой сайт и играй.',
     },
-  },
-  homeFooter: {
-    copyright: '© {{year}} Boardly. Создано с Next.js, Supabase и Prisma.',
   },
   footer: {
     tagline: 'Играй в настольные игры онлайн с друзьями в реальном времени. Бесплатно, без скачивания.',

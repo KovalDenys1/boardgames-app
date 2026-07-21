@@ -1,4 +1,5 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
+import { getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
 
 export type FakeArtistPhase = 'drawing' | 'discussion' | 'voting' | 'reveal'
 
@@ -209,7 +210,7 @@ export class FakeArtistGame extends GameEngine {
         return false
       }
 
-      const content = this.getStringField(move.data, 'content')
+      const content = getStringField(move.data, 'content')
       if (!content) {
         return false
       }
@@ -230,7 +231,7 @@ export class FakeArtistGame extends GameEngine {
         return false
       }
 
-      const suspectPlayerId = this.getStringField(move.data, 'suspectPlayerId')
+      const suspectPlayerId = getStringField(move.data, 'suspectPlayerId')
       if (!suspectPlayerId) {
         return false
       }
@@ -254,7 +255,7 @@ export class FakeArtistGame extends GameEngine {
     const nowMs = Date.now()
 
     if (data.phase === 'drawing' && move.type === 'submit-stroke') {
-      const content = this.getStringField(move.data, 'content')
+      const content = getStringField(move.data, 'content')
       if (!content) {
         return
       }
@@ -272,7 +273,7 @@ export class FakeArtistGame extends GameEngine {
     }
 
     if (data.phase === 'voting' && move.type === 'submit-vote') {
-      const suspectPlayerId = this.getStringField(move.data, 'suspectPlayerId')
+      const suspectPlayerId = getStringField(move.data, 'suspectPlayerId')
       if (!suspectPlayerId) {
         return
       }
@@ -304,11 +305,7 @@ export class FakeArtistGame extends GameEngine {
     }
 
     const data = this.state.data as FakeArtistGameData
-    if (!data.winnerId) {
-      return null
-    }
-
-    return this.state.players.find((player) => player.id === data.winnerId) || null
+    return this.resolvePlayerWinner(data.winnerId)
   }
 
   getGameRules(): string[] {
@@ -666,11 +663,7 @@ export class FakeArtistGame extends GameEngine {
   }
 
   private resolveFakeArtistId(round: number, playerOrder: string[]): string {
-    if (playerOrder.length === 0) {
-      return ''
-    }
-    const index = (round - 1) % playerOrder.length
-    return playerOrder[index] || playerOrder[0]
+    return resolvePlayerByRoundIndex(round, playerOrder) || playerOrder[0] || ''
   }
 
   private resolvePromptFingerprint(round: number, fakeArtistId: string, playerOrder: string[]): string {
@@ -716,11 +709,6 @@ export class FakeArtistGame extends GameEngine {
 
   private isKnownPlayer(playerId: string, data: FakeArtistGameData): boolean {
     return data.playerOrder.includes(playerId)
-  }
-
-  private getStringField(data: Record<string, unknown>, key: string): string | null {
-    const value = data[key]
-    return typeof value === 'string' ? value : null
   }
 
   private buildTimeoutFallbackStroke(playerId: string, round: number, turnIndex: number): string {

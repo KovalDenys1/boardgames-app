@@ -412,7 +412,7 @@ const Scorecard = React.memo(function Scorecard({
           </div>
 
           {/* Upper categories */}
-          <div className="flex flex-col gap-1 sm:justify-evenly sm:flex-1">
+          <div className="flex flex-col gap-1 sm:justify-start sm:flex-1">
             {upperSection.map(renderCategory)}
           </div>
 
@@ -444,7 +444,7 @@ const Scorecard = React.memo(function Scorecard({
           </div>
 
           {/* Lower categories */}
-          <div className="flex flex-col gap-1 sm:justify-evenly sm:flex-1">
+          <div className="flex flex-col gap-1 sm:justify-start sm:flex-1">
             {lowerSection.map(renderCategory)}
           </div>
 

@@ -278,4 +278,19 @@ export abstract class GameEngine {
 
   // Override in subclasses that need to normalize deserialized game data (e.g. ensure arrays exist).
   protected normalizeRestoredData(): void {}
+
+  // For 2-player games: find the other player's id. Was reimplemented
+  // identically in connect-four and tic-tac-toe as `resolveResponderId`.
+  protected getOpponent(playerId: string): string | null {
+    const opponent = this.state.players.find((player) => player.id !== playerId);
+    return opponent?.id ?? null;
+  }
+
+  // Resolves a stored winnerId to the matching Player, or null if unset/not found.
+  // Was reimplemented identically in checkWinCondition() across 5 engines
+  // (memory, liars-party, telephone-doodle, sketch-and-guess, fake-artist).
+  protected resolvePlayerWinner(winnerId: string | null | undefined): Player | null {
+    if (!winnerId) return null;
+    return this.state.players.find((player) => player.id === winnerId) || null;
+  }
 }

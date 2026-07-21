@@ -1157,9 +1157,7 @@ const no = {
       scoring: 'Velger kategori...'
     },
     ui: {
-      yourTurn: 'Din tur',
       hurry: 'Skynd deg!',
-      waiting: 'Venter...',
       moveReverted: 'Trekket feilet. Tilstanden ble gjenopprettet fra serveren.',
       waitTurnHint: 'Vent på turen din...',
       rollFirstHint: 'Kast terningene først',
@@ -1171,38 +1169,21 @@ const no = {
       startingGame: 'Starter spill...',
       readyToPlay: 'Klar til å spille Yahtzee?',
       rollTheDice: 'Kast terningene, score stort og ha det gøy!',
-      playersInLobby: '{{count}} spiller i lobbyen',
-      playersInLobby_other: '{{count}} spillere i lobbyen',
       addBotOrWait: 'Legg til en bot eller vent på at andre blir med',
-      readyToStart: '✅ Klar til å starte spillet!',
-      playersInLobbyTitle: 'Spillere i lobbyen',
       preparingDice: '🎲 Forbereder terningene...',
       addingBot: '🤖 Legger til botspiller...',
       willTakeAMoment: 'Dette vil bare ta et øyeblikk',
-      aiBot: '🤖 AI-bot',
-      player: 'Spiller',
-      you: '(Du)',
-      round: 'Runde',
-      turn: 'Tur',
       leave: 'Forlat',
       leaveConfirm: 'Er du sikker på at du vil forlate spillet?',
       soundOn: '🔊 Lyd aktivert',
       soundOff: '🔇 Lyd deaktivert',
-      enableSound: 'Aktiver lydeffekter',
-      disableSound: 'Deaktiver lydeffekter',
-      playerFallback: 'Spiller',
       startYahtzeeGame: 'Start Yahtzee-spill',
       addBotPlayer: 'Legg til botspiller',
-      inviteFriends: 'Inviter venner',
-      lobbyFull: 'Lobbyen er full',
       addAiOpponent: 'Legg til AI-motstander',
-      inviteFriendsToJoin: 'Inviter vennene dine til å bli med',
       botAutoAddTip: 'En bot blir automatisk lagt til hvis du starter alene',
       tip: 'Tips',
       waitingForHost: 'Venter på at verten skal starte...',
-      host: 'Vert',
       perTurn: 'per tur',
-      timeLimit: 'Tidsgrense',
       scored: 'Scoret',
       notAvailable: 'Ikke tilgjengelig',
       bonusProgress: '{{current}}/63 for bonus',
@@ -2093,6 +2074,7 @@ const no = {
   spectate: {
     watchingCount: '👁 Ser på · {{count}} ser',
     joinAsPlayer: 'Bli med som spiller',
+    joinNextGame: 'Bli med i neste spill',
     joining: 'Blir med...',
     backToLobbies: '← Lobbier',
     gameUnavailable: 'Spilltilstand ikke tilgjengelig',
@@ -2224,12 +2206,10 @@ const no = {
     startFailed: 'Kunne ikke starte gjestemodus'
   },
   maintenance: {
-    title: 'Vedlikehold pågår',
     heading: 'Vi er snart tilbake!',
     message: 'Boardly er for øyeblikket utilgjengelig grunnet planlagt vedlikehold for å forbedre spillopplevelsen.',
     estimate: 'Estimert ferdig: innen 24 timer',
     contact: 'Spørsmål eller tilbakemeldinger?',
-    github: 'Send e-post',
     apology: 'Beklager ulempen.',
   },
   errorPage: {
@@ -2256,29 +2236,6 @@ const no = {
   },
   celebration: {
     scorePoints: '+{{count}} poeng',
-  },
-  showcase: {
-    title: 'Spill nå — Gratis',
-    subtitle: 'Ingen nedlasting. Ingen konto nødvendig.',
-    browseAll: 'Se alle spill →',
-    games: {
-      yahtzee: {
-        description: 'Kast terninger, samle kombinasjoner, slå vennene dine.',
-        players: '1–4 spillere',
-      },
-      ticTacToe: {
-        description: 'Klassisk 3×3-strategi. Kampusmodus tilgjengelig.',
-        players: '2 spillere',
-      },
-      memory: {
-        description: 'Snu kort, finn par. Tre vanskelighetsgrader.',
-        players: '2–4 spillere',
-      },
-      spy: {
-        description: 'Én spion, ett hemmelig sted. Kan du finne dem?',
-        players: '3–10 spillere',
-      },
-    },
   },
   faq: {
     title: 'Ofte stilte spørsmål',
@@ -2314,9 +2271,6 @@ const no = {
       question: 'Er det noe å laste ned eller installere?',
       answer: 'Ingenting å laste ned. Boardly kjører helt i nettleseren din. Bare åpne siden og begynn å spille.',
     },
-  },
-  homeFooter: {
-    copyright: '© {{year}} Boardly. Bygget med Next.js, Supabase og Prisma.',
   },
   footer: {
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',

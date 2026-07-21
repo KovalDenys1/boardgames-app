@@ -9,6 +9,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import type { ChatMessagePayload, GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
@@ -376,7 +377,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
   const winSoundPlayedForRef = React.useRef<string | null>(null)
-  const isLeavingRef = React.useRef(false)
+  const { isLeavingLobbyRef: isLeavingRef, leaveLobby } = useLeaveLobby(code, 'Alias')
   const minPlayersRequired = 4
 
   const getCurrentUserId = useCallback(() => {
@@ -578,17 +579,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   const handleLeave = useCallback(() => {
     if (isLeavingRef.current) return
-    isLeavingRef.current = true
     setShowLeaveConfirmModal(false)
-    void fetchWithGuest(`/api/lobby/${code}/leave`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-    }).catch((err) => {
-      clientLogger.warn('Alias leave API failed', { code, error: err })
-    })
+    leaveLobby()
     router.push('/games')
-  }, [code, router])
+  }, [isLeavingRef, leaveLobby, router])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id || isStarting) return
@@ -1068,6 +1062,18 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   }
 
   // ── Phases 2-5 helpers ─────────────────────────────────────────────────────
+  // data.teams can arrive briefly unset during a realtime reconcile (e.g. a
+  // game-reset/switch broadcast landing before the full snapshot) even though
+  // phase has already moved past team_assignment — fall back to the same
+  // loading state used while data itself is still unset, instead of crashing.
+  if (!data.teams || data.teams.length === 0) {
+    return (
+      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
   const currentTeam = data.teams[data.currentTeamIndex]
   const describerId = currentTeam?.playerIds[currentTeam?.describerIndex ?? 0]
   const isDescriber = describerId === currentUserId

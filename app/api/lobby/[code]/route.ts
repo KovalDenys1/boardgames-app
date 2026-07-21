@@ -16,7 +16,7 @@ import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { AliasGame } from '@/lib/games/alias'
-import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import {
   hashLobbyPassword,
@@ -401,9 +401,7 @@ export async function GET(
           ...activeGame,
           state: (() => {
             const parsed = parsePersistedGameState<{ data?: unknown; status?: string }>(activeGame.state)
-            const safe = activeGameType === 'guess_the_spy'
-              ? sanitizeSpyStateForBroadcast(parsed)
-              : parsed
+            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed)
             return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])
           })(),
           players: Array.isArray(activeGame.players)

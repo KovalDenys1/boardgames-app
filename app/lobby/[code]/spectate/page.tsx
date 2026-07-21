@@ -54,6 +54,7 @@ function SpectatorTopBar({
   onJoinAsPlayer,
   lobbyCode,
   isAdminView,
+  isMidMatch,
 }: {
   spectatorCount: number
   canJoinAsPlayer: boolean
@@ -61,6 +62,7 @@ function SpectatorTopBar({
   onJoinAsPlayer: () => void
   lobbyCode: string
   isAdminView?: boolean
+  isMidMatch?: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -98,7 +100,7 @@ function SpectatorTopBar({
               fontFamily: 'inherit',
             }}
           >
-            {joiningAsPlayer ? t('spectate.joining') : t('spectate.joinAsPlayer')}
+            {joiningAsPlayer ? t('spectate.joining') : isMidMatch ? t('spectate.joinNextGame') : t('spectate.joinAsPlayer')}
           </button>
         )}
         <a
@@ -114,6 +116,104 @@ function SpectatorTopBar({
         </a>
       </div>
     </div>
+  )
+}
+
+/**
+ * Chat for spectate paths that render a real game board full-page (the 5
+ * DEDICATED_SPECTATOR_GAMES plus memory/yahtzee/guess_the_spy since #672
+ * moved them onto the same real-board pattern) — those pages own their own
+ * layout, so chat can't be docked in a sidebar like the generic fallback
+ * shell below. A floating collapsible widget avoids touching 8 separate page
+ * layouts just to add one shared feature (#653).
+ */
+function FloatingSpectatorChat({
+  isAuthenticated,
+  isAdminView,
+  chatMessages,
+  chatInput,
+  onChatInputChange,
+  onSendMessage,
+}: {
+  isAuthenticated: boolean
+  isAdminView: boolean
+  chatMessages: SpectatorChatMessage[]
+  chatInput: string
+  onChatInputChange: (value: string) => void
+  onSendMessage: (e: React.FormEvent) => void
+}) {
+  const { t } = useTranslation()
+  const [isOpen, setIsOpen] = useState(false)
+
+  if (!isAuthenticated) return null
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label={t('spectate.chatTitle')}
+        style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 60,
+          width: 48, height: 48, borderRadius: 999,
+          background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+          border: 'none', cursor: 'pointer', fontSize: 20,
+          display: 'grid', placeItems: 'center',
+          boxShadow: '0 6px 16px -4px rgba(31,27,22,0.4)',
+        }}
+      >
+        {isOpen ? '✕' : '💬'}
+        {!isOpen && chatMessages.length > 0 && (
+          <span aria-hidden style={{
+            position: 'absolute', top: -2, right: -2,
+            width: 12, height: 12, borderRadius: 999,
+            background: 'var(--bd-coral)', border: '2px solid var(--bd-bg)',
+          }} />
+        )}
+      </button>
+      {isOpen && (
+        <div
+          className="bd-card"
+          style={{
+            position: 'fixed', bottom: 72, right: 16, zIndex: 60,
+            width: 300, maxWidth: 'calc(100vw - 32px)',
+            display: 'flex', flexDirection: 'column', padding: 16,
+          }}
+        >
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
+          <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
+            {chatMessages.length === 0 && (
+              <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
+            )}
+            {chatMessages.map((message) => (
+              <div key={message.id} className="text-sm">
+                <span className="font-semibold text-bd-ink">{message.username}: </span>
+                <span className="text-bd-ink-soft">{message.message}</span>
+              </div>
+            ))}
+          </div>
+          {!isAdminView && (
+            <form onSubmit={onSendMessage} className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => onChatInputChange(e.target.value)}
+                placeholder={t('spectate.chatPlaceholder')}
+                maxLength={500}
+                className="bd-input min-w-0 flex-1 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('chat.send')}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -430,6 +530,8 @@ export default function SpectatorLobbyPage() {
     )
   }
 
+  const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
+
   // ── Dedicated game types: render real game component with isSpectator prop ──
   if (DEDICATED_SPECTATOR_GAMES.has(data.lobby.gameType)) {
     const gameType = data.lobby.gameType
@@ -442,12 +544,21 @@ export default function SpectatorLobbyPage() {
           onJoinAsPlayer={joinAsPlayer}
           lobbyCode={code}
           isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
         />
         {gameType === 'connect_four' && <ConnectFourLobbyPage code={code} isSpectator />}
         {gameType === 'tic_tac_toe' && <TicTacToeLobbyPage code={code} isSpectator />}
         {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
         {gameType === 'alias' && <AliasPage code={code} isSpectator />}
         {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
+        <FloatingSpectatorChat
+          isAuthenticated={isAuthenticated}
+          isAdminView={isAdminView}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          onChatInputChange={setChatInput}
+          onSendMessage={sendSpectatorChatMessage}
+        />
       </>
     )
   }
@@ -466,6 +577,7 @@ export default function SpectatorLobbyPage() {
           onJoinAsPlayer={joinAsPlayer}
           lobbyCode={code}
           isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
         />
         <MemoryGameBoard
           gameId={data.activeGame?.id ?? ''}
@@ -475,6 +587,14 @@ export default function SpectatorLobbyPage() {
           currentUserId={spectatorUserId}
           turnTimerLimit={data.lobby.turnTimer ?? undefined}
           isSpectator
+        />
+        <FloatingSpectatorChat
+          isAuthenticated={isAuthenticated}
+          isAdminView={isAdminView}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          onChatInputChange={setChatInput}
+          onSendMessage={sendSpectatorChatMessage}
         />
       </>
     )
@@ -491,6 +611,7 @@ export default function SpectatorLobbyPage() {
           onJoinAsPlayer={joinAsPlayer}
           lobbyCode={code}
           isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
         />
         <SpyGameBoard
           gameId={data.activeGame?.id ?? ''}
@@ -505,6 +626,14 @@ export default function SpectatorLobbyPage() {
           guestToken={null}
           onRefresh={loadSnapshot}
           isSpectator
+        />
+        <FloatingSpectatorChat
+          isAuthenticated={isAuthenticated}
+          isAdminView={isAdminView}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          onChatInputChange={setChatInput}
+          onSendMessage={sendSpectatorChatMessage}
         />
       </>
     )
@@ -526,6 +655,7 @@ export default function SpectatorLobbyPage() {
           onJoinAsPlayer={joinAsPlayer}
           lobbyCode={code}
           isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
         />
         {yahtzeeEngine ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,6fr)', gap: 16, padding: '16px', height: 'calc(100dvh - 64px - 48px)', overflow: 'hidden' }}>
@@ -572,13 +702,20 @@ export default function SpectatorLobbyPage() {
             <LoadingSpinner size="lg" />
           </div>
         )}
+        <FloatingSpectatorChat
+          isAuthenticated={isAuthenticated}
+          isAdminView={isAdminView}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          onChatInputChange={setChatInput}
+          onSendMessage={sendSpectatorChatMessage}
+        />
       </>
     )
   }
 
   // ── Fallback: game types with no dedicated spectator board (e.g. experimental/in-development games) ──
   const players = activeGamePlayers
-  const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
 
   return (
     <div className="bd-page bd-screen min-h-[calc(100dvh-64px)] text-bd-ink">
@@ -612,7 +749,11 @@ export default function SpectatorLobbyPage() {
                 disabled={joiningAsPlayer}
                 className="bd-btn bd-btn-coral justify-center disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {joiningAsPlayer ? t('spectate.joining') : t('spectate.joinAsPlayer')}
+                {joiningAsPlayer
+                  ? t('spectate.joining')
+                  : data.activeGame?.status === 'playing'
+                    ? t('spectate.joinNextGame')
+                    : t('spectate.joinAsPlayer')}
               </button>
             )}
             <button

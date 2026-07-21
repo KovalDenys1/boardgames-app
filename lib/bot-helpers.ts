@@ -12,26 +12,6 @@ export async function isBot(userId: string): Promise<boolean> {
 }
 
 /**
- * Check if multiple users are bots (batch operation)
- * Returns a Map of userId -> isBot
- */
-export async function checkMultipleBots(userIds: string[]): Promise<Map<string, boolean>> {
-  const bots = await prisma.bots.findMany({
-    where: { userId: { in: userIds } },
-    select: { userId: true }
-  })
-  
-  const botUserIds = new Set(bots.map(b => b.userId))
-  const result = new Map<string, boolean>()
-  
-  for (const userId of userIds) {
-    result.set(userId, botUserIds.has(userId))
-  }
-  
-  return result
-}
-
-/**
  * Create a bot user with bot record
  */
 export async function createBot(
@@ -120,39 +100,4 @@ export async function getOrCreateBotUser(
 
     throw error
   }
-}
-
-/**
- * Get bot info by userId
- */
-export async function getBotInfo(userId: string) {
-  return await prisma.bots.findUnique({
-    where: { userId },
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          image: true,
-        }
-      }
-    }
-  })
-}
-
-/**
- * Delete a bot and its user record
- */
-export async function deleteBot(userId: string) {
-  // Cascade delete will handle bot record
-  return await prisma.users.delete({
-    where: { id: userId }
-  })
-}
-
-/**
- * Helper to check if user object has bot relation loaded
- */
-export function isBotUser(user: { bot?: unknown }): boolean {
-  return user.bot !== null && user.bot !== undefined
 }

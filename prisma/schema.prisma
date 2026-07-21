@@ -165,6 +165,8 @@ model Lobbies {
   @@index([isActive])
   @@index([createdAt])
   @@index([creatorId])
+  @@index([isActive, createdAt])
+  @@index([isActive, gameType])
 }
 
 model LobbyInvites {

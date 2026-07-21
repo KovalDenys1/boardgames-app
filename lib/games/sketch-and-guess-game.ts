@@ -1,4 +1,5 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
+import { resolveBoundedRuleNumber, getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
 
 export type SketchAndGuessPhase = 'drawing' | 'guessing' | 'reveal'
 
@@ -171,7 +172,7 @@ export class SketchAndGuessGame extends GameEngine {
         return false
       }
 
-      const content = this.getStringField(move.data, 'content')
+      const content = getStringField(move.data, 'content')
       if (!content) {
         return false
       }
@@ -193,7 +194,7 @@ export class SketchAndGuessGame extends GameEngine {
         return false
       }
 
-      const guess = this.getStringField(move.data, 'guess')
+      const guess = getStringField(move.data, 'guess')
       if (!guess) {
         return false
       }
@@ -215,7 +216,7 @@ export class SketchAndGuessGame extends GameEngine {
 
     if (data.phase === 'drawing' && move.type === 'submit-drawing') {
       const currentRound = this.getCurrentRound(data)
-      const content = this.getStringField(move.data, 'content')
+      const content = getStringField(move.data, 'content')
       if (!currentRound || !content) {
         return
       }
@@ -232,7 +233,7 @@ export class SketchAndGuessGame extends GameEngine {
 
     if (data.phase === 'guessing' && move.type === 'submit-guess') {
       const currentRound = this.getCurrentRound(data)
-      const guess = this.getStringField(move.data, 'guess')
+      const guess = getStringField(move.data, 'guess')
       if (!currentRound || !guess) {
         return
       }
@@ -266,11 +267,7 @@ export class SketchAndGuessGame extends GameEngine {
     }
 
     const data = this.state.data as SketchAndGuessGameData
-    if (!data.winnerId) {
-      return null
-    }
-
-    return this.state.players.find((player) => player.id === data.winnerId) || null
+    return this.resolvePlayerWinner(data.winnerId)
   }
 
   getGameRules(): string[] {
@@ -554,9 +551,7 @@ export class SketchAndGuessGame extends GameEngine {
   }
 
   private resolveDrawerId(round: number, drawerOrder: string[]): string {
-    if (drawerOrder.length === 0) return ''
-    const index = (round - 1) % drawerOrder.length
-    return drawerOrder[index] || ''
+    return resolvePlayerByRoundIndex(round, drawerOrder) || ''
   }
 
   private createRound(round: number, drawerId: string): SketchAndGuessRound {
@@ -582,20 +577,15 @@ export class SketchAndGuessGame extends GameEngine {
   }
 
   private resolveTotalRounds(): number {
-    const rawRounds = (this.config.rules as { rounds?: unknown } | undefined)?.rounds
-    if (typeof rawRounds === 'number' && Number.isFinite(rawRounds) && rawRounds > 0) {
-      return Math.min(MAX_TOTAL_ROUNDS, Math.max(MIN_TOTAL_ROUNDS, Math.floor(rawRounds)))
-    }
-    return DEFAULT_TOTAL_ROUNDS
+    return resolveBoundedRuleNumber(this.config.rules, 'rounds', {
+      min: MIN_TOTAL_ROUNDS,
+      max: MAX_TOTAL_ROUNDS,
+      fallback: DEFAULT_TOTAL_ROUNDS,
+    })
   }
 
   private getExpectedGuesserCount(data: SketchAndGuessGameData): number {
     return Math.max(0, this.state.players.length - 1)
-  }
-
-  private getStringField(data: Record<string, unknown>, key: string): string | null {
-    const value = data[key]
-    return typeof value === 'string' ? value : null
   }
 
   private normalizeAnswer(value: string): string {
