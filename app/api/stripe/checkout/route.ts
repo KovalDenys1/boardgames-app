@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
@@ -6,6 +7,31 @@ import { getStripe, PREMIUM_PRICE_ID } from '@/lib/stripe'
 import { apiLogger } from '@/lib/logger'
 
 const log = apiLogger('/api/stripe/checkout')
+
+/**
+ * True if a stored stripeCustomerId no longer resolves on Stripe's side —
+ * e.g. it was created under a different key/mode (test vs live) or deleted
+ * directly in the Stripe dashboard. Safe to drop and recreate.
+ */
+function isStaleCustomerError(error: unknown): boolean {
+  return (
+    error instanceof Stripe.errors.StripeInvalidRequestError &&
+    error.code === 'resource_missing' &&
+    error.param === 'customer'
+  )
+}
+
+async function recreateStripeCustomer(user: { id: string; email: string | null }): Promise<string> {
+  const customer = await getStripe().customers.create({
+    email: user.email ?? undefined,
+    metadata: { userId: user.id },
+  })
+  await prisma.users.update({
+    where: { id: user.id },
+    data: { stripeCustomerId: customer.id },
+  })
+  return customer.id
+}
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -24,40 +50,49 @@ export async function POST(req: NextRequest) {
     if (!user.stripeCustomerId) {
       return NextResponse.json({ error: 'No billing account found' }, { status: 400 })
     }
-    const portal = await getStripe().billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
-      return_url: `${process.env.NEXTAUTH_URL}/profile`,
-    })
-    return NextResponse.json({ url: portal.url })
+    try {
+      const portal = await getStripe().billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${process.env.NEXTAUTH_URL}/profile`,
+      })
+      return NextResponse.json({ url: portal.url })
+    } catch (err) {
+      if (!isStaleCustomerError(err)) throw err
+      log.warn('Stale stripeCustomerId on billing portal request, recreating', { userId: user.id })
+      return NextResponse.json(
+        { error: 'Your billing account needs to be reconnected — please start a new checkout.' },
+        { status: 409 }
+      )
+    }
   }
 
   const origin = req.headers.get('origin') ?? process.env.NEXTAUTH_URL ?? ''
 
   // Get or create Stripe customer
-  let customerId = user.stripeCustomerId
-  if (!customerId) {
-    const customer = await getStripe().customers.create({
-      email: user.email ?? undefined,
-      metadata: { userId: user.id },
-    })
-    customerId = customer.id
-    await prisma.users.update({
-      where: { id: user.id },
-      data: { stripeCustomerId: customerId },
-    })
-  }
+  let customerId = user.stripeCustomerId ?? (await recreateStripeCustomer(user))
 
-  const checkoutSession = await getStripe().checkout.sessions.create({
-    customer: customerId,
-    mode: 'subscription',
-    line_items: [{ price: PREMIUM_PRICE_ID, quantity: 1 }],
-    success_url: `${origin}/profile?premium=success`,
-    cancel_url: `${origin}/profile`,
-    allow_promotion_codes: true,
-    subscription_data: {
-      metadata: { userId: user.id },
-    },
-  })
+  const createCheckoutSession = () =>
+    getStripe().checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: PREMIUM_PRICE_ID, quantity: 1 }],
+      success_url: `${origin}/profile?premium=success`,
+      cancel_url: `${origin}/profile`,
+      allow_promotion_codes: true,
+      subscription_data: {
+        metadata: { userId: user.id },
+      },
+    })
+
+  let checkoutSession
+  try {
+    checkoutSession = await createCheckoutSession()
+  } catch (err) {
+    if (!isStaleCustomerError(err)) throw err
+    log.warn('Stale stripeCustomerId on checkout, recreating customer', { userId: user.id })
+    customerId = await recreateStripeCustomer(user)
+    checkoutSession = await createCheckoutSession()
+  }
 
   log.info('Checkout session created', { userId: user.id })
   return NextResponse.json({ url: checkoutSession.url })
