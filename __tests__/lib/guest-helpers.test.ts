@@ -100,6 +100,48 @@ describe('Guest Helpers', () => {
             expect(prisma.users.create).not.toHaveBeenCalled()
         })
 
+        it('should skip the write when recently active and username unchanged', async () => {
+            const guestId = 'guest_throttled'
+            const guestName = 'Same Name'
+            const existingUser = {
+                id: guestId,
+                username: guestName,
+                email: `guest-${guestId}@boardly.guest`,
+                isGuest: true,
+                lastActiveAt: new Date(Date.now() - 60000), // 1 minute ago
+            }
+
+                ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(existingUser)
+
+            const user = await getOrCreateGuestUser(guestId, guestName)
+
+            expect(prisma.users.update).not.toHaveBeenCalled()
+            expect(user).toEqual(existingUser)
+        })
+
+        it('should fall back to the existing record if the activity write times out', async () => {
+            const guestId = 'guest_slow_write'
+            const guestName = 'Test Guest'
+            const existingUser = {
+                id: guestId,
+                username: 'Old Name',
+                email: `guest-${guestId}@boardly.guest`,
+                isGuest: true,
+                lastActiveAt: new Date(Date.now() - 3600000), // 1 hour ago
+            }
+
+                ; (prisma.users.findFirst as jest.Mock)
+                    .mockResolvedValueOnce(existingUser) // lookup by guestId
+                    .mockResolvedValueOnce(null) // username uniqueness check — available
+                ; (prisma.users.update as jest.Mock).mockRejectedValue(new Error('Database operation timed out after 12000ms (Users.update)'))
+
+            const user = await getOrCreateGuestUser(guestId, guestName)
+
+            expect(prisma.users.update).toHaveBeenCalled()
+            expect(user.id).toBe(guestId)
+            expect(user.username).toBe(guestName)
+        })
+
         it('should handle errors gracefully', async () => {
             const guestId = 'guest_error'
             const guestName = 'Error Guest'

@@ -171,8 +171,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                 disabled={disabled || colFull}
                                 aria-label={`column ${c + 1}`}
                                 style={{
-                                    width: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
-                                    height: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
+                                    width: 'clamp(30px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
+                                    height: 'clamp(30px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
                                     background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
