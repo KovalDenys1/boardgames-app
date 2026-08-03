@@ -40,7 +40,12 @@ import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 const DISC_RED = 'var(--bd-coral)'
 const DISC_YELLOW = 'var(--bd-sun)'
-const DISC_EMPTY = 'var(--bd-bg2)'
+// Fixed (not var(--bd-bg2)) — the board is a self-contained "black plastic
+// with pale holes" look that must stay the same in light and dark theme.
+// --bd-bg2 flips to a dark color in html.dark, which inverted this into a
+// light frame with near-black holes on real devices. Matches --bd-bg2's
+// light-mode value exactly, so light mode is visually unchanged.
+const DISC_EMPTY = '#F2E9D8'
 
 function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx }: {
     disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc; fallDistancePx?: number
@@ -137,9 +142,11 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 ))}
             </div>
 
-            {/* Board grid */}
+            {/* Board grid — fixed dark frame (not var(--bd-ink), which
+                flips to a light color in html.dark) so the board keeps its
+                self-contained look in both themes; see DISC_EMPTY above. */}
             <div style={{
-                background: 'var(--bd-ink)',
+                background: '#1F1B16',
                 borderRadius: 16,
                 padding: 8,
                 boxShadow: '0 8px 24px rgba(31,27,22,0.24)',
