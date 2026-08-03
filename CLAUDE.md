@@ -83,6 +83,45 @@ Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based 
 - Auth: NextAuth, Supabase Realtime (Broadcast + Postgres Changes)
 - Deployed on Vercel (iad1 / US East)
 
+## Mobile responsiveness rules
+
+Learned from real bugs (#687, #688) that emulated-viewport testing missed —
+apply these whenever touching any game board or in-game mobile view.
+
+- **Never size a multi-row grid/board from `100vw` alone.** Any board taller
+  than it is a single row (Connect Four's 7x6, not Tic-Tac-Toe's square 3x3)
+  needs its cell size to be the `min()` of a width-derived value AND a
+  height-derived value using the shared `--ttt-h` custom property
+  (`app/globals.css`, `.ttt-screen`). Width-only sizing is blind to vertical
+  space and can produce a board taller than the real usable viewport,
+  silently clipped by `overflow:hidden` — this is exactly what happened in
+  #688. See `.ttt-board-card`'s `--c4-cell` rule for the pattern to copy.
+- **Emulated viewports (Playwright/Chrome DevTools device mode) do not
+  reproduce real mobile browser chrome.** iOS Safari's address bar
+  show/hide animation changes the resolved `100dvh` of any `position:fixed`
+  element sized with `calc(100dvh - ...)` — this can only be observed on a
+  real device, never in a resized desktop browser window. A mobile
+  responsiveness fix is not "verified" until checked on a real phone
+  screenshot. If browser automation tooling is unavailable, say so
+  explicitly rather than claiming a fix works.
+- **Budget vertical space deliberately in mobile game views — don't stack
+  full-size info cards.** Prefer one thin, always-shrinkable region (the
+  actual board/scorecard) surrounded by as few `flex-shrink-0` chrome
+  blocks as possible. Before adding a new status banner/card to a mobile
+  game view, check whether the info already exists somewhere else on
+  screen (Yahtzee had a "Your Turn" banner duplicating both the Next Move
+  card's copy and the timer's color-coded urgency). Reuse the codebase's
+  own compact patterns instead of inventing new ones:
+  - Compact multi-stat header row: `MemoryGameBoard.tsx`'s
+    `.memory-mobile-header` (`app/globals.css`) — 24px avatars,
+    `padding:4px 8px`, `fontSize:10-11px`.
+  - Collapse-on-tap for secondary info: `WaitingRoomActions.tsx`'s
+    `useState` toggle + rotating-chevron button idiom.
+  - Horizontal scroll instead of wrap for a chip/pill row on narrow
+    screens: `LobbyInfo.tsx`'s `overflow-x-auto` rail (no
+    scrollbar-hiding utility exists in this codebase — don't add one,
+    the native thin scrollbar is the accepted look).
+
 ## Adding a new game — checklist
 
 ### Code

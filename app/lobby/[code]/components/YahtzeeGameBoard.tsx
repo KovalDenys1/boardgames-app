@@ -96,8 +96,8 @@ export default function GameBoard({
         }}
       >
         {/* Timer at top of dice area */}
-        <div className="flex-shrink-0 p-3 border-b" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
-          <div className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-2xl transition-all ${percentage <= 17 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
+        <div className="flex-shrink-0 px-3 py-1.5 border-b" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+          <div className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-2xl transition-all ${percentage <= 17 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
               percentage <= 50 ? 'bg-[var(--bd-sun)] text-bd-ink shadow-sm' :
                 'text-bd-ink shadow-sm'
             }`}
@@ -108,8 +108,12 @@ export default function GameBoard({
           </div>
         </div>
 
-        {/* Dice */}
-        <div className="flex-1 min-h-0">
+        {/* Dice — min-h floor keeps this from being crushed to overlapping
+            size when iOS Safari's address-bar toggle momentarily shrinks
+            the resolved 100dvh of the fixed game viewport (see
+            LobbyPageClient.tsx's scroll-lock comment for the same class of
+            bug) */}
+        <div className="flex-1 min-h-[190px]">
           <DiceGroup
             dice={gameEngine.getDice()}
             held={isMyTurn ? held : gameEngine.getHeld()}
@@ -121,7 +125,7 @@ export default function GameBoard({
         </div>
 
         {/* Controls pinned to bottom of card */}
-        <div className="flex-shrink-0 p-3 space-y-2 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+        <div className="flex-shrink-0 p-2.5 space-y-1.5 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           <div
             className="rounded-2xl border px-3 py-3 shadow-sm"
             style={{ background: nextStepBg, borderColor: nextStepBorder }}
@@ -131,18 +135,23 @@ export default function GameBoard({
                 Next Move
               </p>
               <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                <span className={`bd-chip px-2 py-1 ${isMyTurn && timeLeft <= 10 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse' : isMyTurn ? 'bd-chip-mint' : ''}`}>
+                  {isMyTurn
+                    ? (timeLeft <= 10 ? `⚠️ ${t('yahtzee.ui.hurry')}` : `🎯 ${t('game.ui.yourTurn')}`)
+                    : `⏳ ${t('game.ui.waiting')}`}
+                </span>
                 <span className="bd-chip px-2 py-1">
-                  {rollsLeft} roll{rollsLeft === 1 ? '' : 's'} left
+                  {rollsLeft} left
                 </span>
                 <span className="bd-chip px-2 py-1">
                   Hold {heldCount}/5
                 </span>
               </div>
             </div>
-            <p className="mt-1 text-sm font-semibold text-bd-ink">
+            <p className="mt-0.5 text-sm font-semibold text-bd-ink">
               {nextStepTitle}
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-bd-ink-soft">
+            <p className="mt-0.5 text-xs leading-snug text-bd-ink-soft">
               {nextStepCopy}
             </p>
             {showReviewScorecardButton && canReviewScorecard && (
@@ -160,38 +169,10 @@ export default function GameBoard({
           </div>
 
           {isStateReverting && (
-            <div className="text-center px-3 py-2 rounded-2xl shadow-sm border text-red-700 animate-pulse" style={{ background: 'rgba(255,107,91,0.14)', borderColor: 'rgba(255,107,91,0.24)' }}>
+            <div className="text-center px-3 py-1.5 rounded-2xl shadow-sm border text-red-700 animate-pulse" style={{ background: 'rgba(255,107,91,0.14)', borderColor: 'rgba(255,107,91,0.24)' }}>
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <span className="text-base sm:text-lg">↩️</span>
                 <p className="text-xs sm:text-sm font-semibold">{t('yahtzee.ui.moveReverted')}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Turn Indicator */}
-          {isMyTurn ? (
-            timeLeft <= 10 ? (
-              <div className="text-center px-3 py-2 rounded-2xl shadow-sm text-white animate-pulse bg-gradient-to-r from-red-500 to-pink-500 transition-all duration-200">
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                  <span className="text-base sm:text-xl">⚠️</span>
-                  <p className="text-xs sm:text-sm font-bold">{t('yahtzee.ui.hurry')}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="bd-pulse text-center px-3 py-2 rounded-2xl shadow-sm text-bd-ink transition-all duration-200" style={{ background: 'rgba(79,201,166,0.2)', border: '1px solid rgba(79,201,166,0.28)' }}>
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                  <span className="text-base sm:text-xl">🎯</span>
-                  <p className="text-xs sm:text-sm font-bold">{t('game.ui.yourTurn')}</p>
-                </div>
-              </div>
-            )
-          ) : (
-            <div className="text-center px-3 py-2 rounded-2xl border transition-all duration-200" style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}>
-              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                <span className="text-base sm:text-xl">⏳</span>
-                <p className="text-sm text-bd-ink-muted font-medium">
-                  {t('game.ui.waiting')}
-                </p>
               </div>
             </div>
           )}
