@@ -114,7 +114,8 @@ describe('Guest user flow integration', () => {
       username: guestName,
       email: `guest-${guestId}@boardly.guest`,
       isGuest: true,
-      lastActiveAt: new Date(Date.now() - 60_000),
+      // Beyond the 5-minute activity throttle (#683) so the write isn't skipped.
+      lastActiveAt: new Date(Date.now() - 10 * 60_000),
     })
     ;(prisma.users.update as jest.Mock).mockResolvedValue({
       id: guestId,

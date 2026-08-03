@@ -365,11 +365,18 @@ export const authOptions: NextAuthOptions = {
       const fiveMinutes = 5 * 60 * 1000
 
       if (token.id && now - lastUpdate > fiveMinutes) {
-        // Update lastActiveAt in background (non-blocking)
-        prisma.users.update({
-          where: { id: token.id as string },
-          data: { lastActiveAt: new Date() }
-        }).catch(() => { }) // Silently fail to avoid blocking auth
+        // Awaited (not fire-and-forget): Vercel serverless functions can kill pending
+        // promises once the response is sent (see #509), which would silently orphan
+        // this write and its DB connection under load. Failures are swallowed here
+        // deliberately — a stale lastActiveAt shouldn't block auth.
+        try {
+          await prisma.users.update({
+            where: { id: token.id as string },
+            data: { lastActiveAt: new Date() }
+          })
+        } catch {
+          // Silently fail to avoid blocking auth
+        }
 
         token.lastActiveUpdate = now
       }

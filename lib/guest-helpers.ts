@@ -3,6 +3,12 @@ import { apiLogger } from '@/lib/logger'
 
 const log = apiLogger('/lib/guest-helpers')
 
+// Matches the authenticated-user activity throttle in lib/next-auth.ts — guests hit this
+// path on nearly every API call (getRequestAuthUser -> getOrCreateGuestUser), so writing
+// lastActiveAt unconditionally on every request made it the hottest, unthrottled write in
+// the app and a recurring source of Users.update timeouts under DB contention (#683).
+const GUEST_ACTIVITY_THROTTLE_MS = 5 * 60 * 1000
+
 /**
  * Get or create a guest user based on guest ID
  * Guest users are temporary and marked with isGuest = true
@@ -18,13 +24,21 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
         })
 
         if (existingGuest) {
+            const usernameChanged = existingGuest.username !== guestName
+            const lastActiveAgeMs = Date.now() - existingGuest.lastActiveAt.getTime()
+
+            // Nothing to persist and we touched this row recently — skip the write.
+            if (!usernameChanged && lastActiveAgeMs < GUEST_ACTIVITY_THROTTLE_MS) {
+                return existingGuest
+            }
+
             // Update last active timestamp and username only if it changed
             const updateData: { lastActiveAt: Date; username?: string } = {
                 lastActiveAt: new Date(),
             }
 
             // Only update username if it has changed
-            if (existingGuest.username !== guestName) {
+            if (usernameChanged) {
                 // Check if the new username is already taken
                 const usernameExists = await prisma.users.findFirst({
                     where: {
@@ -46,16 +60,26 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
                 }
             }
 
-            const updatedGuest = await prisma.users.update({
-                where: { id: existingGuest.id },
-                data: updateData,
-            })
-            log.info('Found existing guest user', {
-                guestId,
-                guestName: updatedGuest.username,
-                usernameUpdated: updateData.username !== undefined
-            })
-            return updatedGuest
+            try {
+                const updatedGuest = await prisma.users.update({
+                    where: { id: existingGuest.id },
+                    data: updateData,
+                })
+                log.info('Found existing guest user', {
+                    guestId,
+                    guestName: updatedGuest.username,
+                    usernameUpdated: updateData.username !== undefined
+                })
+                return updatedGuest
+            } catch (updateError) {
+                // This is a housekeeping write (activity timestamp / display name) piggybacking
+                // on whatever request the guest happened to make — it shouldn't be able to take
+                // down that request (e.g. Quick Play matchmaking) just because it hit the DB
+                // timeout under load. Fall back to the pre-write record; the next request will
+                // retry the write.
+                log.error('Failed to update guest activity, continuing with existing record', updateError as Error, { guestId })
+                return { ...existingGuest, ...updateData }
+            }
         }
 
         // For new guest users, ensure username is unique
