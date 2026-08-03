@@ -367,9 +367,9 @@ const Scorecard = React.memo(function Scorecard({
       )}
 
       {/* Two-column body — each column scrolls independently on small viewports */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 overflow-y-auto sm:overflow-hidden divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: 'var(--bd-line)' }}>
+      <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 overflow-hidden divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: 'var(--bd-line)' }}>
         {/* ── Upper section ── */}
-        <div className="flex flex-col min-h-0 px-3 pt-3 pb-2 sm:overflow-y-auto">
+        <div className="flex flex-col min-h-0 overflow-y-auto px-3 pt-3 pb-2">
           {/* Section header */}
           <div className="mb-2 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -431,7 +431,7 @@ const Scorecard = React.memo(function Scorecard({
         </div>
 
         {/* ── Lower section ── */}
-        <div className="flex flex-col min-h-0 px-3 pt-3 pb-2 sm:overflow-y-auto">
+        <div className="flex flex-col min-h-0 overflow-y-auto px-3 pt-3 pb-2">
           {/* Section header */}
           <div className="mb-2 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
