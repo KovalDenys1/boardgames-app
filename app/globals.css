@@ -1664,6 +1664,21 @@ input[type="range"].slider-thumb::-moz-range-track {
     width: min(calc(100vw - 52px), calc(var(--ttt-h) - 325px));
     height: auto;
   }
+  /* Connect Four's board is 7 cols x 6 rows, not square like TTT's 3x3 — sizing
+     cells from 100vw alone (its original formula) ignores vertical space
+     entirely, so the board's real height (6 rows tall) can run past the
+     bottom of the screen and get clipped by .ttt-board-card's overflow:hidden
+     on shorter phone viewports (confirmed live on a real iPhone, #688).
+     Overhead = .ttt-board-wrap's 325px budget above (identical header/status/
+     tabs/actions shell) + this board's own 28px drop-arrow row + the grid's
+     own 46px of internal padding(16)/row-gaps(30) that .ttt-board-wrap doesn't
+     need to account for separately (its square sizing wraps the whole card).
+     Not live-verified against a real device this session (tooling outage) —
+     erred toward a larger overhead (safety buffer ~20px) so a slightly-smaller
+     board is the failure mode, not a re-cropped one. */
+  .ttt-board-card {
+    --c4-cell: min(calc((100vw - 104px) / 7), calc((var(--ttt-h) - 420px) / 6));
+  }
 }
 
 .ttt-mobile-content {
