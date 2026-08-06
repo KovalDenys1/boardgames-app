@@ -6,6 +6,12 @@ import { withErrorHandler, AuthenticationError, assertExists } from '@/lib/error
 import { apiLogger } from '@/lib/logger'
 import { loginSchema } from '@/lib/validation/auth'
 
+// NOTE: the web app does NOT use this route — it signs in via
+// signIn('credentials'), which NextAuth handles in app/api/auth/[...nextauth].
+// This endpoint verifies a password but issues no session, so it is a second,
+// independent copy of the credential check. Kept for now because it is public
+// API surface that an external client could rely on; if nothing consumes it,
+// delete it rather than keeping two password paths in sync. See #714.
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/auth/login')
 
