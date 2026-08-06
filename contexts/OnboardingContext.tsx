@@ -49,6 +49,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }, [pathname])
 
   const completeOnboarding = useCallback(async () => {
+    // Close immediately on click — persisting the choice is fire-and-forget
+    // background work, not something the dismiss action should block on.
+    // Previously awaited the PATCH before closing, so on any network delay
+    // the modal would silently sit there through the first click (looking
+    // like the button did nothing) until it resolved.
+    setShowModal(false)
     if (status === 'authenticated') {
       await fetch('/api/onboarding', {
         method: 'PATCH',
@@ -58,10 +64,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     } else {
       localStorage.setItem(GUEST_ONBOARDING_KEY, 'completed')
     }
-    setShowModal(false)
   }, [status])
 
   const skipOnboarding = useCallback(async () => {
+    setShowModal(false)
     if (status === 'authenticated') {
       await fetch('/api/onboarding', {
         method: 'PATCH',
@@ -71,7 +77,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     } else {
       localStorage.setItem(GUEST_ONBOARDING_KEY, 'skipped')
     }
-    setShowModal(false)
   }, [status])
 
   return (
