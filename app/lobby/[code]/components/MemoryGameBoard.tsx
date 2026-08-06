@@ -764,7 +764,11 @@ export default function MemoryGameBoard({
                 <span className="memory-tile-back-mark">✦</span>
               </span>
               <span className={`memory-tile-face ${symbolSizeClass}`}>
-                {card.value}
+                {/* Face-down cards no longer carry their value (#715), so an
+                    optimistic flip has nothing to show until the server confirms
+                    the move. Render a neutral placeholder for that brief window
+                    instead of a blank tile. */}
+                {card.value || (isFaceUp ? '·' : '')}
               </span>
             </span>
           </button>

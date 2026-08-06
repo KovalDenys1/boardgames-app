@@ -304,3 +304,34 @@ export class MemoryGame extends GameEngine {
     return tie ? null : winnerId
   }
 }
+
+/**
+ * Strips the face of every card the table cannot already see.
+ *
+ * `MemoryCard.value` was previously broadcast for every card regardless of
+ * `isFlipped`/`isMatched`, so any player could read the whole board out of the
+ * network payload and win every game (#715). A card is only safe to reveal once
+ * it is face up (`isFlipped`) or already claimed (`isMatched`).
+ *
+ * There is no viewer exception: no player, not even the one whose turn it is,
+ * may see a face-down card. `moveHistory` is left intact — it records values
+ * that were shown to everyone when the pair was flipped, and it does not map
+ * them back to card ids, so remembering them is the game rather than a leak.
+ */
+export function sanitizeMemoryStateForBroadcast<T extends { data?: unknown; status?: string }>(
+  state: T
+): T {
+  const data = state.data as MemoryGameData | undefined
+  if (!data || !Array.isArray(data.cards)) return state
+
+  let redactedAny = false
+  const sanitizedCards = data.cards.map((card) => {
+    if (!card || card.isFlipped || card.isMatched) return card
+    redactedAny = true
+    return { ...card, value: '' }
+  })
+
+  if (!redactedAny) return state
+
+  return { ...state, data: { ...data, cards: sanitizedCards } }
+}
