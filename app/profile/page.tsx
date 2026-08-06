@@ -226,7 +226,11 @@ export default function ProfilePage() {
 
   const memberSinceLabel = useMemo(() => {
     if (!profileSummary?.createdAt) {
-      return '--'
+      // null (not '--') distinguishes "profile hasn't loaded yet" from a
+      // real value so the card can show a loading skeleton instead of a
+      // static placeholder that briefly reads as broken/empty data right
+      // after registration.
+      return null
     }
 
     return new Date(profileSummary.createdAt).toLocaleDateString(i18n.language || undefined, {
@@ -1777,9 +1781,13 @@ export default function ProfilePage() {
                           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
                             {card.label}
                           </p>
-                          <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
-                            {card.value}
-                          </p>
+                          {card.value === null ? (
+                            <div className="mt-2 h-8 w-16 animate-pulse rounded-lg bg-bd-bg2 dark:bg-slate-700" aria-hidden="true" />
+                          ) : (
+                            <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
+                              {card.value}
+                            </p>
+                          )}
                         </>
                       )
                       const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800'
