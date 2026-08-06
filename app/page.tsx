@@ -31,7 +31,13 @@ export default function HomePage() {
         <HeroSectionRedesign
           facts={{
             availableGameCount: availableGames.length,
-            catalogGameCount: catalogGames.length,
+            // "Games in catalog" sits directly under the "N ready to play" /
+            // "M more coming soon" badges — it must equal ready + coming
+            // soon, not the raw catalog length. catalogGames also includes
+            // 'planned' games that aren't part of either badge's narrative;
+            // counting them here made the three numbers not add up (e.g.
+            // 6 + 5 = 11 shown next to a "15" stat).
+            catalogGameCount: availableGames.length + inDevelopmentGameCount,
             inDevelopmentGameCount,
             quickPlayGameCount,
           }}

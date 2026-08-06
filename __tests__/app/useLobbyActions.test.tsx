@@ -99,7 +99,7 @@ describe('useLobbyActions', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockRestoreGameEngineClient.mockResolvedValue({} as never)
+    mockRestoreGameEngineClient.mockResolvedValue({ getCurrentPlayer: () => null } as never)
   })
 
   afterAll(() => {

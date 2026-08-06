@@ -401,7 +401,17 @@ const no = {
         title: 'Begynn å spille',
         description: 'Alle ser samme brett, poeng og trekk i nettleseren sin. Ingen nedlasting nødvendig.',
       },
-    }
+    },
+    demo: {
+      youWin: '🎉 Du vinner!',
+      botWins: 'Bot vinner!',
+      draw: 'Uavgjort!',
+      yourTurnX: 'Din tur (X)',
+      dropAPiece: 'Slipp en brikke',
+      allMatched: '🎉 Alle par funnet!',
+      pairsProgress: '{{count}} / {{total}} par',
+      playFullGame: 'Spill hele spillet →',
+    },
   },
   games: {
     title: 'Tilgjengelige spill',
@@ -638,6 +648,7 @@ const no = {
         victoryBadge: 'SEIER',
         drawBadge: 'UAVGJORT',
         theirTurn: 'Deres tur',
+        yourTurnBadge: 'Din tur',
         catsGameFull: 'Uavgjort — brettet er fullt.',
         playerTurn: '{{player}}s tur',
         moveNum: '· trekk {{num}}',
@@ -1370,6 +1381,7 @@ const no = {
     sending: 'Sender...',
     memberSince: 'Medlem siden',
     premiumAccount: 'Premium-konto',
+    premiumFeatureLocked: 'Oppgrader til Premium for å låse opp dette',
     comingSoon: 'Kommer snart',
     verificationBanner: {
       title: 'E-post ikke bekreftet',

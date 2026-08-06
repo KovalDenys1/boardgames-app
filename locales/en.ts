@@ -402,6 +402,16 @@ const en = {
         description: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
       },
     },
+    demo: {
+      youWin: '🎉 You win!',
+      botWins: 'Bot wins!',
+      draw: 'Draw!',
+      yourTurnX: 'Your turn (X)',
+      dropAPiece: 'Drop a piece',
+      allMatched: '🎉 All matched!',
+      pairsProgress: '{{count}} / {{total}} pairs',
+      playFullGame: 'Play full game →',
+    },
   },
   games: {
     title: 'Available Games',
@@ -638,6 +648,7 @@ const en = {
         victoryBadge: 'VICTORY',
         drawBadge: 'DRAW',
         theirTurn: 'Their turn',
+        yourTurnBadge: 'Your turn',
         catsGameFull: "Cat's game — board is full.",
         playerTurn: "{{player}}'s turn",
         moveNum: '· move {{num}}',
@@ -1370,6 +1381,7 @@ const en = {
     sending: 'Sending...',
     memberSince: 'Member Since',
     premiumAccount: 'Premium Account',
+    premiumFeatureLocked: 'Upgrade to Premium to unlock this',
     comingSoon: 'Coming soon',
     verificationBanner: {
       title: 'Email not verified',

@@ -2530,6 +2530,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onProfileClick={setProfileUserId}
               isGuest={isGuest}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+              reconcileWithServerSnapshot={reconcileWithServerSnapshot}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">

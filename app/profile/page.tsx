@@ -226,7 +226,11 @@ export default function ProfilePage() {
 
   const memberSinceLabel = useMemo(() => {
     if (!profileSummary?.createdAt) {
-      return '--'
+      // null (not '--') distinguishes "profile hasn't loaded yet" from a
+      // real value so the card can show a loading skeleton instead of a
+      // static placeholder that briefly reads as broken/empty data right
+      // after registration.
+      return null
     }
 
     return new Date(profileSummary.createdAt).toLocaleDateString(i18n.language || undefined, {
@@ -1777,9 +1781,13 @@ export default function ProfilePage() {
                           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
                             {card.label}
                           </p>
-                          <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
-                            {card.value}
-                          </p>
+                          {card.value === null ? (
+                            <div className="mt-2 h-8 w-16 animate-pulse rounded-lg bg-bd-bg2 dark:bg-slate-700" aria-hidden="true" />
+                          ) : (
+                            <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
+                              {card.value}
+                            </p>
+                          )}
                         </>
                       )
                       const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800'
@@ -2760,8 +2768,11 @@ export default function ProfilePage() {
                       <button
                         key={hex}
                         type="button"
-                        disabled={!hasUploadPack}
                         onClick={() => {
+                          if (!hasUploadPack) {
+                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            return
+                          }
                           const next = profileAccentColor === hex ? null : hex
                           setProfileAccentColor(next)
                           void handleSaveCustomization({ accentColor: next })
@@ -2772,7 +2783,7 @@ export default function ProfilePage() {
                         style={{
                           width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
                           outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
-                          outlineOffset: 2, cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                          outlineOffset: 2, cursor: 'pointer',
                           opacity: hasUploadPack ? 1 : 0.4,
                           transition: 'all 0.15s',
                         }}
@@ -2809,8 +2820,11 @@ export default function ProfilePage() {
                       <button
                         key={id}
                         type="button"
-                        disabled={!hasUploadPack}
                         onClick={() => {
+                          if (!hasUploadPack) {
+                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            return
+                          }
                           const next = profileFeaturedGame === id ? null : id
                           setProfileFeaturedGame(next)
                           void handleSaveCustomization({ featuredGame: next })
@@ -2820,7 +2834,7 @@ export default function ProfilePage() {
                             ? 'border-bd-ink bg-bd-ink text-bd-bg dark:border-white dark:bg-white dark:text-bd-ink'
                             : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-slate-400'
                         }`}
-                        style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: hasUploadPack ? 'pointer' : 'not-allowed' }}
+                        style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: 'pointer' }}
                       >
                         {label}
                       </button>
@@ -2847,17 +2861,20 @@ export default function ProfilePage() {
                         <button
                           key={id}
                           type="button"
-                          disabled={!hasUploadPack}
                           aria-pressed={active}
                           aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
                           onClick={() => {
+                            if (!hasUploadPack) {
+                              showToast.custom('profile.premiumFeatureLocked', '👑')
+                              return
+                            }
                             setPremiumCardStyle(id)
                             void handleSaveCustomization({ premiumCardStyle: id })
                           }}
                           style={{
                             background: preview,
                             opacity: hasUploadPack ? 1 : 0.4,
-                            cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                            cursor: 'pointer',
                             outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
                             outlineOffset: 2,
                           }}

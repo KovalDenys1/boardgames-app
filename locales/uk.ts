@@ -404,6 +404,16 @@ const uk: Translation = {
         description: 'Всі бачать одну дошку, рахунок і ходи у своєму браузері. Завантаження не потрібне.',
       },
     },
+    demo: {
+      youWin: '🎉 Ви перемогли!',
+      botWins: 'Бот переміг!',
+      draw: 'Нічия!',
+      yourTurnX: 'Ваш хід (X)',
+      dropAPiece: 'Зробіть хід',
+      allMatched: '🎉 Усі пари знайдено!',
+      pairsProgress: '{{count}} / {{total}} пар',
+      playFullGame: 'Грати повну гру →',
+    },
   },
   games: {
     title: 'Доступні ігри',
@@ -640,6 +650,7 @@ const uk: Translation = {
         victoryBadge: 'ПЕРЕМОГА',
         drawBadge: 'НІЧИЯ',
         theirTurn: 'Їхній хід',
+        yourTurnBadge: 'Ваш хід',
         catsGameFull: 'Нічия — дошка заповнена.',
         playerTurn: 'Хід {{player}}',
         moveNum: '· хід {{num}}',
@@ -1372,6 +1383,7 @@ const uk: Translation = {
     sending: 'Надсилання...',
     memberSince: 'Учасник з',
     premiumAccount: 'Преміум акаунт',
+    premiumFeatureLocked: 'Оформіть Преміум, щоб відкрити це',
     comingSoon: 'Незабаром',
     verificationBanner: {
       title: 'Пошту не підтверджено',
