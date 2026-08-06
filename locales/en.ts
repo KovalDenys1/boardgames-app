@@ -638,6 +638,7 @@ const en = {
         victoryBadge: 'VICTORY',
         drawBadge: 'DRAW',
         theirTurn: 'Their turn',
+        yourTurnBadge: 'Your turn',
         catsGameFull: "Cat's game — board is full.",
         playerTurn: "{{player}}'s turn",
         moveNum: '· move {{num}}',

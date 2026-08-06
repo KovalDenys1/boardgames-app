@@ -640,6 +640,7 @@ const uk: Translation = {
         victoryBadge: 'ПЕРЕМОГА',
         drawBadge: 'НІЧИЯ',
         theirTurn: 'Їхній хід',
+        yourTurnBadge: 'Ваш хід',
         catsGameFull: 'Нічия — дошка заповнена.',
         playerTurn: 'Хід {{player}}',
         moveNum: '· хід {{num}}',

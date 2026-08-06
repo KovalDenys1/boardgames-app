@@ -638,6 +638,7 @@ const ru = {
         victoryBadge: 'ПОБЕДА',
         drawBadge: 'НИЧЬЯ',
         theirTurn: 'Их ход',
+        yourTurnBadge: 'Ваш ход',
         catsGameFull: 'Ничья — доска заполнена.',
         playerTurn: 'Ход {{player}}',
         moveNum: '· ход {{num}}',

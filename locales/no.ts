@@ -638,6 +638,7 @@ const no = {
         victoryBadge: 'SEIER',
         drawBadge: 'UAVGJORT',
         theirTurn: 'Deres tur',
+        yourTurnBadge: 'Din tur',
         catsGameFull: 'Uavgjort — brettet er fullt.',
         playerTurn: '{{player}}s tur',
         moveNum: '· trekk {{num}}',
