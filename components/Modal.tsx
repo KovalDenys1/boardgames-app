@@ -1,7 +1,17 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from '@/lib/i18n-helpers'
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
 
 interface ModalProps {
   isOpen: boolean
@@ -23,6 +33,9 @@ export default function Modal({
   bodyPadding = 'default',
 }: ModalProps) {
   const [isMounted, setIsMounted] = useState(false)
+  const { t } = useTranslation()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     setIsMounted(true)
@@ -31,25 +44,72 @@ export default function Modal({
     }
   }, [])
 
-  // Close on Escape key
+  const getFocusableElements = useCallback((): HTMLElement[] => {
+    const dialog = dialogRef.current
+    if (!dialog) return []
+    return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+      (element) => element.offsetParent !== null || element === document.activeElement
+    )
+  }, [])
+
+  // Close on Escape, and keep Tab inside the dialog while it's open. Without the
+  // trap, tabbing past the last control landed on the page behind a scroll-locked
+  // body, which is a dead end for keyboard and screen-reader users.
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         onClose()
+        return
+      }
+
+      if (e.key !== 'Tab') return
+
+      const focusable = getFocusableElements()
+      if (focusable.length === 0) {
+        // Nothing to move to — keep focus on the dialog itself.
+        e.preventDefault()
+        dialogRef.current?.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+
+      if (e.shiftKey && (active === first || active === dialogRef.current)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault()
+        first.focus()
       }
     }
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden'
-    }
+    document.addEventListener('keydown', handleKeyDown)
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden'
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
+      document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, getFocusableElements])
+
+  // Move focus in on open and hand it back to the trigger on close, so keyboard
+  // users don't get dropped at the top of the document.
+  useEffect(() => {
+    if (!isOpen || !isMounted) return
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const focusable = getFocusableElements()
+    ;(focusable[0] ?? dialogRef.current)?.focus()
+
+    return () => {
+      previouslyFocused?.focus?.()
+    }
+  }, [isOpen, isMounted, getFocusableElements])
 
   if (!isOpen || !isMounted) return null
 
@@ -73,14 +133,21 @@ export default function Modal({
       }`}
       style={{ padding: mobileFullscreen ? '0px' : `clamp(12px, 1.2vw, 20px)` }}
     >
-      {/* Backdrop */}
-      <div 
+      {/* Backdrop — presentational; Escape and the close button are the
+          keyboard-accessible ways out, so this isn't a focusable control. */}
+      <div
         className="absolute inset-0 z-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden="true"
       />
-      
+
       {/* Modal Content */}
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        {...(title ? { 'aria-labelledby': titleId } : {})}
+        tabIndex={-1}
         className={`relative z-10 flex w-full flex-col shadow-2xl animate-scale-in ${
           mobileFullscreen
             ? 'h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:max-h-[92vh] sm:rounded-3xl sm:border'
@@ -102,6 +169,7 @@ export default function Modal({
             style={mobileFullscreen ? { borderColor: 'var(--bd-line)' } : { padding: `clamp(12px, 1.2vh, 20px)`, borderColor: 'var(--bd-line)' }}
           >
             <h2
+              id={titleId}
               className={`font-bold ${
                 mobileFullscreen ? 'pr-4 text-lg sm:text-2xl' : ''
               }`}
@@ -113,7 +181,7 @@ export default function Modal({
               onClick={onClose}
               className="transition-colors rounded-xl"
               style={{ padding: `clamp(3px, 0.3vh, 5px)`, color: 'var(--bd-ink-muted)' }}
-              aria-label="Close modal"
+              aria-label={t('common.close')}
             >
               <svg
                 className="fill-none stroke-current"
