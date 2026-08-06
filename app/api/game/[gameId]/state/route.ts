@@ -14,18 +14,9 @@ import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
 import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
+import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 
-interface AutoActionContext {
-  source: 'turn-timeout'
-  debounceKey: string
-  turnSnapshot: {
-    currentPlayerId: string
-    currentPlayerIndex: number
-    lastMoveAt: number | null
-    rollsLeft: number
-    updatedAt: string | number | null
-  }
-}
+type AutoActionContext = AutoActionContextRequest
 
 interface BotAutoResponse {
   type: 'undo' | 'draw'
@@ -233,19 +224,19 @@ export async function POST(
     }
 
     const requestBody = await request.json()
-    const move = requestBody?.move
-    const autoActionContext = requestBody?.autoActionContext as AutoActionContext | undefined
-    const isAutoAction = autoActionContext?.source === 'turn-timeout'
-
-    if (!move || !move.type) {
-      return NextResponse.json({ error: 'Invalid move data' }, { status: 400 })
+    const parsedBody = gameStateRequestSchema.safeParse(requestBody)
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: 'Invalid move data', issues: parsedBody.error.issues },
+        { status: 400 }
+      )
     }
 
-    if (isAutoAction) {
-      if (!autoActionContext?.debounceKey || !autoActionContext.turnSnapshot) {
-        return NextResponse.json({ error: 'Invalid auto action context' }, { status: 400 })
-      }
+    const move = parsedBody.data.move
+    const autoActionContext = parsedBody.data.autoActionContext
+    const isAutoAction = autoActionContext?.source === 'turn-timeout'
 
+    if (isAutoAction) {
       const debounceKey = `${gameId}:${autoActionContext.debounceKey}:${move.type}`
       if (shouldDebounceAutoAction(debounceKey)) {
         return NextResponse.json(

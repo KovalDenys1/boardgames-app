@@ -25,6 +25,12 @@ export async function hashLobbyPassword(password: string | null | undefined): Pr
   return hashPassword(normalized)
 }
 
+/**
+ * Returns true when the lobby is open (no password set) or the supplied password
+ * matches. Note the open-lobby case: this answers "does this password check
+ * out", not "is this user allowed in" — callers must not use it as a general
+ * authorization gate.
+ */
 export async function verifyLobbyPassword(
   storedPassword: string | null | undefined,
   providedPassword: string | null | undefined
@@ -39,14 +45,17 @@ export async function verifyLobbyPassword(
     return false
   }
 
-  if (isHashedLobbyPassword(normalizedStored)) {
-    try {
-      return await comparePassword(normalizedProvided, normalizedStored)
-    } catch {
-      return false
-    }
+  // Only bcrypt hashes are accepted. A stored value that isn't a hash is treated
+  // as invalid rather than compared as plain text (#721) — the previous fallback
+  // kept unhashed rows working indefinitely, so they were never migrated and
+  // stayed readable to anyone with database or backup access.
+  if (!isHashedLobbyPassword(normalizedStored)) {
+    return false
   }
 
-  // Legacy fallback for old lobbies that still store plain-text passwords.
-  return normalizedStored === normalizedProvided
+  try {
+    return await comparePassword(normalizedProvided, normalizedStored)
+  } catch {
+    return false
+  }
 }
