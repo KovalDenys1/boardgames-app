@@ -2362,6 +2362,39 @@ const no = {
     startPlaying: 'Begynn å spille →',
     starting: 'Starter...',
     skip: 'Hopp over',
+    quickStart: '🚀 Hurtigstart',
+    showMeAround: '🗺️ Vis meg rundt',
+    back: '← Tilbake',
+  },
+  tour: {
+    stepOf: 'Steg {{current}} av {{total}}',
+    next: 'Neste',
+    back: 'Tilbake',
+    skipTour: 'Hopp over omvisningen',
+    welcome: {
+      title: 'Velkommen til Boardly! 👋',
+      description: 'La oss ta en rask titt rundt — det tar bare et minutt.',
+    },
+    games: {
+      title: 'Velg et spill',
+      description: 'Bla gjennom hele spillkatalogen her. Hvert kort viser antall spillere og vanskelighetsgrad.',
+    },
+    createLobby: {
+      title: 'Start ditt eget lobby',
+      description: 'Opprett et lobby, inviter venner med koden, eller legg til en bot for å spille med en gang.',
+    },
+    findLobbies: {
+      title: 'Eller bli med i et som allerede kjører',
+      description: 'Filtrer åpne lobbyer etter spill, og hopp rett inn.',
+    },
+    profile: {
+      title: 'Følg fremgangen din',
+      description: 'Statistikken din, spilte spill og venner finner du her.',
+    },
+    quickStart: {
+      title: 'Klar til å spille?',
+      description: 'Velg et spill nedenfor, så setter vi opp en botkamp for deg med en gang.',
+    },
   },
   suspended: {
     title: 'Konto suspendert',

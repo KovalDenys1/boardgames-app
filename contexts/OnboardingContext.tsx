@@ -11,6 +11,8 @@ interface OnboardingContextType {
   showModal: boolean
   completeOnboarding: () => Promise<void>
   skipOnboarding: () => Promise<void>
+  /** Hides the modal without marking onboarding complete/skipped — used when handing off to the guided tour. */
+  hideModal: () => void
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined)
@@ -79,8 +81,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   }, [status])
 
+  const hideModal = useCallback(() => {
+    setShowModal(false)
+  }, [])
+
   return (
-    <OnboardingContext.Provider value={{ showModal, completeOnboarding, skipOnboarding }}>
+    <OnboardingContext.Provider value={{ showModal, completeOnboarding, skipOnboarding, hideModal }}>
       {children}
     </OnboardingContext.Provider>
   )

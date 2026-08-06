@@ -2374,6 +2374,39 @@ const en = {
     startPlaying: 'Start playing →',
     starting: 'Starting...',
     skip: 'Skip for now',
+    quickStart: '🚀 Quick Start',
+    showMeAround: '🗺️ Show me around',
+    back: '← Back',
+  },
+  tour: {
+    stepOf: 'Step {{current}} of {{total}}',
+    next: 'Next',
+    back: 'Back',
+    skipTour: 'Skip tour',
+    welcome: {
+      title: 'Welcome to Boardly! 👋',
+      description: "Let's take a quick look around — it only takes a minute.",
+    },
+    games: {
+      title: 'Pick a game',
+      description: 'Browse the full game catalog here. Each card shows player count and difficulty at a glance.',
+    },
+    createLobby: {
+      title: 'Start your own lobby',
+      description: 'Create a lobby, invite friends with the code, or add a bot to play right away.',
+    },
+    findLobbies: {
+      title: 'Or join one already running',
+      description: 'Filter open lobbies by game, then jump straight in.',
+    },
+    profile: {
+      title: 'Track your progress',
+      description: 'Your stats, games played, and friends all live here.',
+    },
+    quickStart: {
+      title: 'Ready to play?',
+      description: 'Pick a game below and we\'ll set up a bot match for you right now.',
+    },
   },
   suspended: {
     title: 'Account Suspended',
