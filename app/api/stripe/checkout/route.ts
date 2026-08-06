@@ -21,6 +21,26 @@ function isStaleCustomerError(error: unknown): boolean {
   )
 }
 
+/**
+ * Any other Stripe-side config error (bad price ID, disabled product, etc.)
+ * — not something a retry fixes, but the client still needs a clean JSON
+ * error instead of an uncaught-exception 500 with no body.
+ */
+function toCheckoutErrorResponse(err: unknown, log: ReturnType<typeof apiLogger>) {
+  if (err instanceof Stripe.errors.StripeError) {
+    log.error('Stripe checkout failed', err, {
+      type: err.type,
+      code: err.code,
+      param: 'param' in err ? err.param : undefined,
+    })
+    return NextResponse.json(
+      { error: 'Checkout is temporarily unavailable. Please try again in a few minutes.' },
+      { status: 502 }
+    )
+  }
+  throw err
+}
+
 async function recreateStripeCustomer(user: { id: string; email: string | null }): Promise<string> {
   const customer = await getStripe().customers.create({
     email: user.email ?? undefined,
@@ -57,13 +77,23 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json({ url: portal.url })
     } catch (err) {
-      if (!isStaleCustomerError(err)) throw err
-      log.warn('Stale stripeCustomerId on billing portal request, recreating', { userId: user.id })
-      return NextResponse.json(
-        { error: 'Your billing account needs to be reconnected — please start a new checkout.' },
-        { status: 409 }
-      )
+      if (isStaleCustomerError(err)) {
+        log.warn('Stale stripeCustomerId on billing portal request, recreating', { userId: user.id })
+        return NextResponse.json(
+          { error: 'Your billing account needs to be reconnected — please start a new checkout.' },
+          { status: 409 }
+        )
+      }
+      return toCheckoutErrorResponse(err, log)
     }
+  }
+
+  if (!PREMIUM_PRICE_ID) {
+    log.error('STRIPE_PREMIUM_PRICE_ID is not configured')
+    return NextResponse.json(
+      { error: 'Checkout is temporarily unavailable. Please try again in a few minutes.' },
+      { status: 502 }
+    )
   }
 
   const origin = req.headers.get('origin') ?? process.env.NEXTAUTH_URL ?? ''
@@ -88,10 +118,16 @@ export async function POST(req: NextRequest) {
   try {
     checkoutSession = await createCheckoutSession()
   } catch (err) {
-    if (!isStaleCustomerError(err)) throw err
+    if (!isStaleCustomerError(err)) {
+      return toCheckoutErrorResponse(err, log)
+    }
     log.warn('Stale stripeCustomerId on checkout, recreating customer', { userId: user.id })
     customerId = await recreateStripeCustomer(user)
-    checkoutSession = await createCheckoutSession()
+    try {
+      checkoutSession = await createCheckoutSession()
+    } catch (retryErr) {
+      return toCheckoutErrorResponse(retryErr, log)
+    }
   }
 
   log.info('Checkout session created', { userId: user.id })
