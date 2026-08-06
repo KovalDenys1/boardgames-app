@@ -995,6 +995,9 @@ const uk: Translation = {
         nextRound: 'Наступний раунд',
         seeResults: 'Переглянути результати',
         winnerBanner: '🏆 Переможець: {{name}}!',
+        liveUpdates: 'Онлайн',
+        reconnecting: "Перепідключення...",
+        roundAdvancedByTimeout: 'Час вийшов — раунд продовжився',
       },
     },
     liars_party: {

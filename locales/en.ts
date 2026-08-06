@@ -993,6 +993,9 @@ const en = {
         nextRound: 'Next Round',
         seeResults: 'See Results',
         winnerBanner: '🏆 {{name}} wins!',
+        liveUpdates: 'Live',
+        reconnecting: 'Reconnecting...',
+        roundAdvancedByTimeout: 'Time ran out — the round moved on',
       },
     },
     liars_party: {

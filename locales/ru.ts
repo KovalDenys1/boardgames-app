@@ -993,6 +993,9 @@ const ru = {
         nextRound: 'Следующий раунд',
         seeResults: 'Посмотреть результаты',
         winnerBanner: '🏆 Победитель: {{name}}!',
+        liveUpdates: 'В сети',
+        reconnecting: 'Переподключение...',
+        roundAdvancedByTimeout: 'Время вышло — раунд продолжился',
       },
     },
     liars_party: {
