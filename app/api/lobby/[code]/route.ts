@@ -10,6 +10,7 @@ import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/
 import { getGameMetadata as getCatalogGameMetadata, isAvailableGameType } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS } from '@/lib/lobby-themes'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { sweepStalePlayers } from '@/lib/lobby-presence'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { type RestorableGameState } from '@/lib/game-engine'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
@@ -242,8 +243,42 @@ export async function GET(
     const { password, ...safeLobby } = lobby
     const activeGame = pickRelevantLobbyGame(safeLobby.games, { includeFinished })
 
+    // Zero-signal disconnect detection (#675) — opportunistic, no separate
+    // cron. If it abandoned/deactivated the game we just loaded, the
+    // per-game-type timeout-fallback checks below would otherwise still run
+    // against a now-stale in-memory `activeGame.status === 'playing'` and
+    // write a pointless update to an already-abandoned game — skip them for
+    // this one request; the next GET picks up the corrected state.
+    let presenceSweptGameAbandoned = false
+    if (activeGame && activeGame.status === 'playing') {
+      const log = apiLogger('GET /api/lobby/[code]')
+      try {
+        const sweepResult = await sweepStalePlayers(activeGame, code, log)
+        presenceSweptGameAbandoned = sweepResult.gameAbandoned
+        // Keep the in-memory object in sync with what was just committed —
+        // matches the existing pattern below (commitTimeoutFallback mutates
+        // activeGame.state directly) so this response reflects the sweep
+        // instead of momentarily still showing an already-removed player.
+        if (sweepResult.removedUserIds.length > 0) {
+          activeGame.players = activeGame.players.filter(
+            (p) => !sweepResult.removedUserIds.includes(p.userId)
+          )
+          if (presenceSweptGameAbandoned) {
+            activeGame.status = 'abandoned'
+          }
+        }
+      } catch (error) {
+        log.warn('Stale-player sweep failed', {
+          code,
+          gameId: activeGame.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'telephone_doodle'
     ) {
@@ -287,6 +322,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'liars_party'
     ) {
@@ -333,6 +369,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'fake_artist'
     ) {
@@ -379,6 +416,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'alias'
     ) {
@@ -413,6 +451,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'sketch_and_guess'
     ) {
