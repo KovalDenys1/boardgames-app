@@ -79,6 +79,7 @@ interface DBPlayer {
 }
 
 import { useRealtimeConnection } from './hooks/useRealtimeConnection'
+import { useLobbyHeartbeat } from './hooks/useLobbyHeartbeat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
@@ -1588,6 +1589,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
   const isGameStarted = game?.status === 'playing'
   const isSpectator = isGameStarted && !isInGame
+
+  // Zero-signal disconnect detection (#675) — only real participants (not
+  // spectators, who aren't Players rows) need to heartbeat.
+  useLobbyHeartbeat(code, Boolean(isInGame))
   const finishedYahtzeeEngine =
     lobby?.gameType === 'yahtzee' &&
     gameEngine instanceof YahtzeeGame &&

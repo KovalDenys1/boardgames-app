@@ -16,6 +16,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -425,6 +426,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Tic-Tac-Toe')
+    // Zero-signal disconnect detection (#675) — dedicated pages unmount the
+    // shared lobby shell (where this also runs for waiting rooms), so each
+    // needs its own heartbeat while the game itself is active.
+    useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)

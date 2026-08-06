@@ -9,6 +9,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
@@ -543,6 +544,9 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const [gameEngine, setGameEngine] = useState<LiarsPartyGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+
+  // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
+  useLobbyHeartbeat(code, !isSpectator)
 
   // Timer tick — forces re-render every second for countdown displays
   const [, setTimerTick] = useState(0)

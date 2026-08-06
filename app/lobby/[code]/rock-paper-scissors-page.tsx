@@ -10,6 +10,7 @@ import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-sci
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -63,6 +64,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
 
     const lifecycleRedirectInFlightRef = useRef(false)
+    // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
+    useLobbyHeartbeat(code, !isSpectator)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'rock_paper_scissors').minPlayersRequired
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
