@@ -16,6 +16,7 @@ import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { AliasGame } from '@/lib/games/alias'
+import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import {
@@ -68,10 +69,11 @@ async function commitTimeoutFallback(params: {
   actionType: string
   actionPayload: Record<string, unknown>
   lobbyCode: string
+  gameType: string
   gameSocketEvent?: string
   gameSocketData?: Record<string, unknown>
 }): Promise<void> {
-  const { activeGame, nextState, actionType, actionPayload, lobbyCode, gameSocketEvent, gameSocketData } = params
+  const { activeGame, nextState, actionType, actionPayload, lobbyCode, gameType, gameSocketEvent, gameSocketData } = params
   const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
 
   const updateResult = await prisma.games.updateMany({
@@ -124,18 +126,23 @@ async function commitTimeoutFallback(params: {
     state: nextState,
   })
 
+  // No single viewer for a shared broadcast — strip any per-game hidden info
+  // (e.g. Sketch & Guess's live prompt) for everyone. `nextState` itself
+  // (used for persistence/replay above) is deliberately left untouched.
+  const broadcastState = sanitizeStateForBroadcast(gameType, nextState, null)
+
   if (gameSocketEvent && gameSocketData) {
     void broadcastToLobby(lobbyCode, gameSocketEvent, {
       action: 'timeout-fallback',
       playerId: null,
       data: gameSocketData,
-      state: nextState,
+      state: broadcastState,
     })
   }
 
   void broadcastToLobby(lobbyCode, 'game-update', {
     action: 'state-change',
-    payload: { state: nextState },
+    payload: { state: broadcastState },
   })
 }
 
@@ -163,6 +170,11 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const includeFinished = searchParams.get('includeFinished') === 'true'
     const { code } = await params
+    // Optional — this route stays publicly readable for guests/spectators
+    // with no session; resolved only so a signed-in viewer can see their own
+    // not-yet-revealed data (e.g. Sketch & Guess's live prompt while
+    // they're the drawer) via the sanitizer below.
+    const requestUser = await getRequestAuthUser(request)
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
@@ -253,6 +265,7 @@ export async function GET(
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
               lobbyCode: safeLobby.code,
+              gameType: 'telephone_doodle',
               gameSocketEvent: 'telephone-doodle-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
@@ -297,6 +310,7 @@ export async function GET(
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
               lobbyCode: safeLobby.code,
+              gameType: 'liars_party',
               gameSocketEvent: 'liars-party-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
@@ -342,6 +356,7 @@ export async function GET(
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
               lobbyCode: safeLobby.code,
+              gameType: 'fake_artist',
               gameSocketEvent: 'fake-artist-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
@@ -382,11 +397,58 @@ export async function GET(
               actionType: 'alias:timeout-fallback',
               actionPayload: {},
               lobbyCode: safeLobby.code,
+              gameType: 'alias',
             })
           }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
           log.warn('Alias timeout fallback on lobby GET failed', {
+            code,
+            gameId: activeGame.id,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+    }
+
+    if (
+      activeGame &&
+      activeGame.status === 'playing' &&
+      (safeLobby.gameType || activeGame.gameType) === 'sketch_and_guess'
+    ) {
+      const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
+      if (turnTimerSeconds > 0) {
+        try {
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
+          const sketchGame = new SketchAndGuessGame(activeGame.id)
+          sketchGame.restoreState(parsedState)
+
+          const r = sketchGame.applyTimeoutFallback(turnTimerSeconds)
+          if (r.changed) {
+            await commitTimeoutFallback({
+              activeGame,
+              nextState: sketchGame.getState(),
+              actionType: 'sketch_and_guess:timeout-fallback',
+              actionPayload: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedDrawings: r.autoSubmittedDrawings,
+                autoSubmittedGuesses: r.autoSubmittedGuesses,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
+              },
+              lobbyCode: safeLobby.code,
+              gameType: 'sketch_and_guess',
+              gameSocketEvent: 'sketch-and-guess-action',
+              gameSocketData: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedDrawings: r.autoSubmittedDrawings,
+                autoSubmittedGuesses: r.autoSubmittedGuesses,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
+              },
+            })
+          }
+        } catch (error) {
+          const log = apiLogger('GET /api/lobby/[code]')
+          log.warn('Sketch & Guess timeout fallback on lobby GET failed', {
             code,
             gameId: activeGame.id,
             error: error instanceof Error ? error.message : String(error),
@@ -401,7 +463,7 @@ export async function GET(
           ...activeGame,
           state: (() => {
             const parsed = parsePersistedGameState<{ data?: unknown; status?: string }>(activeGame.state)
-            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed)
+            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed, requestUser?.id ?? null)
             return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])
           })(),
           players: Array.isArray(activeGame.players)
