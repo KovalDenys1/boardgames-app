@@ -401,7 +401,17 @@ const ru = {
         title: 'Начинайте играть',
         description: 'Все видят одну доску, счёт и ходы в своём браузере. Загрузка не нужна.',
       },
-    }
+    },
+    demo: {
+      youWin: '🎉 Вы выиграли!',
+      botWins: 'Бот выиграл!',
+      draw: 'Ничья!',
+      yourTurnX: 'Ваш ход (X)',
+      dropAPiece: 'Сделайте ход',
+      allMatched: '🎉 Все пары найдены!',
+      pairsProgress: '{{count}} / {{total}} пар',
+      playFullGame: 'Играть полностью →',
+    },
   },
   games: {
     title: 'Доступные игры',

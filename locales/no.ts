@@ -401,7 +401,17 @@ const no = {
         title: 'Begynn å spille',
         description: 'Alle ser samme brett, poeng og trekk i nettleseren sin. Ingen nedlasting nødvendig.',
       },
-    }
+    },
+    demo: {
+      youWin: '🎉 Du vinner!',
+      botWins: 'Bot vinner!',
+      draw: 'Uavgjort!',
+      yourTurnX: 'Din tur (X)',
+      dropAPiece: 'Slipp en brikke',
+      allMatched: '🎉 Alle par funnet!',
+      pairsProgress: '{{count}} / {{total}} par',
+      playFullGame: 'Spill hele spillet →',
+    },
   },
   games: {
     title: 'Tilgjengelige spill',

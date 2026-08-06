@@ -402,6 +402,16 @@ const en = {
         description: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
       },
     },
+    demo: {
+      youWin: '🎉 You win!',
+      botWins: 'Bot wins!',
+      draw: 'Draw!',
+      yourTurnX: 'Your turn (X)',
+      dropAPiece: 'Drop a piece',
+      allMatched: '🎉 All matched!',
+      pairsProgress: '{{count}} / {{total}} pairs',
+      playFullGame: 'Play full game →',
+    },
   },
   games: {
     title: 'Available Games',

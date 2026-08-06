@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 const PAIRS = ['🎲', '🃏', '🏆', '⭐', '🎮', '🎯']
 
@@ -16,6 +17,7 @@ function makeCards(): Card[] {
 }
 
 export default function HeroDemoMemory() {
+  const { t } = useTranslation()
   const [cards, setCards] = useState<Card[]>(makeCards)
   const [flipped, setFlipped] = useState<number[]>([])
   const [locked, setLocked] = useState(false)
@@ -73,7 +75,7 @@ export default function HeroDemoMemory() {
         fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: isMobile ? 12 : 14,
         color: 'var(--bd-ink-muted)', minHeight: isMobile ? 18 : 22,
       }}>
-        {allMatched ? '🎉 All matched!' : `${matchedCount} / ${PAIRS.length} pairs`}
+        {allMatched ? t('home.demo.allMatched') : t('home.demo.pairsProgress', { count: matchedCount, total: PAIRS.length })}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(4, ${CARD_W}px)`, gridTemplateRows: `repeat(3, ${CARD_H}px)`, gap: GRID_GAP }}>
@@ -112,7 +114,7 @@ export default function HeroDemoMemory() {
           color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
         }}
       >
-        Play full game →
+        {t('home.demo.playFullGame')}
       </Link>
     </div>
   )

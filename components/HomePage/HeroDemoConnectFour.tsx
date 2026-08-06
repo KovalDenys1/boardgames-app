@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 const COLS = 6
 const ROWS = 5
@@ -59,6 +60,7 @@ function botMove(board: Board): number {
 }
 
 export default function HeroDemoConnectFour() {
+  const { t } = useTranslation()
   const [board, setBoard] = useState<Board>(makeBoard)
   const [winner, setWinner] = useState<'red' | 'yellow' | 'draw' | null>(null)
   const [hoverCol, setHoverCol] = useState<number | null>(null)
@@ -134,10 +136,10 @@ export default function HeroDemoConnectFour() {
   }
 
   const statusText =
-    winner === 'red' ? '🎉 You win!'
-    : winner === 'yellow' ? 'Bot wins!'
-    : winner === 'draw' ? 'Draw!'
-    : 'Drop a piece'
+    winner === 'red' ? t('home.demo.youWin')
+    : winner === 'yellow' ? t('home.demo.botWins')
+    : winner === 'draw' ? t('home.demo.draw')
+    : t('home.demo.dropAPiece')
 
   return (
     <div style={{
@@ -250,7 +252,7 @@ export default function HeroDemoConnectFour() {
           color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
         }}
       >
-        Play full game →
+        {t('home.demo.playFullGame')}
       </Link>
     </div>
   )

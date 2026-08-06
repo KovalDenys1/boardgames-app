@@ -404,6 +404,16 @@ const uk: Translation = {
         description: 'Всі бачать одну дошку, рахунок і ходи у своєму браузері. Завантаження не потрібне.',
       },
     },
+    demo: {
+      youWin: '🎉 Ви перемогли!',
+      botWins: 'Бот переміг!',
+      draw: 'Нічия!',
+      yourTurnX: 'Ваш хід (X)',
+      dropAPiece: 'Зробіть хід',
+      allMatched: '🎉 Усі пари знайдено!',
+      pairsProgress: '{{count}} / {{total}} пар',
+      playFullGame: 'Грати повну гру →',
+    },
   },
   games: {
     title: 'Доступні ігри',
