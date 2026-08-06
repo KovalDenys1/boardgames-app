@@ -64,9 +64,18 @@ i18n
       // Order of detection methods
       // Keep first client render aligned with SSR output (htmlTag from server),
       // then switch to persisted language after hydration in Providers.
+      //
+      // caches is deliberately empty: with caches: ['localStorage'], this
+      // detector writes its htmlTag-detected value ('en', the SSR default)
+      // back into the 'i18nextLng' key on every fresh page load, clobbering
+      // whatever locale the user had actually picked before Providers' effect
+      // gets a chance to read it back out — silently reverting the language on
+      // every hard navigation/reload. Persistence is handled explicitly by
+      // lib/appearance-preferences.ts (setStoredAppearanceLocale /
+      // getStoredAppearanceLocale) instead, so the detector shouldn't also be
+      // writing to storage.
       order: ['htmlTag'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'i18nextLng',
+      caches: [],
     },
     react: {
       useSuspense: false, // Disable suspense to avoid hydration issues
