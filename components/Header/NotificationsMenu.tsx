@@ -235,10 +235,7 @@ export function NotificationsMenu() {
     return notifications.map((item) => buildNotificationDisplayItem(item, t, i18n.language))
   }, [i18n.language, notifications, t])
 
-  const badgeLabel =
-    unreadCount > 0
-      ? t('header.notificationsUnread', { count: unreadCount })
-      : t('header.notifications')
+  const badgeLabel = t('header.notificationsUnread', { count: unreadCount })
 
   return (
     <div ref={containerRef} className="relative shrink-0">
@@ -274,7 +271,9 @@ export function NotificationsMenu() {
             <div className="flex items-start justify-between gap-3 border-b border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-4">
               <div>
                 <p className="bd-kicker">{t('header.notifications')}</p>
-                <p className="mt-1 text-sm font-bold text-[var(--bd-ink)]">{badgeLabel}</p>
+                {unreadCount > 0 && (
+                  <p className="mt-1 text-sm font-bold text-[var(--bd-ink)]">{badgeLabel}</p>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {unreadCount > 0 && (
