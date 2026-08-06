@@ -123,6 +123,7 @@ function TourNav({
   onSkip,
   nextLabel,
   backLabel,
+  skipLabel,
 }: {
   stepLabel: string
   showBack: boolean
@@ -131,18 +132,24 @@ function TourNav({
   onSkip: () => void
   nextLabel: string
   backLabel: string
+  skipLabel: string
 }) {
   return (
-    <div className="mt-4 flex items-center justify-between gap-2">
-      <button
-        type="button"
-        onClick={onSkip}
-        className="text-xs font-semibold"
-        style={{ color: 'var(--bd-ink-muted)' }}
-      >
-        {stepLabel}
-      </button>
-      <div className="flex items-center gap-2">
+    <div className="mt-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold" style={{ color: 'var(--bd-ink-muted)' }}>
+          {stepLabel}
+        </span>
+        <button
+          type="button"
+          onClick={onSkip}
+          className="text-xs font-semibold underline"
+          style={{ color: 'var(--bd-ink-muted)' }}
+        >
+          {skipLabel}
+        </button>
+      </div>
+      <div className="flex items-center justify-end gap-2">
         {showBack && (
           <button
             type="button"
@@ -368,6 +375,7 @@ export function TourOverlay() {
                 onSkip={skipTour}
                 nextLabel={nextLabel}
                 backLabel={backLabel}
+                skipLabel={t('tour.skipTour')}
               />
             </>
           )}
