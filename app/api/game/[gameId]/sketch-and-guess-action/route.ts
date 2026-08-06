@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
+import { SketchAndGuessGame, sanitizeSketchAndGuessStateForBroadcast } from '@/lib/games/sketch-and-guess-game'
 import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -176,18 +176,23 @@ export async function POST(
       })
 
       if (game.lobby?.code) {
+        // No single viewer for a shared broadcast — strip the live prompt for
+        // everyone; each client re-fetches its own viewer-sanitized state via
+        // GET /api/lobby/[code] rather than trusting this payload directly.
+        const broadcastState = sanitizeSketchAndGuessStateForBroadcast(nextState, null)
+
         if (emitActionEvent) {
           void broadcastToLobby(game.lobby.code, 'sketch-and-guess-action', {
             action: emitActionEvent.action,
             playerId: emitActionEvent.playerId ?? null,
             data: emitActionEvent.data ?? {},
-            state: nextState,
+            state: broadcastState,
           })
         }
 
         void broadcastToLobby(game.lobby.code, 'game-update', {
           action: 'state-change',
-          payload: { state: nextState },
+          payload: { state: broadcastState },
         })
       }
     }
@@ -268,7 +273,7 @@ export async function POST(
           {
             error: 'Move expired due to timeout fallback',
             code: 'ROUND_TIMEOUT_ADVANCED',
-            state: stateAfterTimeout,
+            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId),
           },
           { status: 409 }
         )
@@ -292,7 +297,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      state: updatedState,
+      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId),
       timeoutFallbackApplied,
       timeoutFallback: timeoutFallbackApplied
         ? {

@@ -1,5 +1,6 @@
 import { sanitizeSpyStateForBroadcast } from './games/spy-game'
 import { sanitizeRpsStateForBroadcast } from './games/rock-paper-scissors-game'
+import { sanitizeSketchAndGuessStateForBroadcast } from './games/sketch-and-guess-game'
 
 /**
  * Single dispatch point for "strip secrets before this state leaves the
@@ -24,6 +25,8 @@ export function sanitizeStateForBroadcast<T extends { data?: unknown; status?: s
       return sanitizeSpyStateForBroadcast(state)
     case 'rock_paper_scissors':
       return sanitizeRpsStateForBroadcast(state, viewerUserId)
+    case 'sketch_and_guess':
+      return sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId)
     default:
       return state
   }

@@ -614,3 +614,32 @@ export class SketchAndGuessGame extends GameEngine {
     })
   }
 }
+
+/**
+ * Strips the current round's secret prompt from state before it reaches a
+ * non-drawer — mirrors sanitizeSpyStateForBroadcast/sanitizeRpsStateForBroadcast.
+ * Only the round matching data.currentRound can ever be unrevealed (advanceAfterReveal
+ * only increments currentRound after that round's reveal+scoring), so every other
+ * round in the array is always safe to return untouched.
+ */
+export function sanitizeSketchAndGuessStateForBroadcast<T extends { data?: unknown; status?: string }>(
+  state: T,
+  viewerUserId: string | null = null
+): T {
+  const data = state.data as SketchAndGuessGameData | undefined
+  if (!data || !Array.isArray(data.rounds)) return state
+
+  const isCurrentRoundRevealed = data.phase === 'reveal' || state.status === 'finished'
+  if (isCurrentRoundRevealed) return state
+
+  const currentRoundIndex = data.rounds.findIndex((r) => r.round === data.currentRound)
+  if (currentRoundIndex === -1) return state
+
+  const currentRound = data.rounds[currentRoundIndex]
+  if (viewerUserId !== null && viewerUserId === currentRound.drawerId) return state
+
+  const sanitizedRounds = data.rounds.slice()
+  sanitizedRounds[currentRoundIndex] = { ...currentRound, prompt: '' }
+
+  return { ...state, data: { ...data, rounds: sanitizedRounds } }
+}

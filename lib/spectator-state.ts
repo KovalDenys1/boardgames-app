@@ -1,4 +1,5 @@
 import { sanitizeRpsStateForBroadcast } from '@/lib/games/rock-paper-scissors-game'
+import { sanitizeSketchAndGuessStateForBroadcast } from '@/lib/games/sketch-and-guess-game'
 
 type JsonObject = Record<string, unknown>
 
@@ -75,6 +76,11 @@ export function sanitizeGameStateForSpectator(
   // Spectators never own a choice, so always redact a still-pending one (no viewer exception)
   if (gameType === 'rock_paper_scissors' && typeof parsed === 'object' && parsed !== null) {
     return sanitizeRpsStateForBroadcast(parsed as { data?: unknown; status?: string })
+  }
+
+  // Spectators are never a drawer, so always redact the live prompt (no viewer exception)
+  if (gameType === 'sketch_and_guess' && typeof parsed === 'object' && parsed !== null) {
+    return sanitizeSketchAndGuessStateForBroadcast(parsed as { data?: unknown; status?: string })
   }
 
   return parsed
