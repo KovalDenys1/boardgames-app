@@ -109,7 +109,11 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
         </div>
 
         {/* Games grid */}
-        <div className="mb-14 grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <div
+          data-tour-step="games-grid"
+          className="mb-14 grid gap-5"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
+        >
           {filteredGames.map(game => (
             <div
               key={game.id}
