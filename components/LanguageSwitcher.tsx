@@ -11,15 +11,18 @@ interface LanguageSwitcherProps {
   variant?: 'header' | 'panel'
 }
 
+// Each language's own self-name (endonym), not translated — a Russian
+// speaker who can't read the current locale still needs to recognize
+// "Русский" in the list, so these stay constant across all 4 locales.
 const LANGUAGE_OPTIONS: Array<{
   code: Locale
   shortLabel: string
   name: string
 }> = [
   { code: 'en', shortLabel: 'EN', name: 'English' },
-  { code: 'uk', shortLabel: 'UA', name: 'Ukrainian' },
-  { code: 'no', shortLabel: 'NO', name: 'Norwegian' },
-  { code: 'ru', shortLabel: 'RU', name: 'Russian' },
+  { code: 'uk', shortLabel: 'UA', name: 'Українська' },
+  { code: 'no', shortLabel: 'NO', name: 'Norsk' },
+  { code: 'ru', shortLabel: 'RU', name: 'Русский' },
 ]
 
 function GlobeIcon() {
