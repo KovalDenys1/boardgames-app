@@ -2760,8 +2760,11 @@ export default function ProfilePage() {
                       <button
                         key={hex}
                         type="button"
-                        disabled={!hasUploadPack}
                         onClick={() => {
+                          if (!hasUploadPack) {
+                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            return
+                          }
                           const next = profileAccentColor === hex ? null : hex
                           setProfileAccentColor(next)
                           void handleSaveCustomization({ accentColor: next })
@@ -2772,7 +2775,7 @@ export default function ProfilePage() {
                         style={{
                           width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
                           outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
-                          outlineOffset: 2, cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                          outlineOffset: 2, cursor: 'pointer',
                           opacity: hasUploadPack ? 1 : 0.4,
                           transition: 'all 0.15s',
                         }}
@@ -2809,8 +2812,11 @@ export default function ProfilePage() {
                       <button
                         key={id}
                         type="button"
-                        disabled={!hasUploadPack}
                         onClick={() => {
+                          if (!hasUploadPack) {
+                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            return
+                          }
                           const next = profileFeaturedGame === id ? null : id
                           setProfileFeaturedGame(next)
                           void handleSaveCustomization({ featuredGame: next })
@@ -2820,7 +2826,7 @@ export default function ProfilePage() {
                             ? 'border-bd-ink bg-bd-ink text-bd-bg dark:border-white dark:bg-white dark:text-bd-ink'
                             : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-slate-400'
                         }`}
-                        style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: hasUploadPack ? 'pointer' : 'not-allowed' }}
+                        style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: 'pointer' }}
                       >
                         {label}
                       </button>
@@ -2847,17 +2853,20 @@ export default function ProfilePage() {
                         <button
                           key={id}
                           type="button"
-                          disabled={!hasUploadPack}
                           aria-pressed={active}
                           aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
                           onClick={() => {
+                            if (!hasUploadPack) {
+                              showToast.custom('profile.premiumFeatureLocked', '👑')
+                              return
+                            }
                             setPremiumCardStyle(id)
                             void handleSaveCustomization({ premiumCardStyle: id })
                           }}
                           style={{
                             background: preview,
                             opacity: hasUploadPack ? 1 : 0.4,
-                            cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                            cursor: 'pointer',
                             outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
                             outlineOffset: 2,
                           }}

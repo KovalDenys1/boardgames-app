@@ -1370,6 +1370,7 @@ const en = {
     sending: 'Sending...',
     memberSince: 'Member Since',
     premiumAccount: 'Premium Account',
+    premiumFeatureLocked: 'Upgrade to Premium to unlock this',
     comingSoon: 'Coming soon',
     verificationBanner: {
       title: 'Email not verified',

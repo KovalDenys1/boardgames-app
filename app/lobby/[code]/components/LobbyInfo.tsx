@@ -372,15 +372,24 @@ export default function LobbyInfo({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true}
-                  onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: true })}
+                  disabled={isPremium && (updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true)}
+                  onClick={() => {
+                    if (!isPremium) {
+                      showToast.custom('profile.premiumFeatureLocked', '👑')
+                      return
+                    }
+                    void applySettingUpdate('allowSpectators', { allowSpectators: true })
+                  }}
+                  title={isPremium ? undefined : '👑 Premium'}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                     lobby?.allowSpectators
                       ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                      : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
+                      : !isPremium
+                        ? 'border-bd-line bg-bd-bg2 text-bd-ink-muted opacity-60'
+                        : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {t('common.enabled')}
+                  {t('common.enabled')}{!isPremium && ' 👑'}
                 </button>
                 <button
                   type="button"
@@ -465,8 +474,14 @@ export default function LobbyInfo({
                     <button
                       key={themeId}
                       type="button"
-                      disabled={updatingSetting === 'theme' || isActive || isLocked}
-                      onClick={() => !isLocked && void applySettingUpdate('theme', { theme: themeId })}
+                      disabled={updatingSetting === 'theme' || isActive}
+                      onClick={() => {
+                        if (isLocked) {
+                          showToast.custom('profile.premiumFeatureLocked', '👑')
+                          return
+                        }
+                        void applySettingUpdate('theme', { theme: themeId })
+                      }}
                       title={isLocked ? '👑 Premium' : theme.name}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         isActive

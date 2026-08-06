@@ -1370,6 +1370,7 @@ const no = {
     sending: 'Sender...',
     memberSince: 'Medlem siden',
     premiumAccount: 'Premium-konto',
+    premiumFeatureLocked: 'Oppgrader til Premium for å låse opp dette',
     comingSoon: 'Kommer snart',
     verificationBanner: {
       title: 'E-post ikke bekreftet',

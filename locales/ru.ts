@@ -1370,6 +1370,7 @@ const ru = {
     sending: 'Отправка...',
     memberSince: 'Участник с',
     premiumAccount: 'Премиум аккаунт',
+    premiumFeatureLocked: 'Чтобы открыть это, оформите Премиум',
     comingSoon: 'Скоро',
     verificationBanner: {
       title: 'Почта не подтверждена',

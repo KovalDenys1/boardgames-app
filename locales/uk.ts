@@ -1372,6 +1372,7 @@ const uk: Translation = {
     sending: 'Надсилання...',
     memberSince: 'Учасник з',
     premiumAccount: 'Преміум акаунт',
+    premiumFeatureLocked: 'Оформіть Преміум, щоб відкрити це',
     comingSoon: 'Незабаром',
     verificationBanner: {
       title: 'Пошту не підтверджено',
