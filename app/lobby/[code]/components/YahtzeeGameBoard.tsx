@@ -127,6 +127,15 @@ export default function GameBoard({
             disabled={isSpectator || !isMyTurn || isMoveInProgress || gameEngine.getRollsLeft() === 3}
             isRolling={isRolling}
             isMyTurn={isMyTurn && !isSpectator}
+            onRollDice={isSpectator ? undefined : onRollDice}
+            canRoll={
+              !isSpectator &&
+              isMyTurn &&
+              rollsLeft > 0 &&
+              heldCount < 5 &&
+              !isMoveInProgress &&
+              !isRolling
+            }
           />
         </div>
 
