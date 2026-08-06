@@ -88,9 +88,15 @@ export default function GameBoard({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Dice Area with Timer + Controls */}
+      {/* Dice Area with Timer + Controls. overflow-y-auto (not hidden) is
+          load-bearing: on a real iPhone with Safari's address bar expanded,
+          measured real-device math shows timer(~59px) + dice's own
+          min-h-[190px] floor + controls(~207px incl. safe-area-inset-bottom)
+          can exceed the ~424-428px actually available, which would silently
+          clip the Roll button under overflow:hidden. Scrolling ~20-30px is
+          the acceptable worst case; an unreachable Roll button is not. */}
       <div
-        className="bd-card flex-1 overflow-hidden flex flex-col min-h-0"
+        className="bd-card flex-1 overflow-y-auto flex flex-col min-h-0"
         style={{
           background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
         }}
