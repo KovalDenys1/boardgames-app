@@ -16,6 +16,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -547,6 +548,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const [hoverCol, setHoverCol] = useState<number | null>(null)
     const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Connect Four')
+    // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
+    useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)

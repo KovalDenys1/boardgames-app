@@ -12,6 +12,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -128,6 +129,8 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         code,
         'Sketch & Guess'
     )
+    // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
+    useLobbyHeartbeat(code, !isSpectator)
     const lifecycleRedirectInFlightRef = useRef(false)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'sketch_and_guess').minPlayersRequired
 
