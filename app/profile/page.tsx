@@ -1138,12 +1138,17 @@ export default function ProfilePage() {
   const handleTogglePush = async (enable: boolean) => {
     if (notificationsSaving) return
     try {
+      // Request permission before the dynamic import below (or anything else
+      // async) — browsers can silently ignore Notification.requestPermission()
+      // once too much time has passed since the click that triggered it.
+      const permission = enable ? await Notification.requestPermission() : null
+      if (enable) setPushPermission(permission!)
+      if (enable && permission !== 'granted') return
+
       const { subscribeToPush, unsubscribeFromPush, getExistingPushSubscription } = await import('@/lib/push-subscription')
       if (enable) {
         const sub = await subscribeToPush()
         if (!sub) return
-        setPushPermission(Notification.permission)
-        if (Notification.permission !== 'granted') return
         await fetch('/api/push-subscriptions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
