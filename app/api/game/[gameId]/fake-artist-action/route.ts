@@ -9,6 +9,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { fakeArtistActionRequestSchema } from '@/lib/validation/fake-artist'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -197,6 +198,10 @@ export async function POST(
           action: 'state-change',
           payload: { state: nextState },
         })
+      }
+
+      if (game.status !== nextState.status && nextState.status === 'finished') {
+        await checkAchievementsForFinishedGame(game.players, log)
       }
     }
 
