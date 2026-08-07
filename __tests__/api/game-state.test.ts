@@ -185,7 +185,9 @@ describe('POST /api/game/[gameId]/state', () => {
     })
 
     expect(response.status).toBe(400)
-    expect(await response.json()).toEqual({ error: 'Invalid move data' })
+    const body = await response.json()
+    expect(body.error).toBe('Invalid move data')
+    expect(Array.isArray(body.issues)).toBe(true)
   })
 
   it('returns 404 when game does not exist', async () => {
