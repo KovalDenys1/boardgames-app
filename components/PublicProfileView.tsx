@@ -8,6 +8,7 @@ import { buildAuthUrl } from '@/lib/auth-redirect'
 import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 import { getGameMetadata } from '@/lib/game-catalog'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import { ACHIEVEMENTS } from '@/lib/achievements'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -35,6 +36,7 @@ export type PublicProfileViewData = {
   gamesPlayed: number
   completedGamesCount?: number
   isPremium?: boolean
+  unlockedAchievements?: { key: string; unlockedAt: string }[]
 }
 
 type PublicProfileViewProps = {
@@ -168,6 +170,22 @@ export default function PublicProfileView({
     day: 'numeric',
   })
   const publicProfilePath = `/u/${profile.publicProfileId}`
+  const unlockedAchievementsByKey = new Map(
+    (profile.unlockedAchievements ?? []).map((a) => [a.key, a.unlockedAt])
+  )
+  const achievementBadges = ACHIEVEMENTS.map((achievement) => {
+    const unlockedAt = unlockedAchievementsByKey.get(achievement.key) ?? null
+    const description = t(`achievements.${achievement.key}.description` as TranslationKeys)
+    return {
+      id: achievement.key,
+      icon: achievement.icon,
+      label: t(`achievements.${achievement.key}.name` as TranslationKeys),
+      tooltip: unlockedAt
+        ? `${description} — ${t('profile.achievements.unlockedOn' as TranslationKeys, { date: new Date(unlockedAt).toLocaleDateString(i18n.language || undefined) })}`
+        : description,
+      earned: unlockedAt !== null,
+    }
+  })
 
   const getPublicProfileUrl = () => {
     if (typeof window === 'undefined') {
@@ -534,6 +552,28 @@ export default function PublicProfileView({
                       {t('profile.memberSince')}
                     </p>
                     <p className={`mt-3 text-lg font-bold ${tc.statValueAlt}`}>{memberSince}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
+                    {t('profile.achievements.title')}
+                  </p>
+                  <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-2">
+                    {achievementBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        title={badge.tooltip}
+                        className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-center transition-opacity ${
+                          badge.earned
+                            ? `${tc.statCard} opacity-100`
+                            : `${tc.statCard} opacity-40 grayscale`
+                        }`}
+                      >
+                        <span className="text-xl">{badge.earned ? badge.icon : '🔒'}</span>
+                        <span className={`text-[10px] font-bold leading-tight ${tc.statLabel}`}>{badge.label}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

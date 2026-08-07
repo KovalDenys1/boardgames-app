@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
@@ -24,6 +24,7 @@ import {
   setStoredAppearanceLocale,
 } from '@/lib/appearance-preferences'
 import { changeLanguageLazy, type Locale } from '@/i18n'
+import { ACHIEVEMENTS } from '@/lib/achievements'
 
 interface LinkedAccount {
   provider: string
@@ -80,6 +81,7 @@ type ProfileSummary = {
   achievementStats?: {
     completedGamesCount: number
     winsCount: number
+    unlockedAchievements: { key: string; unlockedAt: string }[]
   }
 }
 
@@ -220,9 +222,6 @@ export default function ProfilePage() {
   const displayName = currentUsername || currentEmail.split('@')[0] || t('profile.playerFallback')
   const effectiveEmailVerified = Boolean(profileSummary?.emailVerified || session?.user?.emailVerified)
   const emailNotificationsEnabled = !notificationPreferences.unsubscribedAll
-  const achievementStats = profileSummary?.achievementStats
-  const completedGamesCount = achievementStats?.completedGamesCount ?? 0
-  const winsCount = achievementStats?.winsCount ?? 0
 
   const memberSinceLabel = useMemo(() => {
     if (!profileSummary?.createdAt) {
@@ -1407,36 +1406,23 @@ export default function ProfilePage() {
     { id: 'settings', icon: '⚙️', label: t('profile.settings.title') },
   ]
 
-  const achievementItems = [
-    {
-      id: 'first-game',
-      label: t('profile.achievements.firstFinish'),
-      mark: '1',
-      className: 'bg-bd-coral text-white',
-      earned: completedGamesCount > 0,
-    },
-    {
-      id: 'social',
-      label: t('profile.achievements.firstFriend'),
-      mark: String(Math.min(profileSummary?.friendsCount ?? 0, 9)),
-      className: 'bg-bd-mint text-bd-ink',
-      earned: (profileSummary?.friendsCount ?? 0) > 0,
-    },
-    {
-      id: 'first-win',
-      label: t('profile.achievements.firstWin'),
-      mark: String(Math.min(winsCount, 9)),
-      className: 'bg-bd-lav text-white',
-      earned: winsCount > 0,
-    },
-    {
-      id: 'verified',
-      label: t('profile.achievements.verified'),
-      mark: 'V',
-      className: 'bg-bd-sun text-bd-ink',
-      earned: effectiveEmailVerified,
-    },
-  ]
+  const unlockedAchievementsByKey = new Map(
+    (profileSummary?.achievementStats?.unlockedAchievements ?? []).map((a) => [a.key, a.unlockedAt])
+  )
+  const achievementItems = ACHIEVEMENTS.map((achievement) => {
+    const unlockedAt = unlockedAchievementsByKey.get(achievement.key) ?? null
+    const name = t(`achievements.${achievement.key}.name` as TranslationKeys)
+    const description = t(`achievements.${achievement.key}.description` as TranslationKeys)
+    return {
+      id: achievement.key,
+      icon: achievement.icon,
+      label: name,
+      tooltip: unlockedAt
+        ? `${description} — ${t('profile.achievements.unlockedOn' as TranslationKeys, { date: new Date(unlockedAt).toLocaleDateString(i18n.language || undefined) })}`
+        : description,
+      earned: unlockedAt !== null,
+    }
+  })
 
   const inlineEditorMessageClassName =
     editingStatus === 'available'
@@ -1822,14 +1808,15 @@ export default function ProfilePage() {
                         {achievementItems.map((item) => (
                           <div
                             key={item.id}
+                            title={item.tooltip}
                             className={`flex min-h-28 flex-col rounded-2xl border-[1.5px] p-3 transition-opacity ${
                               item.earned
                                 ? 'border-bd-line bg-bd-card-warm opacity-100 dark:border-slate-700 dark:bg-slate-900/70'
                                 : 'border-bd-line/70 bg-transparent opacity-50 dark:border-slate-700'
                             }`}
                           >
-                            <div className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink font-display text-lg font-bold shadow-[2px_2px_0_#1F1B16] ${item.earned ? item.className : 'bg-bd-bg2 text-bd-ink-muted'}`}>
-                              {item.earned ? item.mark : '?'}
+                            <div className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink text-lg shadow-[2px_2px_0_#1F1B16] ${item.earned ? 'bg-bd-sun' : 'bg-bd-bg2 grayscale'}`}>
+                              {item.earned ? item.icon : '🔒'}
                             </div>
                             <p className="mt-auto pt-3 text-sm font-bold leading-tight text-bd-ink dark:text-slate-100">{item.label}</p>
                           </div>

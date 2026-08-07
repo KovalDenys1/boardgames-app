@@ -95,7 +95,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     notFound()
   }
 
-  const [session, completedGamesCount] = await Promise.all([
+  const [session, completedGamesCount, unlockedAchievementRows] = await Promise.all([
     getServerSession(authOptions),
     prisma.players.count({
       where: {
@@ -104,6 +104,10 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
           status: 'finished',
         },
       },
+    }),
+    prisma.userAchievements.findMany({
+      where: { userId: profile.id },
+      select: { achievementKey: true, unlockedAt: true },
     }),
   ])
   let relation: PublicProfileRelation = 'login_required'
@@ -176,6 +180,10 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         gamesPlayed: profile._count.players,
         completedGamesCount,
         isPremium: profile.premiumUntil ? profile.premiumUntil > new Date() : false,
+        unlockedAchievements: unlockedAchievementRows.map((row) => ({
+          key: row.achievementKey,
+          unlockedAt: row.unlockedAt.toISOString(),
+        })),
       }}
       initialRelation={relation}
       accessState={accessState}

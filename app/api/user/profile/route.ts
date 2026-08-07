@@ -41,6 +41,7 @@ type SelectedProfileUser = {
 type ProfileAchievementStats = {
   completedGamesCount: number
   winsCount: number
+  unlockedAchievements: { key: string; unlockedAt: string }[]
 }
 
 function buildProfilePayload(
@@ -48,6 +49,7 @@ function buildProfilePayload(
   achievementStats: ProfileAchievementStats = {
     completedGamesCount: 0,
     winsCount: 0,
+    unlockedAchievements: [],
   }
 ) {
   return {
@@ -68,7 +70,7 @@ function buildProfilePayload(
 }
 
 async function getProfileAchievementStats(userId: string): Promise<ProfileAchievementStats> {
-  const [completedGamesCount, winsCount] = await Promise.all([
+  const [completedGamesCount, winsCount, unlockedAchievementRows] = await Promise.all([
     prisma.players.count({
       where: {
         userId,
@@ -86,11 +88,19 @@ async function getProfileAchievementStats(userId: string): Promise<ProfileAchiev
         },
       },
     }),
+    prisma.userAchievements.findMany({
+      where: { userId },
+      select: { achievementKey: true, unlockedAt: true },
+    }),
   ])
 
   return {
     completedGamesCount,
     winsCount,
+    unlockedAchievements: unlockedAchievementRows.map((row) => ({
+      key: row.achievementKey,
+      unlockedAt: row.unlockedAt.toISOString(),
+    })),
   }
 }
 

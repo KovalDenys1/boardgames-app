@@ -1427,10 +1427,7 @@ const no = {
     },
     achievements: {
       title: 'Prestasjoner',
-      firstFinish: 'Første mål',
-      firstFriend: 'Første venn',
-      firstWin: 'Første seier',
-      verified: 'Bekreftet',
+      unlockedOn: 'Låst opp {{date}}',
     },
     saving: 'Lagrer...',
     sending: 'Sender...',
@@ -1877,6 +1874,36 @@ const no = {
       copyLink: 'Kopier profillenke',
       linkCopied: 'Kopiert!',
     }
+  },
+  achievements: {
+    first_win: {
+      name: 'Første seier',
+      description: 'Vinn ditt første spill',
+    },
+    on_a_roll: {
+      name: 'På stigende form',
+      description: 'Vinn 5 spill på rad',
+    },
+    veteran: {
+      name: 'Veteran',
+      description: 'Spill 50 spill',
+    },
+    champion: {
+      name: 'Mester',
+      description: 'Vinn 100 spill',
+    },
+    game_explorer: {
+      name: 'Spillutforsker',
+      description: 'Spill 3 forskjellige spilltyper',
+    },
+    social_butterfly: {
+      name: 'Sosial sommerfugl',
+      description: 'Spill med 10 forskjellige venner',
+    },
+    speed_demon: {
+      name: 'Fartsdjevel',
+      description: 'Vinn et spill på under 2 minutter',
+    },
   },
   notFound: {
     title: 'Siden ikke funnet',

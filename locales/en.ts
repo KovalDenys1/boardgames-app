@@ -1427,10 +1427,7 @@ const en = {
     },
     achievements: {
       title: 'Achievements',
-      firstFinish: 'First finish',
-      firstFriend: 'First friend',
-      firstWin: 'First win',
-      verified: 'Verified',
+      unlockedOn: 'Unlocked {{date}}',
     },
     saving: 'Saving...',
     sending: 'Sending...',
@@ -1887,6 +1884,36 @@ const en = {
       lovesGame: 'Loves {{game}}',
       copyLink: 'Copy profile link',
       linkCopied: 'Copied!',
+    },
+  },
+  achievements: {
+    first_win: {
+      name: 'First Win',
+      description: 'Win your first game',
+    },
+    on_a_roll: {
+      name: 'On a Roll',
+      description: 'Win 5 games in a row',
+    },
+    veteran: {
+      name: 'Veteran',
+      description: 'Play 50 games',
+    },
+    champion: {
+      name: 'Champion',
+      description: 'Win 100 games',
+    },
+    game_explorer: {
+      name: 'Game Explorer',
+      description: 'Play 3 different game types',
+    },
+    social_butterfly: {
+      name: 'Social Butterfly',
+      description: 'Play with 10 different friends',
+    },
+    speed_demon: {
+      name: 'Speed Demon',
+      description: 'Win a game in under 2 minutes',
     },
   },
   notFound: {
