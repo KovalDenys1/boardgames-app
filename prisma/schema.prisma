@@ -56,6 +56,7 @@ model Users {
   notifications           Notifications[]
   pushSubscriptions       PushSubscriptions[]
   feedback                Feedback[]
+  userAchievements        UserAchievements[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -379,6 +380,7 @@ enum NotificationType {
   friend_request
   friend_accepted
   feedback_thanks
+  achievement_unlocked
 }
 
 enum NotificationChannel {
@@ -448,6 +450,22 @@ model PushSubscriptions {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
+  @@index([userId])
+}
+
+// Achievement *definitions* (key, name, description, icon, category) live in
+// code (lib/achievements.ts) rather than a DB table — consistent with how
+// game types/catalog entries are defined in this codebase (lib/game-registry.ts,
+// lib/game-catalog.ts), and avoids a migration every time a new achievement
+// is added. This table only tracks which keys a user has unlocked and when.
+model UserAchievements {
+  id             String   @id @default(cuid())
+  userId         String
+  user           Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementKey String
+  unlockedAt     DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([userId, achievementKey])
   @@index([userId])
 }
 
