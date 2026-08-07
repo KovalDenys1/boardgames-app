@@ -58,6 +58,26 @@ async function emitLobbyEvent(
   if (!sent) log.warn('Failed to broadcast lobby leave event', { code, event })
 }
 
+/**
+ * Cleans up stale turn-reminder notifications for an abandoned game. Awaited
+ * (not fire-and-forget) because Vercel can freeze/kill a serverless
+ * function's pending promises once the response is sent — a bare `void` call
+ * here resurfaces later as an out-of-context DatabaseTimeoutError on an
+ * unrelated request (same class of bug #509 fixed for emitLobbyEvent). Errors
+ * are swallowed rather than thrown: a missed cleanup just leaves one stale
+ * notification row, which must never fail the leave request itself.
+ */
+async function cleanupTurnReminderNotifications(log: ReturnType<typeof apiLogger>, gameId: string) {
+  try {
+    await deleteGameTurnReminderNotifications(gameId)
+  } catch (error) {
+    log.warn('Failed to clean up turn-reminder notifications after game abandonment', {
+      gameId,
+      error: (error as Error).message,
+    })
+  }
+}
+
 function notifyLobbyListUpdate() {
   // Postgres Changes on Lobbies table handles lobby-list updates globally
 }
@@ -297,7 +317,7 @@ export async function performPlayerLeave(
     })
 
     await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
-    void deleteGameTurnReminderNotifications(activeGame.id)
+    await cleanupTurnReminderNotifications(log, activeGame.id)
     notifyLobbyListUpdate()
 
     return {
@@ -329,7 +349,7 @@ export async function performPlayerLeave(
     })
 
     await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
-    void deleteGameTurnReminderNotifications(activeGame.id)
+    await cleanupTurnReminderNotifications(log, activeGame.id)
     notifyLobbyListUpdate()
 
     return {
@@ -357,7 +377,7 @@ export async function performPlayerLeave(
     })
     await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
     await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
-    void deleteGameTurnReminderNotifications(activeGame.id)
+    await cleanupTurnReminderNotifications(log, activeGame.id)
     notifyLobbyListUpdate()
     return {
       status: 200,
@@ -387,7 +407,7 @@ export async function performPlayerLeave(
         })
         await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
         await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'spy_left' })
-        void deleteGameTurnReminderNotifications(activeGame.id)
+        await cleanupTurnReminderNotifications(log, activeGame.id)
         notifyLobbyListUpdate()
         return {
           status: 200,
