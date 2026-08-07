@@ -139,6 +139,14 @@
     },
     "ajv-formats": {
       "ajv": "^8.18.0"
+    },
+    "@edge-runtime/jest-environment": {
+      "jest-mock": "^30.0.0"
+    }
+  },
+  "pnpm": {
+    "overrides": {
+      "@edge-runtime/jest-environment>jest-mock": "^30.0.0"
     }
   }
 }
