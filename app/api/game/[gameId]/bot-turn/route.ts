@@ -14,6 +14,7 @@ import { type BaseBotActionEvent } from '@/lib/bots/core/bot-types'
 import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
+import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -388,6 +389,10 @@ export async function POST(
                 skippedPlayerIds: disconnectedTurnResult.skippedPlayerIds,
                 currentPlayerId: disconnectedTurnResult.currentPlayerId,
               })
+            }
+
+            if (statusChanged && newState.status === 'finished') {
+              await checkAchievementsForFinishedGame(game.players, log)
             }
 
             const replaySnapshotPromise = appendGameReplaySnapshot({

@@ -1427,10 +1427,7 @@ const ru = {
     },
     achievements: {
       title: 'Достижения',
-      firstFinish: 'Первое завершение',
-      firstFriend: 'Первый друг',
-      firstWin: 'Первая победа',
-      verified: 'Подтверждено',
+      unlockedOn: 'Получено {{date}}',
     },
     saving: 'Сохранение...',
     sending: 'Отправка...',
@@ -1877,6 +1874,36 @@ const ru = {
       copyLink: 'Скопировать ссылку',
       linkCopied: 'Скопировано!',
     }
+  },
+  achievements: {
+    first_win: {
+      name: 'Первая победа',
+      description: 'Выиграйте свою первую игру',
+    },
+    on_a_roll: {
+      name: 'На волне',
+      description: 'Выиграйте 5 игр подряд',
+    },
+    veteran: {
+      name: 'Ветеран',
+      description: 'Сыграйте 50 игр',
+    },
+    champion: {
+      name: 'Чемпион',
+      description: 'Выиграйте 100 игр',
+    },
+    game_explorer: {
+      name: 'Исследователь',
+      description: 'Сыграйте в 3 разных игры',
+    },
+    social_butterfly: {
+      name: 'Душа компании',
+      description: 'Сыграйте с 10 разными друзьями',
+    },
+    speed_demon: {
+      name: 'Скоростной демон',
+      description: 'Выиграйте игру менее чем за 2 минуты',
+    },
   },
   notFound: {
     title: 'Страница не найдена',

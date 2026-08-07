@@ -1429,10 +1429,7 @@ const uk: Translation = {
     },
     achievements: {
       title: 'Досягнення',
-      firstFinish: 'Перше завершення',
-      firstFriend: 'Перший друг',
-      firstWin: 'Перша перемога',
-      verified: 'Підтверджено',
+      unlockedOn: 'Отримано {{date}}',
     },
     saving: 'Збереження...',
     sending: 'Надсилання...',
@@ -1889,6 +1886,36 @@ const uk: Translation = {
       lovesGame: 'Любить {{game}}',
       copyLink: 'Скопіювати посилання',
       linkCopied: 'Скопійовано!',
+    },
+  },
+  achievements: {
+    first_win: {
+      name: 'Перша перемога',
+      description: 'Виграйте свою першу гру',
+    },
+    on_a_roll: {
+      name: 'На хвилі',
+      description: 'Виграйте 5 ігор поспіль',
+    },
+    veteran: {
+      name: 'Ветеран',
+      description: 'Зіграйте 50 ігор',
+    },
+    champion: {
+      name: 'Чемпіон',
+      description: 'Виграйте 100 ігор',
+    },
+    game_explorer: {
+      name: 'Дослідник ігор',
+      description: 'Зіграйте в 3 різні ігри',
+    },
+    social_butterfly: {
+      name: 'Душа компанії',
+      description: 'Зіграйте з 10 різними друзями',
+    },
+    speed_demon: {
+      name: 'Швидкісний демон',
+      description: 'Виграйте гру менш ніж за 2 хвилини',
     },
   },
   notFound: {

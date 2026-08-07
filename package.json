@@ -39,6 +39,7 @@
     "cleanup:old-guests": "tsx scripts/cleanup-old-guests.ts",
     "cleanup:old-replays": "tsx scripts/cleanup-old-replays.ts",
     "cleanup:unverified": "tsx scripts/cleanup-unverified.ts",
+    "achievements:grant-retroactive": "tsx scripts/grant-retroactive-achievements.ts",
     "ops:alerts:check": "tsx scripts/check-reliability-alerts.ts",
     "ops:kpi:report": "tsx scripts/report-operational-kpis.ts",
     "ops:load": "tsx scripts/run-operational-load.ts",
