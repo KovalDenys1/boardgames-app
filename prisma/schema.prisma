@@ -466,6 +466,17 @@ model AdminAuditLogs {
   @@index([targetType, createdAt])
 }
 
+/// Processed Stripe webhook event ids, so a redelivered event is a no-op (#717).
+/// Stripe retries on any non-2xx and can deliver the same event more than once;
+/// without this, each delivery re-ran the subscription write.
+model StripeWebhookEvents {
+  id          String   @id // Stripe's event.id — the natural idempotency key
+  type        String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([processedAt])
+}
+
 model Feedback {
   id        String   @id @default(cuid())
   type      String   // 'bug' | 'feature' | 'other'

@@ -328,3 +328,32 @@ export class AliasGame extends GameEngine {
     this.state.winner = winningTeam?.playerIds[0] ?? undefined
   }
 }
+
+/**
+ * Hides the active word card from everyone except the describer.
+ *
+ * `currentCard` holds the whole run of words for the turn, including ones the
+ * describer has not reached yet, and it was previously broadcast to every player
+ * — so a guesser could read the answers straight out of the network payload
+ * (#716). The UI only ever renders the word on the describer's screen, so
+ * redacting it for everyone else costs nothing visually.
+ *
+ * `currentCardResults` and `lastTurnResult` are left intact: those words have
+ * already been guessed or skipped in front of the whole table.
+ */
+export function sanitizeAliasStateForBroadcast<T extends { data?: unknown; status?: string }>(
+  state: T,
+  viewerUserId: string | null = null
+): T {
+  const data = state.data as AliasGameData | undefined
+  if (!data || !data.currentCard) return state
+
+  // Outside an active turn there is no live card to protect.
+  if (data.phase !== 'turn_active') return state
+
+  const currentTeam = Array.isArray(data.teams) ? data.teams[data.currentTeamIndex] : undefined
+  const describerId = currentTeam?.playerIds?.[currentTeam.describerIndex]
+  if (viewerUserId !== null && describerId === viewerUserId) return state
+
+  return { ...state, data: { ...data, currentCard: null } }
+}

@@ -715,3 +715,35 @@ export class FakeArtistGame extends GameEngine {
     return `[AUTO TIMEOUT] ${playerId} skipped stroke in round ${round}, turn ${turnIndex + 1}.`
   }
 }
+
+/**
+ * Hides which player is the fake artist until the round is revealed.
+ *
+ * `fakeArtistId` sits directly in the broadcast state, so every player could
+ * read the impostor's identity out of the network payload — which is the entire
+ * game (#716). The fake artist themselves must still know, so they keep their
+ * own view. `promptFingerprint` is derived from the fake artist's position and
+ * is redacted alongside it.
+ *
+ * `roundResults` is left intact: those rounds have already been revealed.
+ *
+ * NOTE: this is necessary but not sufficient. `resolveFakeArtistId` picks the
+ * impostor by a deterministic round-robin over `playerOrder`, which is itself
+ * broadcast, so the identity remains computable client-side from public data.
+ * Making the secret genuinely secret requires choosing it randomly server-side
+ * and storing the result — tracked separately.
+ */
+export function sanitizeFakeArtistStateForBroadcast<T extends { data?: unknown; status?: string }>(
+  state: T,
+  viewerUserId: string | null = null
+): T {
+  const data = state.data as FakeArtistGameData | undefined
+  if (!data) return state
+
+  const isRevealed = data.phase === 'reveal' || state.status === 'finished'
+  if (isRevealed) return state
+
+  if (viewerUserId !== null && viewerUserId === data.fakeArtistId) return state
+
+  return { ...state, data: { ...data, fakeArtistId: '', promptFingerprint: '' } }
+}

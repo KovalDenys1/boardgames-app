@@ -1,6 +1,10 @@
+import type { SupportedGameType } from './game-registry'
 import { sanitizeSpyStateForBroadcast } from './games/spy-game'
 import { sanitizeRpsStateForBroadcast } from './games/rock-paper-scissors-game'
 import { sanitizeSketchAndGuessStateForBroadcast } from './games/sketch-and-guess-game'
+import { sanitizeMemoryStateForBroadcast } from './games/memory-game'
+import { sanitizeAliasStateForBroadcast } from './games/alias'
+import { sanitizeFakeArtistStateForBroadcast } from './games/fake-artist-game'
 
 /**
  * Single dispatch point for "strip secrets before this state leaves the
@@ -12,22 +16,56 @@ import { sanitizeSketchAndGuessStateForBroadcast } from './games/sketch-and-gues
  * landmine for the next bot-enabled sanitized game type).
  *
  * `viewerUserId` is only meaningful for sanitizers that keep a viewer's own
- * not-yet-revealed data visible to themselves (currently just RPS); pass
- * `null` for a shared broadcast payload with no single viewer.
+ * not-yet-revealed data visible to themselves; pass `null` for a shared
+ * broadcast payload with no single viewer, which redacts for everyone.
  */
+type Sanitizer = <T extends { data?: unknown; status?: string }>(
+  state: T,
+  viewerUserId: string | null
+) => T
+
+/**
+ * Every supported game must make an explicit sanitization decision. `null` means
+ * "this game has no hidden state" and is a deliberate declaration, not a default
+ * — the `Record<SupportedGameType, …>` type makes adding a game without deciding
+ * a compile error.
+ *
+ * This exhaustiveness is the actual fix for #716: the dispatcher previously fell
+ * through to `default: return state`, so nine of eleven games silently shipped
+ * their secrets and each new game inherited the same silence.
+ */
+const SANITIZERS: Record<SupportedGameType, Sanitizer | null> = {
+  guess_the_spy: (state) => sanitizeSpyStateForBroadcast(state),
+  rock_paper_scissors: (state, viewerUserId) => sanitizeRpsStateForBroadcast(state, viewerUserId),
+  sketch_and_guess: (state, viewerUserId) => sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId),
+  memory: (state) => sanitizeMemoryStateForBroadcast(state),
+  alias: (state, viewerUserId) => sanitizeAliasStateForBroadcast(state, viewerUserId),
+  fake_artist: (state, viewerUserId) => sanitizeFakeArtistStateForBroadcast(state, viewerUserId),
+
+  // No hidden state: the whole board is public by design.
+  tic_tac_toe: null,
+  connect_four: null,
+  yahtzee: null,
+  // Every claim and challenge is made in the open; the bluff is social, not informational.
+  liars_party: null,
+  // Each step is revealed to the next player in the chain by design, and the
+  // full chain is only assembled at the reveal phase.
+  telephone_doodle: null,
+}
+
+function isSupportedGameType(gameType: string): gameType is SupportedGameType {
+  return Object.prototype.hasOwnProperty.call(SANITIZERS, gameType)
+}
+
 export function sanitizeStateForBroadcast<T extends { data?: unknown; status?: string }>(
   gameType: string,
   state: T,
   viewerUserId: string | null = null
 ): T {
-  switch (gameType) {
-    case 'guess_the_spy':
-      return sanitizeSpyStateForBroadcast(state)
-    case 'rock_paper_scissors':
-      return sanitizeRpsStateForBroadcast(state, viewerUserId)
-    case 'sketch_and_guess':
-      return sanitizeSketchAndGuessStateForBroadcast(state, viewerUserId)
-    default:
-      return state
+  if (!isSupportedGameType(gameType)) {
+    return state
   }
+
+  const sanitizer = SANITIZERS[gameType]
+  return sanitizer ? sanitizer(state, viewerUserId) : state
 }
