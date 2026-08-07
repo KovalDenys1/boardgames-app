@@ -1,5 +1,5 @@
 import { GameConfig, GameEngine, Move, Player } from '../game-engine'
-import { getStringField, resolvePlayerByRoundIndex } from './shared-helpers'
+import { getStringField } from './shared-helpers'
 
 export type FakeArtistPhase = 'drawing' | 'discussion' | 'voting' | 'reveal'
 
@@ -156,8 +156,8 @@ export class FakeArtistGame extends GameEngine {
     data.strokes = []
     data.votes = []
     data.submittedPlayerIds = []
-    data.fakeArtistId = this.resolveFakeArtistId(data.currentRound, data.playerOrder)
-    data.promptFingerprint = this.resolvePromptFingerprint(data.currentRound, data.fakeArtistId, data.playerOrder)
+    data.fakeArtistId = this.resolveFakeArtistId(data.playerOrder)
+    data.promptFingerprint = this.resolvePromptFingerprint()
     data.scores = {}
     data.scoreBreakdown = {}
     data.roundResults = []
@@ -501,8 +501,8 @@ export class FakeArtistGame extends GameEngine {
     data.strokes = []
     data.votes = []
     data.submittedPlayerIds = []
-    data.fakeArtistId = this.resolveFakeArtistId(data.currentRound, data.playerOrder)
-    data.promptFingerprint = this.resolvePromptFingerprint(data.currentRound, data.fakeArtistId, data.playerOrder)
+    data.fakeArtistId = this.resolveFakeArtistId(data.playerOrder)
+    data.promptFingerprint = this.resolvePromptFingerprint()
     this.state.lastMoveAt = nowMs
   }
 
@@ -662,14 +662,15 @@ export class FakeArtistGame extends GameEngine {
     })[0] || null
   }
 
-  private resolveFakeArtistId(round: number, playerOrder: string[]): string {
-    return resolvePlayerByRoundIndex(round, playerOrder) || playerOrder[0] || ''
+  private resolveFakeArtistId(playerOrder: string[]): string {
+    if (playerOrder.length === 0) return ''
+    const randomIndex = Math.floor(Math.random() * playerOrder.length)
+    return playerOrder[randomIndex] || playerOrder[0] || ''
   }
 
-  private resolvePromptFingerprint(round: number, fakeArtistId: string, playerOrder: string[]): string {
-    const fakeIndex = Math.max(0, playerOrder.findIndex((playerId) => playerId === fakeArtistId))
-    const promptIndex = (round - 1 + fakeIndex) % PROMPT_FINGERPRINT_POOL.length
-    return PROMPT_FINGERPRINT_POOL[promptIndex] || PROMPT_FINGERPRINT_POOL[0]
+  private resolvePromptFingerprint(): string {
+    const randomIndex = Math.floor(Math.random() * PROMPT_FINGERPRINT_POOL.length)
+    return PROMPT_FINGERPRINT_POOL[randomIndex] || PROMPT_FINGERPRINT_POOL[0]
   }
 
   private resolveDefaultVoteTarget(voterId: string, playerOrder: string[]): string {
@@ -727,11 +728,10 @@ export class FakeArtistGame extends GameEngine {
  *
  * `roundResults` is left intact: those rounds have already been revealed.
  *
- * NOTE: this is necessary but not sufficient. `resolveFakeArtistId` picks the
- * impostor by a deterministic round-robin over `playerOrder`, which is itself
- * broadcast, so the identity remains computable client-side from public data.
- * Making the secret genuinely secret requires choosing it randomly server-side
- * and storing the result — tracked separately.
+ * `resolveFakeArtistId`/`resolvePromptFingerprint` pick the secret with
+ * `Math.random()` at round start and persist only the outcome (#725, mirrors
+ * `spy-game.ts`'s `spyPlayerId` pick) — the redaction here is sufficient
+ * because the value is no longer derivable from broadcast state.
  */
 export function sanitizeFakeArtistStateForBroadcast<T extends { data?: unknown; status?: string }>(
   state: T,

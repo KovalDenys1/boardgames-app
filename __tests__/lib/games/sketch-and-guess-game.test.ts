@@ -41,12 +41,31 @@ describe('SketchAndGuessGame (MVP scaffold)', () => {
     expect(data.currentRound).toBe(1)
     expect(data.currentDrawerId).toBe('player1')
     expect(data.rounds).toHaveLength(1)
-    expect(data.rounds[0].prompt).toBe('castle')
+    expect(typeof data.rounds[0].prompt).toBe('string')
+    expect(data.rounds[0].prompt.length).toBeGreaterThan(0)
     expect(data.rounds[0].drawerId).toBe('player1')
+  })
+
+  it('picks a different prompt across repeated round starts (not a fixed formula)', () => {
+    const seenPrompts = new Set<string>()
+    for (let i = 0; i < 40; i++) {
+      const trial = new SketchAndGuessGame(`sketch-random-${i}`, {
+        maxPlayers: 10,
+        minPlayers: 3,
+        rules: { rounds: 1 },
+      })
+      addDefaultPlayers(trial)
+      trial.startGame()
+      seenPrompts.add(getData(trial).rounds[0].prompt)
+    }
+    // With a 25-entry pool and 40 independent random draws, seeing only one
+    // distinct value would mean the pick isn't actually random.
+    expect(seenPrompts.size).toBeGreaterThan(1)
   })
 
   it('accepts drawer drawing, then guesses, then reveal and score update', () => {
     expect(game.startGame()).toBe(true)
+    const prompt = getData(game).rounds[0].prompt
 
     expect(
       game.validateMove(createMove('player2', 'submit-drawing', { content: '{"x":1}' }))
@@ -57,10 +76,10 @@ describe('SketchAndGuessGame (MVP scaffold)', () => {
     expect(getData(game).phase).toBe('guessing')
 
     expect(
-      game.makeMove(createMove('player2', 'submit-guess', { guess: 'castle' }))
+      game.makeMove(createMove('player2', 'submit-guess', { guess: prompt }))
     ).toBe(true)
     expect(
-      game.makeMove(createMove('player3', 'submit-guess', { guess: 'volcano' }))
+      game.makeMove(createMove('player3', 'submit-guess', { guess: `${prompt}-wrong` }))
     ).toBe(true)
     expect(getData(game).phase).toBe('reveal')
 
@@ -140,6 +159,7 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
   })
 
   it('hides the live prompt from a non-drawer during the drawing phase', () => {
+    const prompt = getData(game).rounds[0].prompt
     const state = game.getState()
     expect(getData(game).currentDrawerId).toBe('player1')
 
@@ -147,7 +167,7 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
     expect((forGuesser.data as SketchAndGuessGameData).rounds[0].prompt).toBe('')
 
     // original state object must be untouched (no accidental mutation)
-    expect(getData(game).rounds[0].prompt).toBe('castle')
+    expect(getData(game).rounds[0].prompt).toBe(prompt)
   })
 
   it('hides the live prompt from a shared broadcast with no viewer (null)', () => {
@@ -157,9 +177,10 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
   })
 
   it('still shows the prompt to the drawer themselves', () => {
+    const prompt = getData(game).rounds[0].prompt
     const state = game.getState()
     const forDrawer = sanitizeSketchAndGuessStateForBroadcast(state, 'player1')
-    expect((forDrawer.data as SketchAndGuessGameData).rounds[0].prompt).toBe('castle')
+    expect((forDrawer.data as SketchAndGuessGameData).rounds[0].prompt).toBe(prompt)
   })
 
   it('hides the prompt from a non-drawer during the guessing phase too', () => {
@@ -172,19 +193,21 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
   })
 
   it('reveals the prompt to everyone once the round is revealed', () => {
+    const prompt = getData(game).rounds[0].prompt
     game.makeMove(createMove('player1', 'submit-drawing', { content: '{"strokes":[1]}' }))
-    game.makeMove(createMove('player2', 'submit-guess', { guess: 'castle' }))
+    game.makeMove(createMove('player2', 'submit-guess', { guess: prompt }))
     game.makeMove(createMove('player3', 'submit-guess', { guess: 'wrong' }))
     expect(getData(game).phase).toBe('reveal')
 
     const state = game.getState()
     const forGuesser = sanitizeSketchAndGuessStateForBroadcast(state, 'player2')
-    expect((forGuesser.data as SketchAndGuessGameData).rounds[0].prompt).toBe('castle')
+    expect((forGuesser.data as SketchAndGuessGameData).rounds[0].prompt).toBe(prompt)
   })
 
   it('keeps past rounds fully visible to everyone once a new round has started', () => {
+    const round1Prompt = getData(game).rounds[0].prompt
     game.makeMove(createMove('player1', 'submit-drawing', { content: '{"strokes":[1]}' }))
-    game.makeMove(createMove('player2', 'submit-guess', { guess: 'castle' }))
+    game.makeMove(createMove('player2', 'submit-guess', { guess: round1Prompt }))
     game.makeMove(createMove('player3', 'submit-guess', { guess: 'wrong' }))
     game.makeMove(createMove('player1', 'advance-round', {}))
     expect(getData(game).currentRound).toBe(2)
@@ -194,7 +217,7 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
     // player3 is neither round 1's nor round 2's drawer
     const forOutsider = sanitizeSketchAndGuessStateForBroadcast(state, 'player3')
     const rounds = (forOutsider.data as SketchAndGuessGameData).rounds
-    expect(rounds[0].prompt).toBe('castle') // past round, already revealed — safe
+    expect(rounds[0].prompt).toBe(round1Prompt) // past round, already revealed — safe
     expect(rounds[1].prompt).toBe('') // new live round, player3 isn't the drawer
   })
 
@@ -206,6 +229,7 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
     })
     addDefaultPlayers(oneRoundGame)
     oneRoundGame.startGame()
+    const prompt = getData(oneRoundGame).rounds[0].prompt
     oneRoundGame.makeMove(createMove('player1', 'submit-drawing', { content: '{"d":1}' }))
     oneRoundGame.makeMove(createMove('player2', 'submit-guess', { guess: 'wrong' }))
     oneRoundGame.makeMove(createMove('player3', 'submit-guess', { guess: 'also wrong' }))
@@ -214,6 +238,6 @@ describe('sanitizeSketchAndGuessStateForBroadcast', () => {
 
     const state = oneRoundGame.getState()
     const forOutsider = sanitizeSketchAndGuessStateForBroadcast(state, 'player2')
-    expect((forOutsider.data as SketchAndGuessGameData).rounds[0].prompt).toBe('castle')
+    expect((forOutsider.data as SketchAndGuessGameData).rounds[0].prompt).toBe(prompt)
   })
 })
