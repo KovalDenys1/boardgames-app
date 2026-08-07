@@ -558,7 +558,7 @@ export class SketchAndGuessGame extends GameEngine {
     return {
       round,
       drawerId,
-      prompt: this.resolvePrompt(round, drawerId),
+      prompt: this.resolvePrompt(),
       drawingContent: null,
       drawingSubmittedAt: null,
       drawingAutoSubmitted: false,
@@ -569,11 +569,9 @@ export class SketchAndGuessGame extends GameEngine {
     }
   }
 
-  private resolvePrompt(round: number, drawerId: string): string {
-    const drawerIndex = this.state.players.findIndex((player) => player.id === drawerId)
-    const stableDrawerIndex = drawerIndex === -1 ? 0 : drawerIndex
-    const promptIndex = (round - 1 + stableDrawerIndex) % PROMPT_POOL.length
-    return PROMPT_POOL[promptIndex] || PROMPT_POOL[0]
+  private resolvePrompt(): string {
+    const randomIndex = Math.floor(Math.random() * PROMPT_POOL.length)
+    return PROMPT_POOL[randomIndex] || PROMPT_POOL[0]
   }
 
   private resolveTotalRounds(): number {
