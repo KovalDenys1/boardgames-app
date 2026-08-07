@@ -20,11 +20,7 @@ import { AliasGame } from '@/lib/games/alias'
 import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
-import {
-  hashLobbyPassword,
-  isHashedLobbyPassword,
-  verifyLobbyPassword,
-} from '@/lib/lobby-password'
+import { verifyLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import {
   parsePersistedGameState,
@@ -581,24 +577,6 @@ export async function POST(
 
       if (!isPasswordValid) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
-      }
-
-      // Upgrade legacy plain-text lobby passwords after a successful match.
-      if (!isHashedLobbyPassword(lobby.password)) {
-        const upgradedHash = await hashLobbyPassword(providedPassword)
-        if (upgradedHash) {
-          try {
-            await prisma.lobbies.update({
-              where: { id: lobby.id },
-              data: { password: upgradedHash },
-            })
-          } catch (upgradeError) {
-            log.warn('Failed to upgrade legacy lobby password hash', {
-              lobbyId: lobby.id,
-              error: (upgradeError as Error).message,
-            })
-          }
-        }
       }
     }
 
