@@ -42,11 +42,16 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   if (!vapidPublicKey) return null
 
-  const reg = await getRegistration()
-  if (!reg) return null
-
+  // Request permission before anything else that could await (including
+  // service-worker readiness, which can take a real amount of time on a
+  // first visit). Browsers require Notification.requestPermission() to run
+  // close to the triggering user gesture — an async gap beforehand can
+  // cause it to hang or silently no-op instead of showing the prompt.
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return null
+
+  const reg = await getRegistration()
+  if (!reg) return null
 
   return reg.pushManager.subscribe({
     userVisibleOnly: true,
