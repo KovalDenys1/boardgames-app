@@ -60,6 +60,7 @@ describe('checkAndGrantAchievements', () => {
     mockPrisma.userAchievements.findMany.mockResolvedValue([])
     mockPrisma.userAchievements.createMany.mockResolvedValue({ count: 0 })
     mockGetUserStatsDashboard.mockResolvedValue(JSON.parse(JSON.stringify(baseDashboard)))
+    mockCreateInAppNotification.mockResolvedValue({ created: true, id: 'notif-1' })
     // First call (inside countDistinctFriendsPlayedWith) then second
     // (inside hasWinUnderSeconds) — Promise.all starts them in this order.
     mockPrisma.$queryRaw
@@ -102,6 +103,18 @@ describe('checkAndGrantAchievements', () => {
       expect.objectContaining({ userId: 'user-1', type: 'achievement_unlocked', dedupeKey: 'achievement:first_win' })
     )
     expect(mockSendPushNotification).toHaveBeenCalledWith('user-1', expect.objectContaining({ tag: 'achievement:first_win' }))
+  })
+
+  it('does not send a duplicate push when the in-app notification was already created (dedupe hit)', async () => {
+    mockGetUserStatsDashboard.mockResolvedValue({
+      ...JSON.parse(JSON.stringify(baseDashboard)),
+      overall: { ...baseDashboard.overall, wins: 1, totalGames: 1 },
+    })
+    mockCreateInAppNotification.mockResolvedValue({ created: false, id: 'notif-1', duplicate: true })
+
+    await checkAndGrantAchievements('user-1')
+
+    expect(mockSendPushNotification).not.toHaveBeenCalled()
   })
 
   it('does not re-grant an achievement the user already has, even if still met', async () => {

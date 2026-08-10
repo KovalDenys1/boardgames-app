@@ -5,7 +5,13 @@ import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 export type InAppNotificationItem = {
   id: string
-  type: 'game_invite' | 'turn_reminder' | 'friend_request' | 'friend_accepted' | 'feedback_thanks'
+  type:
+    | 'game_invite'
+    | 'turn_reminder'
+    | 'friend_request'
+    | 'friend_accepted'
+    | 'feedback_thanks'
+    | 'achievement_unlocked'
   createdAt: string
   readAt: string | null
   payload: unknown
@@ -75,6 +81,8 @@ export function mapNotificationTone(
       return 'amber'
     case 'feedback_thanks':
       return 'emerald'
+    case 'achievement_unlocked':
+      return 'amber'
   }
 }
 
@@ -97,7 +105,9 @@ export function buildNotificationDisplayItem(
     readString(payload, 'href') ||
     (item.type === 'friend_request' || item.type === 'friend_accepted'
       ? '/profile?tab=friends'
-      : '/')
+      : item.type === 'achievement_unlocked'
+        ? '/profile'
+        : '/')
 
   let title = t('header.notificationsItems.default')
   let subtitle: string | null = null
@@ -130,6 +140,14 @@ export function buildNotificationDisplayItem(
       title = t('header.notificationsItems.feedbackThanks')
       subtitle = readString(payload, 'message')
       break
+    case 'achievement_unlocked': {
+      const achievementKey = readString(payload, 'achievementKey')
+      const achievementName = achievementKey
+        ? t(`achievements.${achievementKey}.name` as TranslationKeys)
+        : t('profile.playerFallback')
+      title = t('header.notificationsItems.achievementUnlocked', { name: achievementName })
+      break
+    }
   }
 
   return {

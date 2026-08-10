@@ -53,7 +53,7 @@ describe('in-app notifications helper', () => {
       payload: { href: '/profile?tab=friends' },
     })
 
-    expect(result).toEqual({ created: false, id: 'existing-1' })
+    expect(result).toEqual({ created: false, id: 'existing-1', duplicate: true })
     expect(mockNotifications.create).not.toHaveBeenCalled()
   })
 

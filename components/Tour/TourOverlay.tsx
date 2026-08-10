@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTour } from '@/contexts/TourContext'
 import { useOnboarding } from '@/contexts/OnboardingContext'
@@ -18,6 +18,15 @@ interface TargetRect {
   width: number
   height: number
 }
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
 
 const SPOTLIGHT_PADDING = 8
 const TOOLTIP_GAP = 16
@@ -185,6 +194,9 @@ export function TourOverlay() {
   const [quickStartGame, setQuickStartGame] = useState<string | null>(null)
   const [quickStartLoading, setQuickStartLoading] = useState(false)
 
+  const cardRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+
   const onRightRoute = !currentStep?.route || pathname === currentStep.route
 
   const games = useMemo(
@@ -200,6 +212,68 @@ export function TourOverlay() {
       document.body.style.overflow = prev
     }
   }, [isActive])
+
+  const getFocusableElements = useCallback((): HTMLElement[] => {
+    const card = cardRef.current
+    if (!card) return []
+    return Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+      (element) => element.offsetParent !== null || element === document.activeElement
+    )
+  }, [])
+
+  // Escape to dismiss, and keep Tab inside the tour card while it's open —
+  // mirrors Modal.tsx's trap, since this overlay is modal-like (full-viewport
+  // interaction blocker) but previously had no keyboard escape hatch at all.
+  useEffect(() => {
+    if (!isActive) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        endTour()
+        return
+      }
+
+      if (e.key !== 'Tab') return
+
+      const focusable = getFocusableElements()
+      if (focusable.length === 0) {
+        e.preventDefault()
+        cardRef.current?.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+
+      if (e.shiftKey && (active === first || active === cardRef.current)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isActive, endTour, getFocusableElements])
+
+  // Move focus into the card on open and on each step change (content and
+  // focusable controls differ per step), and hand focus back on close.
+  useEffect(() => {
+    if (!isActive) return
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const focusable = getFocusableElements()
+    ;(focusable[0] ?? cardRef.current)?.focus()
+
+    return () => {
+      previouslyFocused?.focus?.()
+    }
+  }, [isActive, currentStepIndex, getFocusableElements])
 
   useEffect(() => {
     if (!isActive || !currentStep?.selector || !onRightRoute) {
@@ -305,11 +379,20 @@ export function TourOverlay() {
       {/* Full-viewport interaction blocker — only the tooltip card itself is clickable. */}
       <div className="fixed inset-0 z-[106]" />
 
-      <div className="fixed z-[110]" style={tooltipStyle}>
+      <div
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="fixed z-[110]"
+        style={tooltipStyle}
+      >
         <TourCard>
           {isQuickStartStep ? (
             <>
               <h2
+                id={titleId}
                 className="mb-1 text-lg font-bold"
                 style={{ fontFamily: 'var(--bd-font-display)', color: 'var(--bd-ink)' }}
               >
@@ -359,6 +442,7 @@ export function TourOverlay() {
           ) : (
             <>
               <h2
+                id={titleId}
                 className="mb-1 text-lg font-bold"
                 style={{ fontFamily: 'var(--bd-font-display)', color: 'var(--bd-ink)' }}
               >

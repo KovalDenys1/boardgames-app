@@ -478,7 +478,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         return (
             <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
                 <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
-                    <p className="text-bd-ink-soft mb-4">You are not part of this match.</p>
+                    <p className="text-bd-ink-soft mb-4">{t('lobby.game.notPartOfMatch')}</p>
                     <button
                         onClick={() => router.push(`/lobby/${code}`)}
                         className="rounded-xl bd-btn bd-btn-primary px-4 py-2 font-semibold transition"

@@ -246,7 +246,7 @@ export async function GET(
     // write a pointless update to an already-abandoned game — skip them for
     // this one request; the next GET picks up the corrected state.
     let presenceSweptGameAbandoned = false
-    if (activeGame && activeGame.status === 'playing') {
+    if (activeGame && (activeGame.status === 'playing' || activeGame.status === 'waiting')) {
       const log = apiLogger('GET /api/lobby/[code]')
       try {
         const sweepResult = await sweepStalePlayers(activeGame, code, log)

@@ -61,7 +61,13 @@ export async function POST(
       include: {
         players: {
           include: {
-            user: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                bot: true,
+              },
+            },
           },
         },
         lobby: true,

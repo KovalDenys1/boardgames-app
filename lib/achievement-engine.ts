@@ -118,12 +118,15 @@ const ACHIEVEMENT_NOTIFICATION_NAMES: Record<string, string> = {
 async function notifyAchievementUnlocked(userId: string, achievement: AchievementDefinition): Promise<void> {
   const name = ACHIEVEMENT_NOTIFICATION_NAMES[achievement.key] ?? achievement.key
 
-  await createInAppNotification({
+  const inAppResult = await createInAppNotification({
     userId,
     type: 'achievement_unlocked',
     dedupeKey: `achievement:${achievement.key}`,
     payload: { achievementKey: achievement.key },
   })
+  if ('duplicate' in inAppResult && inAppResult.duplicate) {
+    return
+  }
   await sendPushNotification(userId, {
     title: `You earned: ${name} ${achievement.icon}`,
     body: 'Tap to view your achievements',

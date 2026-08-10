@@ -29,7 +29,7 @@ export async function createInAppNotification(input: CreateInAppNotificationInpu
     })
 
     if (existing) {
-      return { created: false, id: existing.id }
+      return { created: false, id: existing.id, duplicate: true as const }
     }
   }
 
