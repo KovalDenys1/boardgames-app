@@ -16,7 +16,15 @@ const QUICK_PLAY_GAMES = getAvailableGameTypes().map((type) => {
   const meta = getGameMetadata(type)!
   const supportsBots = hasBotSupport(type)
   const playerRange = meta.maxPlayers === 1 ? '1' : `${supportsBots ? 1 : meta.minPlayers}–${meta.maxPlayers}`
-  return { type, svgId: meta.svgId, label: meta.name, players: playerRange, supportsBots }
+  return {
+    type,
+    svgId: meta.svgId,
+    label: meta.name,
+    players: playerRange,
+    supportsBots,
+    // Same per-game accent the ribbon and detail pages already use.
+    accentColor: meta.accentColor,
+  }
 })
 
 type GameType = string
@@ -169,7 +177,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                       height: 44,
                       display: 'grid',
                       placeItems: 'center',
-                      background: 'var(--bd-sun)',
+                      background: game.accentColor,
                       border: '2px solid var(--bd-ink)',
                       borderRadius: 10,
                       flexShrink: 0,

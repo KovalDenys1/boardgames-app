@@ -131,7 +131,11 @@ html.dark {
 .home-first-screen > .home-hero-shell {
   flex: 1 1 auto;
   min-height: 0;
-  padding-bottom: clamp(112px, 16svh, 148px);
+  /* Reserve the marquee's REAL footprint: strip box (88px) + rotation growth
+     (~2.2vw for a 110vw strip at -1.1deg) + max bottom offset (46px) + margin.
+     The old clamp(112px, 16svh, 148px) scaled with the wrong axis (height) and
+     under-reserved on short windows — hero buttons slid under the strip. */
+  padding-bottom: calc(146px + 2.2vw);
 }
 
 .home-marquee-anchor {
@@ -201,7 +205,9 @@ html.dark {
 
     .home-first-screen > .home-hero-shell {
       min-height: 0;
-      padding-bottom: clamp(112px, 16dvh, 148px);
+      /* Must match the base .home-first-screen > .home-hero-shell reservation
+         above — the marquee footprint scales with width, not height. */
+      padding-bottom: calc(146px + 2.2vw);
     }
   }
 }
