@@ -231,6 +231,17 @@ export const rateLimitPresets = {
     maxRequests: 5,
     message: 'Too many authentication attempts. Please try again in 15 minutes.'
   },
+
+  // Password sign-in via NextAuth's credentials callback (#714). Slightly more
+  // forgiving than `auth` because this is the primary login path for real users
+  // — a shared IP (household, cafe, office NAT) can legitimately produce several
+  // attempts in a window, and the limiter counts successes too, not just
+  // failures. Still bounds offline-style guessing to ~40 attempts/hour per IP.
+  credentialsLogin: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 10,
+    message: 'Too many sign-in attempts. Please try again in 15 minutes.'
+  },
   
   // Standard limit for general API endpoints
   api: {

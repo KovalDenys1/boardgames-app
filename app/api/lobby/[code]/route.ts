@@ -10,19 +10,18 @@ import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/
 import { getGameMetadata as getCatalogGameMetadata, isAvailableGameType } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS } from '@/lib/lobby-themes'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { sweepStalePlayers } from '@/lib/lobby-presence'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { type RestorableGameState } from '@/lib/game-engine'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { AliasGame } from '@/lib/games/alias'
+import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
-import {
-  hashLobbyPassword,
-  isHashedLobbyPassword,
-  verifyLobbyPassword,
-} from '@/lib/lobby-password'
+import { verifyLobbyPassword } from '@/lib/lobby-password'
+import { buildPartyGameTerminalUpdate, type DbPlayerRecord } from '@/lib/game-persistence'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import {
   parsePersistedGameState,
@@ -58,21 +57,43 @@ type TimeoutActiveGame = {
   updatedAt: Date
   state: unknown
   status: string
+  startedAt?: Date | null
   lastMoveAt?: Date | null
   players: unknown
 }
 
 async function commitTimeoutFallback(params: {
   activeGame: TimeoutActiveGame
-  nextState: { status: string; lastMoveAt?: unknown; players?: unknown[] }
+  nextState: { status: string; winner?: string | null; lastMoveAt?: unknown; players?: unknown[]; data?: unknown }
   actionType: string
   actionPayload: Record<string, unknown>
   lobbyCode: string
+  gameType: string
   gameSocketEvent?: string
   gameSocketData?: Record<string, unknown>
 }): Promise<void> {
-  const { activeGame, nextState, actionType, actionPayload, lobbyCode, gameSocketEvent, gameSocketData } = params
+  const { activeGame, nextState, actionType, actionPayload, lobbyCode, gameType, gameSocketEvent, gameSocketData } = params
   const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+
+  // #729: a timeout fallback can be the write that transitions one of the
+  // party games into 'finished' — it must set the terminal player fields too.
+  const fallbackDbPlayers: DbPlayerRecord[] = (Array.isArray(activeGame.players) ? activeGame.players as Record<string, unknown>[] : [])
+    .map((entry) => ({
+      id: typeof entry?.id === 'string' ? entry.id : '',
+      userId: typeof entry?.userId === 'string' ? entry.userId : '',
+      score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
+      scorecard: typeof entry?.scorecard === 'string' ? entry.scorecard : null,
+      finalScore: typeof entry?.finalScore === 'number' ? entry.finalScore : null,
+      placement: typeof entry?.placement === 'number' ? entry.placement : null,
+      isWinner: entry?.isWinner === true,
+    }))
+    .filter((entry) => entry.id.length > 0 && entry.userId.length > 0)
+  const terminalUpdate = buildPartyGameTerminalUpdate({
+    previousStatus: activeGame.status,
+    state: nextState,
+    startedAt: activeGame.startedAt ?? null,
+    dbPlayers: fallbackDbPlayers,
+  })
 
   const updateResult = await prisma.games.updateMany({
     where: { id: activeGame.id, updatedAt: activeGame.updatedAt },
@@ -80,37 +101,49 @@ async function commitTimeoutFallback(params: {
       state: toPersistedGameStateInput(nextState),
       status: nextState.status as 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled',
       ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+      ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
       updatedAt: new Date(),
     },
   })
 
   if (updateResult.count === 0) return
 
-  type ActiveScorePlayer = { id: string; userId: string; score: number }
-  const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-  const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players as Record<string, unknown>[] : [])
-    .map((entry) => ({
-      id: typeof entry?.id === 'string' ? entry.id : '',
-      userId: typeof entry?.userId === 'string' ? entry.userId : '',
-      score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
-    }))
-    .filter((entry) => entry.id.length > 0 && entry.userId.length > 0)
-  const activePlayersByUserId = new Map(activePlayers.map((p) => [p.userId, p]))
-
-  const scoreUpdates: Array<Promise<unknown>> = []
-  for (const statePlayer of statePlayers) {
-    if (!statePlayer || typeof statePlayer !== 'object') continue
-    const statePlayerId = (statePlayer as { id?: unknown }).id
-    if (typeof statePlayerId !== 'string') continue
-    const dbPlayer = activePlayersByUserId.get(statePlayerId)
-    if (!dbPlayer) continue
-    const rawScore = (statePlayer as { score?: unknown }).score
-    const nextScore = typeof rawScore === 'number' && Number.isFinite(rawScore) ? Math.floor(rawScore) : 0
-    if (dbPlayer.score === nextScore) continue
-    scoreUpdates.push(prisma.players.update({ where: { id: dbPlayer.id }, data: { score: nextScore } }))
-    dbPlayer.score = nextScore
+  if (terminalUpdate) {
+    // The terminal diff supersedes the plain score sync below — one update per
+    // player carrying score + finalScore/placement/isWinner.
+    await Promise.all(terminalUpdate.changedPlayerUpdates.map((update) =>
+      prisma.players.update({
+        where: { id: update.id },
+        data: {
+          score: update.score,
+          scorecard: update.scorecard,
+          finalScore: update.finalScore,
+          placement: update.placement,
+          isWinner: update.isWinner,
+        },
+      })
+    ))
   }
-  if (scoreUpdates.length > 0) await Promise.all(scoreUpdates)
+
+  if (!terminalUpdate) {
+    const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+    const activePlayersByUserId = new Map(fallbackDbPlayers.map((p) => [p.userId, p]))
+
+    const scoreUpdates: Array<Promise<unknown>> = []
+    for (const statePlayer of statePlayers) {
+      if (!statePlayer || typeof statePlayer !== 'object') continue
+      const statePlayerId = (statePlayer as { id?: unknown }).id
+      if (typeof statePlayerId !== 'string') continue
+      const dbPlayer = activePlayersByUserId.get(statePlayerId)
+      if (!dbPlayer) continue
+      const rawScore = (statePlayer as { score?: unknown }).score
+      const nextScore = typeof rawScore === 'number' && Number.isFinite(rawScore) ? Math.floor(rawScore) : 0
+      if (dbPlayer.score === nextScore) continue
+      scoreUpdates.push(prisma.players.update({ where: { id: dbPlayer.id }, data: { score: nextScore } }))
+      dbPlayer.score = nextScore
+    }
+    if (scoreUpdates.length > 0) await Promise.all(scoreUpdates)
+  }
 
   activeGame.state = JSON.stringify(nextState)
   activeGame.status = nextState.status
@@ -124,18 +157,23 @@ async function commitTimeoutFallback(params: {
     state: nextState,
   })
 
+  // No single viewer for a shared broadcast — strip any per-game hidden info
+  // (e.g. Sketch & Guess's live prompt) for everyone. `nextState` itself
+  // (used for persistence/replay above) is deliberately left untouched.
+  const broadcastState = sanitizeStateForBroadcast(gameType, nextState, null)
+
   if (gameSocketEvent && gameSocketData) {
     void broadcastToLobby(lobbyCode, gameSocketEvent, {
       action: 'timeout-fallback',
       playerId: null,
       data: gameSocketData,
-      state: nextState,
+      state: broadcastState,
     })
   }
 
   void broadcastToLobby(lobbyCode, 'game-update', {
     action: 'state-change',
-    payload: { state: nextState },
+    payload: { state: broadcastState },
   })
 }
 
@@ -163,6 +201,11 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const includeFinished = searchParams.get('includeFinished') === 'true'
     const { code } = await params
+    // Optional — this route stays publicly readable for guests/spectators
+    // with no session; resolved only so a signed-in viewer can see their own
+    // not-yet-revealed data (e.g. Sketch & Guess's live prompt while
+    // they're the drawer) via the sanitizer below.
+    const requestUser = await getRequestAuthUser(request)
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
@@ -230,8 +273,42 @@ export async function GET(
     const { password, ...safeLobby } = lobby
     const activeGame = pickRelevantLobbyGame(safeLobby.games, { includeFinished })
 
+    // Zero-signal disconnect detection (#675) — opportunistic, no separate
+    // cron. If it abandoned/deactivated the game we just loaded, the
+    // per-game-type timeout-fallback checks below would otherwise still run
+    // against a now-stale in-memory `activeGame.status === 'playing'` and
+    // write a pointless update to an already-abandoned game — skip them for
+    // this one request; the next GET picks up the corrected state.
+    let presenceSweptGameAbandoned = false
+    if (activeGame && (activeGame.status === 'playing' || activeGame.status === 'waiting')) {
+      const log = apiLogger('GET /api/lobby/[code]')
+      try {
+        const sweepResult = await sweepStalePlayers(activeGame, code, log)
+        presenceSweptGameAbandoned = sweepResult.gameAbandoned
+        // Keep the in-memory object in sync with what was just committed —
+        // matches the existing pattern below (commitTimeoutFallback mutates
+        // activeGame.state directly) so this response reflects the sweep
+        // instead of momentarily still showing an already-removed player.
+        if (sweepResult.removedUserIds.length > 0) {
+          activeGame.players = activeGame.players.filter(
+            (p) => !sweepResult.removedUserIds.includes(p.userId)
+          )
+          if (presenceSweptGameAbandoned) {
+            activeGame.status = 'abandoned'
+          }
+        }
+      } catch (error) {
+        log.warn('Stale-player sweep failed', {
+          code,
+          gameId: activeGame.id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'telephone_doodle'
     ) {
@@ -253,6 +330,7 @@ export async function GET(
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
               lobbyCode: safeLobby.code,
+              gameType: 'telephone_doodle',
               gameSocketEvent: 'telephone-doodle-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
@@ -274,6 +352,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'liars_party'
     ) {
@@ -297,6 +376,7 @@ export async function GET(
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
               lobbyCode: safeLobby.code,
+              gameType: 'liars_party',
               gameSocketEvent: 'liars-party-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
@@ -319,6 +399,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'fake_artist'
     ) {
@@ -342,6 +423,7 @@ export async function GET(
                 autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
               lobbyCode: safeLobby.code,
+              gameType: 'fake_artist',
               gameSocketEvent: 'fake-artist-action',
               gameSocketData: {
                 timeoutWindowsConsumed: r.timeoutWindowsConsumed,
@@ -364,6 +446,7 @@ export async function GET(
 
     if (
       activeGame &&
+      !presenceSweptGameAbandoned &&
       activeGame.status === 'playing' &&
       (safeLobby.gameType || activeGame.gameType) === 'alias'
     ) {
@@ -382,11 +465,59 @@ export async function GET(
               actionType: 'alias:timeout-fallback',
               actionPayload: {},
               lobbyCode: safeLobby.code,
+              gameType: 'alias',
             })
           }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
           log.warn('Alias timeout fallback on lobby GET failed', {
+            code,
+            gameId: activeGame.id,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+    }
+
+    if (
+      activeGame &&
+      !presenceSweptGameAbandoned &&
+      activeGame.status === 'playing' &&
+      (safeLobby.gameType || activeGame.gameType) === 'sketch_and_guess'
+    ) {
+      const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
+      if (turnTimerSeconds > 0) {
+        try {
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
+          const sketchGame = new SketchAndGuessGame(activeGame.id)
+          sketchGame.restoreState(parsedState)
+
+          const r = sketchGame.applyTimeoutFallback(turnTimerSeconds)
+          if (r.changed) {
+            await commitTimeoutFallback({
+              activeGame,
+              nextState: sketchGame.getState(),
+              actionType: 'sketch_and_guess:timeout-fallback',
+              actionPayload: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedDrawings: r.autoSubmittedDrawings,
+                autoSubmittedGuesses: r.autoSubmittedGuesses,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
+              },
+              lobbyCode: safeLobby.code,
+              gameType: 'sketch_and_guess',
+              gameSocketEvent: 'sketch-and-guess-action',
+              gameSocketData: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedDrawings: r.autoSubmittedDrawings,
+                autoSubmittedGuesses: r.autoSubmittedGuesses,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
+              },
+            })
+          }
+        } catch (error) {
+          const log = apiLogger('GET /api/lobby/[code]')
+          log.warn('Sketch & Guess timeout fallback on lobby GET failed', {
             code,
             gameId: activeGame.id,
             error: error instanceof Error ? error.message : String(error),
@@ -401,7 +532,7 @@ export async function GET(
           ...activeGame,
           state: (() => {
             const parsed = parsePersistedGameState<{ data?: unknown; status?: string }>(activeGame.state)
-            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed)
+            const safe = sanitizeStateForBroadcast(activeGameType ?? '', parsed, requestUser?.id ?? null)
             return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])
           })(),
           players: Array.isArray(activeGame.players)
@@ -480,24 +611,6 @@ export async function POST(
 
       if (!isPasswordValid) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
-      }
-
-      // Upgrade legacy plain-text lobby passwords after a successful match.
-      if (!isHashedLobbyPassword(lobby.password)) {
-        const upgradedHash = await hashLobbyPassword(providedPassword)
-        if (upgradedHash) {
-          try {
-            await prisma.lobbies.update({
-              where: { id: lobby.id },
-              data: { password: upgradedHash },
-            })
-          } catch (upgradeError) {
-            log.warn('Failed to upgrade legacy lobby password hash', {
-              lobbyId: lobby.id,
-              error: (upgradeError as Error).message,
-            })
-          }
-        }
       }
     }
 

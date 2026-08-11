@@ -6,12 +6,17 @@ import { SessionProvider } from 'next-auth/react'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
+import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
 import { getStoredAppearanceLocale } from '@/lib/appearance-preferences'
 
 const OnboardingModal = dynamic(
   () => import('@/components/Onboarding/OnboardingModal').then((mod) => mod.OnboardingModal),
+  { ssr: false }
+)
+const TourOverlay = dynamic(
+  () => import('@/components/Tour/TourOverlay').then((mod) => mod.TourOverlay),
   { ssr: false }
 )
 const GlobalToaster = dynamic(
@@ -32,12 +37,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider basePath="/api/auth">
       <GuestProvider>
         <OnboardingProvider>
-          <ToastProvider>
-            <GlobalToaster position="top-right" />
-            <DeferredGlobalEffects />
-            <OnboardingModal />
-            {children}
-          </ToastProvider>
+          <TourProvider>
+            <ToastProvider>
+              <GlobalToaster position="top-right" />
+              <DeferredGlobalEffects />
+              <OnboardingModal />
+              <TourOverlay />
+              {children}
+            </ToastProvider>
+          </TourProvider>
         </OnboardingProvider>
       </GuestProvider>
     </SessionProvider>

@@ -66,6 +66,22 @@ function isOriginAllowed(requestOrigin: string, allowedOrigin: string): boolean 
 }
 
 /**
+ * Server-to-server callbacks that authenticate the request body itself (signature
+ * verification) rather than the browser origin. They arrive with no Origin and no
+ * Referer, so the origin check would reject every delivery — see #713, where this
+ * silently blocked every Stripe subscription webhook in production.
+ *
+ * Only add a path here when the route handler verifies the caller
+ * cryptographically. Matching is exact, so a path merely starting with one of
+ * these is not exempt.
+ */
+const SIGNATURE_AUTHENTICATED_WEBHOOK_PATHS = new Set(['/api/stripe/webhook'])
+
+export function isSignatureAuthenticatedWebhook(pathname: string): boolean {
+  return SIGNATURE_AUTHENTICATED_WEBHOOK_PATHS.has(pathname)
+}
+
+/**
  * Verify that the request origin matches our allowed origins
  */
 export function verifyCsrfToken(request: NextRequest): boolean {

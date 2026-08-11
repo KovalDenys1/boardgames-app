@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
+import { SketchAndGuessGame, sanitizeSketchAndGuessStateForBroadcast } from '@/lib/games/sketch-and-guess-game'
 import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { broadcastToLobby } from '@/lib/supabase-server'
@@ -9,6 +9,8 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { sketchAndGuessActionRequestSchema } from '@/lib/validation/sketch-and-guess'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
+import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -123,48 +125,75 @@ export async function POST(
     ) => {
       const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
 
+      // #729: a transition into a terminal status must also write the
+      // per-player isWinner/finalScore/placement fields stats derive from.
+      const terminalUpdate = buildPartyGameTerminalUpdate({
+        previousStatus: game.status,
+        state: nextState,
+        startedAt: game.startedAt,
+        dbPlayers: game.players,
+      })
+
       await prisma.games.update({
         where: { id: gameId },
         data: {
           state: toPersistedGameStateInput(nextState),
           status: nextState.status,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+          ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
           updatedAt: new Date(),
         },
       })
 
-      const scoreUpdates: Array<Promise<unknown>> = []
-      const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-      for (const statePlayer of statePlayers) {
-        if (!statePlayer || typeof statePlayer !== 'object') continue
-
-        const playerId = (statePlayer as { id?: unknown }).id
-        if (typeof playerId !== 'string') continue
-
-        const dbPlayer = gamePlayersByUserId.get(playerId)
-        if (!dbPlayer) continue
-
-        const rawScore = (statePlayer as { score?: unknown }).score
-        const nextScore =
-          typeof rawScore === 'number' && Number.isFinite(rawScore)
-            ? Math.floor(rawScore)
-            : 0
-
-        if (dbPlayer.score === nextScore) continue
-
-        scoreUpdates.push(
+      if (terminalUpdate) {
+        // The terminal diff supersedes the per-move score sync below — one
+        // update per player carrying score + finalScore/placement/isWinner.
+        await Promise.all(terminalUpdate.changedPlayerUpdates.map((update) =>
           prisma.players.update({
-            where: { id: dbPlayer.id },
+            where: { id: update.id },
             data: {
-              score: nextScore,
+              score: update.score,
+              scorecard: update.scorecard,
+              finalScore: update.finalScore,
+              placement: update.placement,
+              isWinner: update.isWinner,
             },
           })
-        )
-        dbPlayer.score = nextScore
-      }
+        ))
+      } else {
+        const scoreUpdates: Array<Promise<unknown>> = []
+        const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+        for (const statePlayer of statePlayers) {
+          if (!statePlayer || typeof statePlayer !== 'object') continue
 
-      if (scoreUpdates.length > 0) {
-        await Promise.all(scoreUpdates)
+          const playerId = (statePlayer as { id?: unknown }).id
+          if (typeof playerId !== 'string') continue
+
+          const dbPlayer = gamePlayersByUserId.get(playerId)
+          if (!dbPlayer) continue
+
+          const rawScore = (statePlayer as { score?: unknown }).score
+          const nextScore =
+            typeof rawScore === 'number' && Number.isFinite(rawScore)
+              ? Math.floor(rawScore)
+              : 0
+
+          if (dbPlayer.score === nextScore) continue
+
+          scoreUpdates.push(
+            prisma.players.update({
+              where: { id: dbPlayer.id },
+              data: {
+                score: nextScore,
+              },
+            })
+          )
+          dbPlayer.score = nextScore
+        }
+
+        if (scoreUpdates.length > 0) {
+          await Promise.all(scoreUpdates)
+        }
       }
 
       await appendGameReplaySnapshot({
@@ -176,19 +205,28 @@ export async function POST(
       })
 
       if (game.lobby?.code) {
+        // No single viewer for a shared broadcast — strip the live prompt for
+        // everyone; each client re-fetches its own viewer-sanitized state via
+        // GET /api/lobby/[code] rather than trusting this payload directly.
+        const broadcastState = sanitizeSketchAndGuessStateForBroadcast(nextState, null)
+
         if (emitActionEvent) {
           void broadcastToLobby(game.lobby.code, 'sketch-and-guess-action', {
             action: emitActionEvent.action,
             playerId: emitActionEvent.playerId ?? null,
             data: emitActionEvent.data ?? {},
-            state: nextState,
+            state: broadcastState,
           })
         }
 
         void broadcastToLobby(game.lobby.code, 'game-update', {
           action: 'state-change',
-          payload: { state: nextState },
+          payload: { state: broadcastState },
         })
+      }
+
+      if (game.status !== nextState.status && nextState.status === 'finished') {
+        await checkAchievementsForFinishedGame(game.players, log)
       }
     }
 
@@ -268,7 +306,7 @@ export async function POST(
           {
             error: 'Move expired due to timeout fallback',
             code: 'ROUND_TIMEOUT_ADVANCED',
-            state: stateAfterTimeout,
+            state: sanitizeSketchAndGuessStateForBroadcast(stateAfterTimeout, userId),
           },
           { status: 409 }
         )
@@ -292,7 +330,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      state: updatedState,
+      state: sanitizeSketchAndGuessStateForBroadcast(updatedState, userId),
       timeoutFallbackApplied,
       timeoutFallback: timeoutFallbackApplied
         ? {

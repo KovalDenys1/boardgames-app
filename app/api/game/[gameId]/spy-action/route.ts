@@ -8,6 +8,8 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
+import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
 
 const spyActionSchema = z.object({
   action: z.enum([
@@ -60,7 +62,13 @@ export async function POST(
       include: {
         players: {
           include: {
-            user: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                bot: true,
+              },
+            },
           },
         },
         lobby: true,
@@ -119,6 +127,15 @@ export async function POST(
     const statusChanged = game.status !== updatedState.status
     const oldStatus = game.status
 
+    // #729: a transition into a terminal status must also write the
+    // per-player isWinner/finalScore/placement fields stats derive from.
+    const terminalUpdate = buildPartyGameTerminalUpdate({
+      previousStatus: game.status,
+      state: updatedState,
+      startedAt: game.startedAt,
+      dbPlayers: game.players,
+    })
+
     // Update game in database - CRITICAL: include status from engine
     await prisma.games.update({
       where: { id: gameId },
@@ -127,8 +144,24 @@ export async function POST(
         status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
         ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+        ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
       },
     })
+
+    if (terminalUpdate) {
+      await Promise.all(terminalUpdate.changedPlayerUpdates.map((update) =>
+        prisma.players.update({
+          where: { id: update.id },
+          data: {
+            score: update.score,
+            scorecard: update.scorecard,
+            finalScore: update.finalScore,
+            placement: update.placement,
+            isWinner: update.isWinner,
+          },
+        })
+      ))
+    }
 
     await appendGameReplaySnapshot({
       gameId,
@@ -150,6 +183,10 @@ export async function POST(
       })
     } else {
       log.info('Spy game action processed', { userId, action, gameId })
+    }
+
+    if (statusChanged && updatedState.status === 'finished') {
+      await checkAchievementsForFinishedGame(game.players, log)
     }
 
     const broadcastState = sanitizeSpyStateForBroadcast(updatedState)

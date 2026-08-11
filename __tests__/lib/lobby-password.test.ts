@@ -10,8 +10,12 @@ describe('lib/lobby-password', () => {
     await expect(hashLobbyPassword(undefined)).resolves.toBeNull()
   })
 
-  it('supports legacy plain-text password verification', async () => {
-    await expect(verifyLobbyPassword('legacy-secret', 'legacy-secret')).resolves.toBe(true)
+  it('rejects a stored password that is not a bcrypt hash (#721)', async () => {
+    // The legacy plain-text comparison is gone: an unhashed stored value now
+    // fails to match anything, so those rows can't keep working un-migrated.
+    // Verified against production before removing it — the 64 remaining
+    // plain-text rows all belonged to inactive lobbies.
+    await expect(verifyLobbyPassword('legacy-secret', 'legacy-secret')).resolves.toBe(false)
     await expect(verifyLobbyPassword('legacy-secret', 'wrong')).resolves.toBe(false)
   })
 

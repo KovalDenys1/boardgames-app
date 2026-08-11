@@ -236,8 +236,23 @@ export default function LobbyInfo({
         </div>
       </div>
 
-      {/* Settings rail — horizontal scroll on mobile */}
-      <div className="mt-3 -mx-4 overflow-x-auto sm:-mx-5">
+      {/* Settings rail — horizontal scroll on mobile. The trailing mask-image
+          fade is the overflow affordance: on touch devices the native
+          scrollbar this rail relies on for the same signal on desktop
+          doesn't render persistently, so a narrow screen has nothing on
+          screen hinting the row keeps going (e.g. the lobby theme pill can
+          sit fully off-screen with zero visual cue). Fades actual content
+          opacity rather than overlaying a solid color, so it looks correct
+          against either the standalone-card or header background this rail
+          renders inside — no scrollbar-hiding involved, the native
+          scrollbar itself is untouched. */}
+      <div
+        className="mt-3 -mx-4 overflow-x-auto sm:-mx-5"
+        style={{
+          WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent 100%)',
+          maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent 100%)',
+        }}
+      >
         <div className="flex gap-1.5 px-4 pb-1 sm:px-5">
           {/* Players */}
           <button
@@ -372,15 +387,24 @@ export default function LobbyInfo({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true}
-                  onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: true })}
+                  disabled={isPremium && (updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true)}
+                  onClick={() => {
+                    if (!isPremium) {
+                      showToast.custom('profile.premiumFeatureLocked', '👑')
+                      return
+                    }
+                    void applySettingUpdate('allowSpectators', { allowSpectators: true })
+                  }}
+                  title={isPremium ? undefined : '👑 Premium'}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                     lobby?.allowSpectators
                       ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                      : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
+                      : !isPremium
+                        ? 'border-bd-line bg-bd-bg2 text-bd-ink-muted opacity-60'
+                        : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {t('common.enabled')}
+                  {t('common.enabled')}{!isPremium && ' 👑'}
                 </button>
                 <button
                   type="button"
@@ -465,8 +489,14 @@ export default function LobbyInfo({
                     <button
                       key={themeId}
                       type="button"
-                      disabled={updatingSetting === 'theme' || isActive || isLocked}
-                      onClick={() => !isLocked && void applySettingUpdate('theme', { theme: themeId })}
+                      disabled={updatingSetting === 'theme' || isActive}
+                      onClick={() => {
+                        if (isLocked) {
+                          showToast.custom('profile.premiumFeatureLocked', '👑')
+                          return
+                        }
+                        void applySettingUpdate('theme', { theme: themeId })
+                      }}
                       title={isLocked ? '👑 Premium' : theme.name}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         isActive

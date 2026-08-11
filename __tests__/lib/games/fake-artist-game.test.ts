@@ -21,6 +21,10 @@ const addDefaultPlayers = (game: FakeArtistGame): void => {
 describe('FakeArtistGame (MVP scaffold)', () => {
   let game: FakeArtistGame
 
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
   beforeEach(() => {
     game = new FakeArtistGame('fake-artist-test', {
       maxPlayers: 10,
@@ -30,7 +34,28 @@ describe('FakeArtistGame (MVP scaffold)', () => {
     addDefaultPlayers(game)
   })
 
-  it('initializes deterministic role assignment and drawing turn order', () => {
+  it('picks a different fake artist across repeated game starts (not a fixed formula)', () => {
+    const seenFakeArtists = new Set<string>()
+    for (let i = 0; i < 40; i++) {
+      const trial = new FakeArtistGame(`fake-artist-random-${i}`, {
+        maxPlayers: 10,
+        minPlayers: 4,
+        rules: { rounds: 1, strokesPerPlayer: 1 },
+      })
+      addDefaultPlayers(trial)
+      trial.startGame()
+      seenFakeArtists.add(getData(trial).fakeArtistId)
+    }
+    // With 4 players and 40 independent random draws, seeing only one
+    // distinct value would mean the pick isn't actually random.
+    expect(seenFakeArtists.size).toBeGreaterThan(1)
+  })
+
+  it('initializes role assignment and drawing turn order', () => {
+    // Math.random() = 0 => Math.floor(0 * n) = 0 for every pool/roster pick,
+    // reproducing a known fake artist ('player1') so this test can assert
+    // deterministic *consequences* of the pick without asserting the pick itself.
+    jest.spyOn(Math, 'random').mockReturnValue(0)
     expect(game.startGame()).toBe(true)
 
     const data = getData(game)
@@ -61,6 +86,14 @@ describe('FakeArtistGame (MVP scaffold)', () => {
   })
 
   it('progresses drawing -> discussion -> voting -> reveal -> next round with deterministic scoring', () => {
+    // Pins round 1's fake artist to 'player1' and round 2's to 'player2' so
+    // the vote pattern below (and its scoring) is a known, assertable case.
+    jest
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0) // round 1 fakeArtistId -> index 0 (player1)
+      .mockReturnValueOnce(0) // round 1 promptFingerprint (value irrelevant here)
+      .mockReturnValueOnce(0.3) // round 2 fakeArtistId -> index 1 (player2)
+      .mockReturnValueOnce(0) // round 2 promptFingerprint (value irrelevant here)
     expect(game.startGame()).toBe(true)
 
     expect(game.makeMove(createMove('player1', 'submit-stroke', { content: '{"s":1}' }))).toBe(true)
@@ -115,6 +148,7 @@ describe('FakeArtistGame (MVP scaffold)', () => {
       rules: { rounds: 1, strokesPerPlayer: 1 },
     })
     addDefaultPlayers(oneRoundGame)
+    jest.spyOn(Math, 'random').mockReturnValue(0) // pins fake artist to 'player1'
     expect(oneRoundGame.startGame()).toBe(true)
 
     const startedAt = oneRoundGame.getState().lastMoveAt as number

@@ -2,12 +2,28 @@ import { createClient } from '@supabase/supabase-js'
 
 const BUCKET = 'avatars'
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+/**
+ * The single source of truth for what an avatar may be. Deriving the storage
+ * key's extension from this map — rather than from the client-supplied
+ * `file.name` — keeps keys inside a known, closed set, which is what lets
+ * deleteAvatar reliably find and remove them (#719).
+ */
+const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+}
+
+const KNOWN_AVATAR_EXTENSIONS = Array.from(new Set(Object.values(EXTENSION_BY_MIME_TYPE)))
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  // Prefer service role key (bypasses RLS); fall back to anon key for server-side uploads
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // Must be the service role key: uploads write to another user's prefix-scoped
+  // path under RLS, and silently falling back to the anon key would change the
+  // access model without any signal (#719).
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
     throw new Error('Supabase storage not configured: missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
   }
@@ -16,18 +32,30 @@ function getSupabaseAdmin() {
 
 export function validateAvatarFile(file: File): string | null {
   if (file.size > MAX_FILE_SIZE_BYTES) return 'File too large (max 2MB)'
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) return 'Invalid file type (JPEG, PNG, WebP, GIF only)'
+  if (!EXTENSION_BY_MIME_TYPE[file.type]) return 'Invalid file type (JPEG, PNG, WebP, GIF only)'
   return null
 }
 
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const ext = EXTENSION_BY_MIME_TYPE[file.type]
+  if (!ext) {
+    throw new Error('Unsupported avatar file type')
+  }
+
+  // Safe to pass through: the lookup above only succeeds for a MIME type in our
+  // own allowlist, so this is never arbitrary client-declared content.
+  const contentType = file.type
   const path = `${userId}/avatar.${ext}`
 
   const supabase = getSupabaseAdmin()
+
+  // A user switching formats (png -> jpg) would otherwise leave the previous
+  // object behind at its own key, still publicly served after being "replaced".
+  await removeStoredAvatars(supabase, userId, [path])
+
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, file, { upsert: true, contentType: file.type })
+    .upload(path, file, { upsert: true, contentType })
 
   if (error) throw new Error(`Upload failed: ${error.message}`)
 
@@ -36,9 +64,35 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
   return `${data.publicUrl}?t=${Date.now()}`
 }
 
+type StorageClient = ReturnType<typeof getSupabaseAdmin>
+
+/**
+ * Removes every stored avatar object for a user, optionally keeping one path.
+ * Lists the user's prefix rather than guessing extensions so nothing is left
+ * behind — a leftover object stays publicly readable after the user believes
+ * they deleted it.
+ */
+async function removeStoredAvatars(
+  supabase: StorageClient,
+  userId: string,
+  keepPaths: string[] = []
+): Promise<void> {
+  const keep = new Set(keepPaths)
+  const { data: listed, error } = await supabase.storage.from(BUCKET).list(userId)
+
+  const paths = error || !listed
+    ? // Listing failed — fall back to the known extension set rather than
+      // silently removing nothing.
+      KNOWN_AVATAR_EXTENSIONS.map((ext) => `${userId}/avatar.${ext}`)
+    : listed.map((entry) => `${userId}/${entry.name}`)
+
+  const removable = paths.filter((path) => !keep.has(path))
+  if (removable.length === 0) return
+
+  await supabase.storage.from(BUCKET).remove(removable)
+}
+
 export async function deleteAvatar(userId: string): Promise<void> {
   const supabase = getSupabaseAdmin()
-  const extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif']
-  const paths = extensions.map((ext) => `${userId}/avatar.${ext}`)
-  await supabase.storage.from(BUCKET).remove(paths)
+  await removeStoredAvatars(supabase, userId)
 }

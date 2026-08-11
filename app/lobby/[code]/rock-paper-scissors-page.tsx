@@ -10,6 +10,7 @@ import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-sci
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -63,6 +64,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
 
     const lifecycleRedirectInFlightRef = useRef(false)
+    // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
+    useLobbyHeartbeat(code, !isSpectator)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'rock_paper_scissors').minPlayersRequired
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -429,7 +432,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     if (loading) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center">
+            <div className="h-[calc(100dvh-4rem)] flex items-center justify-center" style={getThemePageStyle(lobby?.theme)}>
                 <LoadingSpinner size="lg" />
             </div>
         )
@@ -437,7 +440,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     if (error || !lobby || !lobby.game) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
+            <div className="h-[calc(100dvh-4rem)] flex items-center justify-center p-4" style={getThemePageStyle(lobby?.theme)}>
                 <div className="rounded-2xl border border-rose-200 bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
                     <p className="text-rose-700">{error || t('errors.gameNotFound')}</p>
                     <button
@@ -457,9 +460,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     if (!currentPlayer && !isSpectator) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
+            <div className="h-[calc(100dvh-4rem)] flex items-center justify-center p-4" style={getThemePageStyle(lobby?.theme)}>
                 <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
-                    <p className="text-bd-ink-soft mb-4">You are not part of this match.</p>
+                    <p className="text-bd-ink-soft mb-4">{t('lobby.game.notPartOfMatch')}</p>
                     <button
                         onClick={() => router.push(`/lobby/${code}`)}
                         className="rounded-xl bd-btn bd-btn-primary px-4 py-2 font-semibold transition"

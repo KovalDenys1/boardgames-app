@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 type Cell = 'X' | 'O' | null
 
@@ -38,6 +39,7 @@ function botMove(board: Cell[]): number {
 const EMPTY: Cell[] = Array(9).fill(null)
 
 export default function HeroDemoTicTacToe() {
+  const { t } = useTranslation()
   const [board, setBoard] = useState<Cell[]>(EMPTY)
   const [winner, setWinner] = useState<Cell | 'draw' | null>(null)
 
@@ -66,10 +68,10 @@ export default function HeroDemoTicTacToe() {
   }, [winner, reset])
 
   const statusText =
-    winner === 'X' ? '🎉 You win!'
-    : winner === 'O' ? 'Bot wins!'
-    : winner === 'draw' ? "Draw!"
-    : 'Your turn (X)'
+    winner === 'X' ? t('home.demo.youWin')
+    : winner === 'O' ? t('home.demo.botWins')
+    : winner === 'draw' ? t('home.demo.draw')
+    : t('home.demo.yourTurnX')
 
   return (
     <div style={{
@@ -118,7 +120,7 @@ export default function HeroDemoTicTacToe() {
           color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
         }}
       >
-        Play full game →
+        {t('home.demo.playFullGame')}
       </Link>
     </div>
   )

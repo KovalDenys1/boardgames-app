@@ -16,6 +16,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
+import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -105,8 +106,8 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     )
 }
 
-function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, isPremium, t }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; isPremium?: boolean; t: (key: TranslationKeys) => string
+function TttPlayerCard({ name, symbol, isActive, isMe, isWinner, side, avatarSrc, isPremium, t }: {
+    name: string; symbol: 'X' | 'O'; isActive: boolean; isMe: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; isPremium?: boolean; t: (key: TranslationKeys) => string
 }) {
     const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -161,7 +162,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, isPr
                         justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
                     }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-                        {t('games.tictactoe.game.theirTurn')}
+                        {isMe ? t('games.tictactoe.game.yourTurnBadge') : t('games.tictactoe.game.theirTurn')}
                     </div>
                 )}
             </div>
@@ -425,6 +426,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const { isLeavingLobbyRef, leaveStartedAtRef, leaveApiOutcomeRef, leaveApiStatusCodeRef, leaveLobby } = useLeaveLobby(code, 'Tic-Tac-Toe')
+    // Zero-signal disconnect detection (#675) — dedicated pages unmount the
+    // shared lobby shell (where this also runs for waiting rooms), so each
+    // needs its own heartbeat while the game itself is active.
+    useLobbyHeartbeat(code, !isSpectator)
     const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
@@ -1059,7 +1064,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 <TttBgGrid />
             </div>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} t={t} />
+                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                         Round {roundNum}
@@ -1071,7 +1076,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
                     </div>
                 </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} t={t} />
+                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} t={t} />
             </div>
         </div>
     )

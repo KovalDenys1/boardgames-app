@@ -27,6 +27,9 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'profile.settings.privacy.friendsOnly': 'Friends Only',
         'common.back': 'Back',
         'common.goHome': 'Go to Home',
+        'profile.achievements.title': 'Achievements',
+        'achievements.first_win.name': 'First Win',
+        'achievements.first_win.description': 'Win your first game',
       }
 
       return dictionary[key] ?? key
@@ -113,5 +116,36 @@ describe('PublicProfileView', () => {
     )
 
     expect(screen.getByText('Lvl. 1')).toBeTruthy()
+  })
+
+  it('shows an achievement as unlocked only when it appears in unlockedAchievements', () => {
+    render(
+      <PublicProfileView
+        profile={{
+          ...profile,
+          unlockedAchievements: [{ key: 'first_win', unlockedAt: '2026-03-05T00:00:00.000Z' }],
+        }}
+        initialRelation="can_send"
+      />
+    )
+
+    const firstWinLabel = screen.getByText('First Win')
+    const firstWinCard = firstWinLabel.closest('div')
+    expect(firstWinCard?.className).not.toContain('grayscale')
+    expect(firstWinCard?.textContent).not.toContain('🔒')
+  })
+
+  it('shows every achievement locked when none are unlocked', () => {
+    render(
+      <PublicProfileView
+        profile={{ ...profile, unlockedAchievements: [] }}
+        initialRelation="can_send"
+      />
+    )
+
+    const firstWinLabel = screen.getByText('First Win')
+    const firstWinCard = firstWinLabel.closest('div')
+    expect(firstWinCard?.className).toContain('grayscale')
+    expect(firstWinCard?.textContent).toContain('🔒')
   })
 })

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/OnboardingContext'
+import { useTour } from '@/contexts/TourContext'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -10,10 +11,14 @@ import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 
+type OnboardingStep = 'choice' | 'quick-start'
+
 export function OnboardingModal() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { showModal, completeOnboarding, skipOnboarding } = useOnboarding()
+  const { showModal, completeOnboarding, skipOnboarding, hideModal } = useOnboarding()
+  const { isActive: isTourActive, startTour } = useTour()
+  const [step, setStep] = useState<OnboardingStep>('choice')
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -23,13 +28,25 @@ export function OnboardingModal() {
   )
 
   useEffect(() => {
-    if (!showModal) return
+    if (!showModal) {
+      setStep('choice')
+      setSelectedGame(null)
+    }
+  }, [showModal])
+
+  useEffect(() => {
+    if (!showModal || isTourActive) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
-  }, [showModal])
+  }, [showModal, isTourActive])
 
-  if (!showModal) return null
+  if (!showModal || isTourActive) return null
+
+  const handleShowMeAround = () => {
+    hideModal()
+    startTour()
+  }
 
   const handleStart = async () => {
     if (!selectedGame || loading) return
@@ -149,89 +166,166 @@ export function OnboardingModal() {
           </p>
         </div>
 
-        {/* Game grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 10,
-            marginBottom: 16,
-          }}
-        >
-          {games.map(({ type, meta }) => (
-            <button
-              key={type}
-              onClick={() => setSelectedGame(type)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 8,
-                padding: '16px 12px',
-                background: selectedGame === type ? 'var(--bd-sun)' : 'var(--bd-bg)',
-                border: `2px solid var(--bd-ink)`,
-                borderRadius: 14,
-                boxShadow: '3px 3px 0 var(--bd-ink)',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transform: selectedGame === type ? 'translate(-1px, -1px)' : 'translate(0,0)',
-                transition: 'transform 0.1s, background 0.1s',
-              }}
-            >
-              <GameIcon gameId={meta.svgId} accentColor={selectedGame === type ? 'var(--bd-ink)' : meta.accentColor} size={30} />
-              <span
+        {step === 'choice' ? (
+          <>
+            {/* Path choice */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              <button
+                onClick={() => setStep('quick-start')}
                 style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  background: 'var(--bd-coral)',
+                  color: 'white',
+                  border: '2px solid var(--bd-ink)',
+                  borderRadius: 14,
+                  boxShadow: '3px 3px 0 var(--bd-ink)',
                   fontFamily: 'var(--bd-font-display)',
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: 700,
-                  color: 'var(--bd-ink)',
-                  lineHeight: 1.2,
+                  cursor: 'pointer',
                 }}
               >
-                {meta.name}
-              </span>
+                {t('onboarding.quickStart')}
+              </button>
+              <button
+                onClick={handleShowMeAround}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  background: 'var(--bd-bg)',
+                  color: 'var(--bd-ink)',
+                  border: '2px solid var(--bd-ink)',
+                  borderRadius: 14,
+                  boxShadow: '3px 3px 0 var(--bd-ink)',
+                  fontFamily: 'var(--bd-font-display)',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('onboarding.showMeAround')}
+              </button>
+            </div>
+
+            <button
+              onClick={skipOnboarding}
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                fontSize: 13,
+                color: 'var(--bd-ink-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 0',
+              }}
+            >
+              {t('onboarding.skip')}
             </button>
-          ))}
-        </div>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setStep('choice')}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--bd-ink-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0 0 12px',
+              }}
+            >
+              {t('onboarding.back')}
+            </button>
 
-        {/* CTA */}
-        <button
-          onClick={handleStart}
-          disabled={!selectedGame || loading}
-          style={{
-            width: '100%',
-            padding: '14px 20px',
-            background: 'var(--bd-coral)',
-            color: 'white',
-            border: '2px solid var(--bd-ink)',
-            borderRadius: 14,
-            boxShadow: '3px 3px 0 var(--bd-ink)',
-            fontFamily: 'var(--bd-font-display)',
-            fontSize: 15,
-            fontWeight: 700,
-            cursor: !selectedGame || loading ? 'not-allowed' : 'pointer',
-            opacity: !selectedGame || loading ? 0.45 : 1,
-            marginBottom: 12,
-          }}
-        >
-          {loading ? t('onboarding.starting') : t('onboarding.startPlaying')}
-        </button>
+            {/* Game grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              {games.map(({ type, meta }) => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedGame(type)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '16px 12px',
+                    background: selectedGame === type ? 'var(--bd-sun)' : 'var(--bd-bg)',
+                    border: `2px solid var(--bd-ink)`,
+                    borderRadius: 14,
+                    boxShadow: '3px 3px 0 var(--bd-ink)',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    transform: selectedGame === type ? 'translate(-1px, -1px)' : 'translate(0,0)',
+                    transition: 'transform 0.1s, background 0.1s',
+                  }}
+                >
+                  <GameIcon gameId={meta.svgId} accentColor={selectedGame === type ? 'var(--bd-ink)' : meta.accentColor} size={30} />
+                  <span
+                    style={{
+                      fontFamily: 'var(--bd-font-display)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: 'var(--bd-ink)',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {meta.name}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-        <button
-          onClick={skipOnboarding}
-          style={{
-            width: '100%',
-            textAlign: 'center',
-            fontSize: 13,
-            color: 'var(--bd-ink-muted)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px 0',
-          }}
-        >
-          {t('onboarding.skip')}
-        </button>
+            {/* CTA */}
+            <button
+              onClick={handleStart}
+              disabled={!selectedGame || loading}
+              style={{
+                width: '100%',
+                padding: '14px 20px',
+                background: 'var(--bd-coral)',
+                color: 'white',
+                border: '2px solid var(--bd-ink)',
+                borderRadius: 14,
+                boxShadow: '3px 3px 0 var(--bd-ink)',
+                fontFamily: 'var(--bd-font-display)',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: !selectedGame || loading ? 'not-allowed' : 'pointer',
+                opacity: !selectedGame || loading ? 0.45 : 1,
+                marginBottom: 12,
+              }}
+            >
+              {loading ? t('onboarding.starting') : t('onboarding.startPlaying')}
+            </button>
+
+            <button
+              onClick={skipOnboarding}
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                fontSize: 13,
+                color: 'var(--bd-ink-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 0',
+              }}
+            >
+              {t('onboarding.skip')}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

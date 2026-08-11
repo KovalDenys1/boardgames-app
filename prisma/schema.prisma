@@ -56,6 +56,7 @@ model Users {
   notifications           Notifications[]
   pushSubscriptions       PushSubscriptions[]
   feedback                Feedback[]
+  userAchievements        UserAchievements[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -280,6 +281,11 @@ model Players {
   isWinner   Boolean   @default(false)
   leftAt     DateTime? @db.Timestamptz(3)
   createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  // Updated every ~10s by the client while a player has the lobby/game open
+  // (see useLobbyHeartbeat). Used for zero-signal disconnect detection
+  // (#675) — a stale value means the player closed their tab/browser
+  // without ever calling the explicit leave API.
+  lastHeartbeatAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@unique([gameId, userId])
   @@index([gameId])
@@ -374,6 +380,7 @@ enum NotificationType {
   friend_request
   friend_accepted
   feedback_thanks
+  achievement_unlocked
 }
 
 enum NotificationChannel {
@@ -446,6 +453,22 @@ model PushSubscriptions {
   @@index([userId])
 }
 
+// Achievement *definitions* (key, name, description, icon, category) live in
+// code (lib/achievements.ts) rather than a DB table — consistent with how
+// game types/catalog entries are defined in this codebase (lib/game-registry.ts,
+// lib/game-catalog.ts), and avoids a migration every time a new achievement
+// is added. This table only tracks which keys a user has unlocked and when.
+model UserAchievements {
+  id             String   @id @default(cuid())
+  userId         String
+  user           Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementKey String
+  unlockedAt     DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([userId, achievementKey])
+  @@index([userId])
+}
+
 model AdminAuditLogs {
   id         String   @id @default(cuid())
   adminId    String
@@ -459,6 +482,17 @@ model AdminAuditLogs {
   @@index([adminId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, createdAt])
+}
+
+/// Processed Stripe webhook event ids, so a redelivered event is a no-op (#717).
+/// Stripe retries on any non-2xx and can deliver the same event more than once;
+/// without this, each delivery re-ran the subscription write.
+model StripeWebhookEvents {
+  id          String   @id // Stripe's event.id — the natural idempotency key
+  type        String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([processedAt])
 }
 
 model Feedback {

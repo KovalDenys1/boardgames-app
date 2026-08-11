@@ -7,6 +7,7 @@ import type { ChatMessagePayload } from '@/types/game'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { useGameTimer } from '../hooks/useGameTimer'
@@ -70,9 +71,18 @@ interface MemoryGameBoardProps {
   isGuest?: boolean
   registerUrl?: string
   isSpectator?: boolean
+  /**
+   * Fetches a fresh authoritative snapshot from the server (bypassing
+   * realtime broadcast). Used as a watchdog fallback: Supabase Broadcast is
+   * fire-and-forget over a stateless REST POST with no delivery guarantee —
+   * if the resolve-mismatch broadcast is dropped, pendingMismatchCardIds
+   * never clears client-side and the board looks permanently frozen.
+   */
+  reconcileWithServerSnapshot?: () => Promise<void>
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
+const MISMATCH_RESOLVE_WATCHDOG_MS = MISMATCH_RESOLVE_DELAY_MS + 3500
 
 function getPlayerDisplayName(player: LobbyPlayer): string {
   return player.user?.username || player.user?.name || player.name || 'Player'
@@ -454,6 +464,7 @@ export default function MemoryGameBoard({
   isGuest,
   registerUrl,
   isSpectator = false,
+  reconcileWithServerSnapshot,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -656,6 +667,30 @@ export default function MemoryGameBoard({
     }
   }, [currentPlayerId, isMyTurn, pendingMismatchCardIds])
 
+  // Watchdog: the resolve-mismatch broadcast above is fire-and-forget with no
+  // delivery guarantee. If pendingMismatchCardIds is still stuck at 2 well
+  // after the auto-resolve should have landed, the broadcast was likely
+  // dropped — force a direct snapshot refetch instead of leaving the board
+  // frozen until the player manually reloads the page.
+  useEffect(() => {
+    if (!isMyTurn || pendingMismatchCardIds.length !== 2 || !reconcileWithServerSnapshot) {
+      return
+    }
+
+    const watchdogKey = `${currentPlayerId}:${pendingMismatchCardIds.join(':')}`
+
+    const timer = window.setTimeout(() => {
+      clientLogger.warn('Memory mismatch still pending after watchdog delay — reconciling from server', {
+        watchdogKey,
+      })
+      void reconcileWithServerSnapshot()
+    }, MISMATCH_RESOLVE_WATCHDOG_MS)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [currentPlayerId, isMyTurn, pendingMismatchCardIds, reconcileWithServerSnapshot])
+
   const handleCardClick = useCallback(
     (cardId: string) => {
       if (!isMyTurn || pendingMismatchCardIds.length > 0 || optimisticFlippedIds.length >= 2) {
@@ -729,7 +764,11 @@ export default function MemoryGameBoard({
                 <span className="memory-tile-back-mark">✦</span>
               </span>
               <span className={`memory-tile-face ${symbolSizeClass}`}>
-                {card.value}
+                {/* Face-down cards no longer carry their value (#715), so an
+                    optimistic flip has nothing to show until the server confirms
+                    the move. Render a neutral placeholder for that brief window
+                    instead of a blank tile. */}
+                {card.value || (isFaceUp ? '·' : '')}
               </span>
             </span>
           </button>

@@ -104,6 +104,7 @@ function LobbyListPageContent() {
             {/* Right: full-height create button */}
             <button
               type="button"
+              data-tour-step="create-lobby"
               onClick={handleCreateLobby}
               className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
             >
@@ -122,7 +123,7 @@ function LobbyListPageContent() {
 
         {/* Lobbies list */}
         <div className="bd-card p-6">
-          <div className="mb-5 border-b border-bd-line pb-5">
+          <div data-tour-step="filter-bar" className="mb-5 border-b border-bd-line pb-5">
             <LobbyFilters embedded filters={filters} onFiltersChange={setFilters} />
           </div>
 

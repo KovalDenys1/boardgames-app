@@ -1573,13 +1573,20 @@ input[type="range"].slider-thumb::-moz-range-track {
   grid-template-rows: repeat(3, 1fr);
   gap: clamp(6px, 1.2cqi, 12px);
   padding: clamp(8px, 1.6cqi, 14px);
-  background: var(--bd-ink);
+  /* Fixed (not var(--bd-ink)) — same self-contained "black plastic" board
+     look as Connect Four (#691): var(--bd-ink) flips to a light color in
+     html.dark, which would invert this into a light frame with dark
+     cells (.ttt-cell below has the matching var(--bd-bg) issue). Value
+     matches --bd-ink's light-mode value exactly. */
+  background: #1F1B16;
   border-radius: clamp(16px, 3cqi, 28px);
   box-shadow: 0 8px 0 0 rgba(31,27,22,0.16), 0 18px 36px -14px rgba(31,27,22,0.32);
   container-type: size;
 }
 .ttt-cell {
-  background: var(--bd-bg);
+  /* Fixed (not var(--bd-bg)) — see .ttt-board comment above; matches
+     --bd-bg's light-mode value exactly. */
+  background: #FBF6EE;
   border: none;
   border-radius: clamp(10px, 2cqi, 18px);
   display: grid;

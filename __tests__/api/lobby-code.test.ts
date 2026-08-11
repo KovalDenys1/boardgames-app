@@ -9,6 +9,7 @@ import { POST as LEAVE } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
+import { verifyLobbyPassword } from '@/lib/lobby-password'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -60,9 +61,18 @@ jest.mock('@/lib/logger', () => ({
   })),
 }))
 
+// bcrypt is a native addon and doesn't run inside @edge-runtime/vm, so
+// verifyLobbyPassword (which calls it for any hashed password) is mocked
+// here rather than exercised for real, matching how sibling auth tests
+// mock hashPassword/comparePassword instead of calling real bcrypt.
+jest.mock('@/lib/lobby-password', () => ({
+  verifyLobbyPassword: jest.fn(),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
+const mockVerifyLobbyPassword = verifyLobbyPassword as jest.MockedFunction<typeof verifyLobbyPassword>
 const mockFetch = jest.fn()
 
 global.fetch = mockFetch as any
@@ -295,7 +305,8 @@ describe('POST /api/lobby/[code]', () => {
   })
 
   it('should return 403 when password is incorrect', async () => {
-    const lobbyWithPassword = { ...mockLobby, password: 'secret123' }
+    const lobbyWithPassword = { ...mockLobby, password: '$2b$10$hashedplaceholder' }
+    mockVerifyLobbyPassword.mockResolvedValueOnce(false)
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
     mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
@@ -313,7 +324,8 @@ describe('POST /api/lobby/[code]', () => {
   })
 
   it('should successfully join lobby with correct password', async () => {
-    const lobbyWithPassword = { ...mockLobby, password: 'secret123' }
+    const lobbyWithPassword = { ...mockLobby, password: '$2b$10$hashedplaceholder' }
+    mockVerifyLobbyPassword.mockResolvedValueOnce(true)
     const gameWithPlayers = {
       ...mockGame,
       players: [],

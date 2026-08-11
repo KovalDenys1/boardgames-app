@@ -107,6 +107,10 @@ const Scorecard = React.memo(function Scorecard({
   const [justScoredCategory, setJustScoredCategory] = React.useState<YahtzeeCategory | null>(null)
   const prevScorecardRef = React.useRef(scorecard)
 
+  // Collapsed by default so it doesn't eat vertical space the player needs
+  // to actually see category rows — expands on tap.
+  const [showBestScoring, setShowBestScoring] = React.useState(false)
+
   React.useEffect(() => {
     const prev = prevScorecardRef.current
     const newlyFilled = [...upperSection, ...lowerSection].find(
@@ -275,8 +279,6 @@ const Scorecard = React.memo(function Scorecard({
     )
   }
 
-  const hasHeader = playerName || showBackButton || showCurrentTurnButton
-
   return (
     <div
       className={`bd-card h-full flex flex-col overflow-hidden ${
@@ -286,14 +288,14 @@ const Scorecard = React.memo(function Scorecard({
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       }}
     >
-      {/* Player / navigation header */}
-      {hasHeader && (
-        <div className="flex-shrink-0 flex items-center justify-between px-3 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+      {/* Player identity + nav + stat chips — one horizontally-scrollable
+          row instead of a separate header card + wrapping chip row, so
+          more of the viewport is left for the actual category list */}
+      <div className="flex-shrink-0 flex items-center gap-2 overflow-x-auto border-b px-3 py-1.5" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           {playerName && (
-            <div className="min-w-0 flex-1">
-              <span className="bd-kicker">{t('yahtzee.ui.scorecardTitle')}</span>
-              <div className="truncate text-sm font-semibold text-bd-ink">{playerName}</div>
-            </div>
+            <span className="shrink-0 max-w-[35%] truncate text-xs font-bold text-bd-ink">
+              {playerName}
+            </span>
           )}
           {showBackButton && onBackToMyCards && (
             <button
@@ -301,10 +303,12 @@ const Scorecard = React.memo(function Scorecard({
                 sounds.play('click', { force: true })
                 onBackToMyCards()
               }}
-              className="ml-auto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+              aria-label={t('yahtzee.actions.myCards')}
+              title={t('yahtzee.actions.myCards')}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold"
               style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-lav-deep)' }}
             >
-              ← {t('yahtzee.actions.myCards')}
+              ←
             </button>
           )}
           {showCurrentTurnButton && onGoToCurrentTurn && (
@@ -313,65 +317,85 @@ const Scorecard = React.memo(function Scorecard({
                 sounds.play('click', { force: true })
                 onGoToCurrentTurn()
               }}
-              className="ml-auto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+              aria-label={t('yahtzee.actions.currentTurn')}
+              title={t('yahtzee.actions.currentTurn')}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold"
               style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-sky)' }}
             >
-              {t('yahtzee.actions.currentTurn')} →
+              →
             </button>
           )}
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="bd-chip px-2.5 py-1 text-[10px]">
+              {filledCategories}/{upperSection.length + lowerSection.length} filled
+            </span>
+            <span className="bd-chip px-2.5 py-1 text-[10px]">
+              {remainingCategories} left
+            </span>
+            <span className={`bd-chip px-2.5 py-1 text-[10px] ${bonus > 0 ? 'bd-chip-mint' : 'bd-chip-sun'}`}>
+              {bonus > 0 ? '+35 bonus ready' : `${bonusNeeded} to bonus`}
+            </span>
+            {isCurrentPlayer && canSelectCategory && (
+              <span className="bd-chip bd-chip-lav px-2.5 py-1 text-[10px]">
+                {playableNowCount > 0 ? `${playableNowCount} scoring options` : 'Choose a slot'}
+              </span>
+            )}
+          </div>
         </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
-        <span className="bd-chip px-3 py-1.5 text-[11px]">
-          {filledCategories}/{upperSection.length + lowerSection.length} filled
-        </span>
-        <span className="bd-chip px-3 py-1.5 text-[11px]">
-          {remainingCategories} left
-        </span>
-        <span className={`bd-chip px-3 py-1.5 text-[11px] ${bonus > 0 ? 'bd-chip-mint' : 'bd-chip-sun'}`}>
-          {bonus > 0 ? '+35 bonus ready' : `${bonusNeeded} to bonus`}
-        </span>
-        {isCurrentPlayer && canSelectCategory && (
-          <span className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]">
-            {playableNowCount > 0 ? `${playableNowCount} scoring options` : 'Choose a slot'}
-          </span>
-        )}
-      </div>
 
       {shouldShowScoringGuidance && (
-        <div className="flex-shrink-0 border-b px-3 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 52%, rgba(107,193,240,0.14) 100%)' }}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="bd-kicker" style={{ color: 'var(--bd-mint-deep)' }}>
-                Best Scoring Window
+        <div className="flex-shrink-0 border-b" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 52%, rgba(107,193,240,0.14) 100%)' }}>
+          <button
+            type="button"
+            onClick={() => {
+              sounds.play('click', { force: true })
+              setShowBestScoring((s) => !s)
+            }}
+            className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left"
+          >
+            <span className="min-w-0 truncate text-xs font-semibold text-bd-ink">
+              🏆 {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
+              {' · '}{bestOptionPreview}
+            </span>
+            <span
+              className={`shrink-0 text-bd-ink-muted transition-transform duration-150 ${showBestScoring ? 'rotate-90' : ''}`}
+              aria-hidden
+            >
+              ›
+            </span>
+          </button>
+          {showBestScoring && (
+            <div className="px-3 pb-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-bd-ink">
+                    {scoringInsights.bestPotentialScore === 0 ? 'No strong combo landed yet.' : 'You can bank a strong score right now.'}
+                  </p>
+                  <p className="mt-0.5 text-xs text-bd-ink-soft truncate">
+                    {bestOptionPreview}
+                    {scoringInsights.bestOptions.length > 2 ? '...' : ''}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="bd-chip bd-chip-mint">
+                    {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
+                  </div>
+                  <p className="mt-1 text-[11px] font-medium text-bd-ink-muted">
+                    {rollsLeft > 0 ? `${rollsLeft} roll${rollsLeft === 1 ? '' : 's'} left` : 'No rolls left'}
+                  </p>
+                </div>
               </div>
-              <p className="mt-0.5 text-sm font-semibold text-bd-ink">
-                {scoringInsights.bestPotentialScore === 0 ? 'No strong combo landed yet.' : 'You can bank a strong score right now.'}
-              </p>
-              <p className="mt-0.5 text-xs text-bd-ink-soft truncate">
-                {bestOptionPreview}
-                {scoringInsights.bestOptions.length > 2 ? '...' : ''}
-              </p>
             </div>
-            <div className="shrink-0 text-right">
-              <div className="bd-chip bd-chip-mint">
-                {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
-              </div>
-              <p className="mt-1 text-[11px] font-medium text-bd-ink-muted">
-                {rollsLeft > 0 ? `${rollsLeft} roll${rollsLeft === 1 ? '' : 's'} left` : 'No rolls left'}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Two-column body — each column scrolls independently on small viewports */}
       <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 overflow-hidden divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: 'var(--bd-line)' }}>
         {/* ── Upper section ── */}
-        <div className="flex flex-col min-h-0 overflow-y-auto px-3 pt-3 pb-2">
+        <div className="flex flex-col min-h-0 overflow-y-auto px-3 pt-2 pb-1.5">
           {/* Section header */}
-          <div className="mb-2 flex flex-shrink-0 items-center justify-between gap-2">
+          <div className="mb-1.5 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
             <span className="bd-chip bd-chip-sun text-[11px]">🎯</span>
             <h3 className="bd-kicker" style={{ color: 'var(--bd-ink-soft)' }}>
@@ -382,8 +406,8 @@ const Scorecard = React.memo(function Scorecard({
           </div>
 
           {/* Bonus progress */}
-          <div className="flex-shrink-0 mb-2.5">
-            <div className="flex items-center justify-between mb-1 gap-2">
+          <div className="flex-shrink-0 mb-2">
+            <div className="flex items-center justify-between mb-0.5 gap-2">
               <span className="text-xs font-semibold text-bd-ink-muted">
                 {t('yahtzee.ui.bonusProgress', { current: upperTotal, target: 63 })}
               </span>
@@ -397,7 +421,7 @@ const Scorecard = React.memo(function Scorecard({
                 {bonus > 0 ? `+35 🎁` : `${63 - upperTotal} to go`}
               </span>
             </div>
-            <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: 'var(--bd-bg2)' }}>
+            <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'var(--bd-bg2)' }}>
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   bonus > 0
@@ -459,7 +483,7 @@ const Scorecard = React.memo(function Scorecard({
       </div>
 
       {/* Total score footer */}
-      <div className="flex-shrink-0 flex items-center justify-between px-3 py-3 border-t" style={{ borderColor: 'var(--bd-line)', background: 'linear-gradient(90deg, rgba(255,196,77,0.14) 0%, rgba(155,140,255,0.14) 100%)' }}>
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-t" style={{ borderColor: 'var(--bd-line)', background: 'linear-gradient(90deg, rgba(255,196,77,0.14) 0%, rgba(155,140,255,0.14) 100%)' }}>
         <span className="bd-kicker">
           Total
         </span>

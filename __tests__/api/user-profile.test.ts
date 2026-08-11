@@ -25,6 +25,9 @@ jest.mock('@/lib/db', () => ({
     players: {
       count: jest.fn(),
     },
+    userAchievements: {
+      findMany: jest.fn(),
+    },
   },
 }))
 
@@ -106,13 +109,25 @@ describe('GET /api/user/profile', () => {
     mockPrisma.players.count
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(2)
+    mockPrisma.userAchievements.findMany.mockResolvedValue([])
   })
 
   it('returns achievement stats based on finished games and wins', async () => {
+    mockPrisma.userAchievements.findMany.mockResolvedValue([
+      { achievementKey: 'first_win', unlockedAt: new Date('2026-02-01T00:00:00.000Z') },
+    ])
+
     const response = await GET(buildRequest())
     const payload = await response.json()
 
     expect(response.status).toBe(200)
+    expect(mockPrisma.userAchievements.findMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      select: { achievementKey: true, unlockedAt: true },
+    })
+    expect(payload.user.achievementStats.unlockedAchievements).toEqual([
+      { key: 'first_win', unlockedAt: '2026-02-01T00:00:00.000Z' },
+    ])
     expect(mockPrisma.players.count).toHaveBeenNthCalledWith(1, {
       where: {
         userId: 'user-1',

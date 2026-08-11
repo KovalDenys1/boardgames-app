@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@edge-runtime/jest-environment>jest-mock': ^30.0.0
+
 importers:
 
   .:
@@ -5894,7 +5897,7 @@ snapshots:
       '@edge-runtime/vm': 5.0.0
       '@jest/environment': 29.5.0
       '@jest/fake-timers': 29.5.0
-      jest-mock: 29.5.0
+      jest-mock: 30.4.1
       jest-util: 29.5.0
 
   '@edge-runtime/primitives@6.0.0': {}

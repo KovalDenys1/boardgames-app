@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { getSecurityHeaders, verifyCsrfToken } from '@/lib/csrf'
+import { getSecurityHeaders, isSignatureAuthenticatedWebhook, verifyCsrfToken } from '@/lib/csrf'
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const SECURITY_HEADERS = getSecurityHeaders()
@@ -188,7 +188,12 @@ export async function proxy(request: NextRequest) {
     }
 
     const isUnsafeMethod = !SAFE_METHODS.has(request.method.toUpperCase())
-    if (isUnsafeMethod && !isTrustedServerRequest(request) && !verifyCsrfToken(request)) {
+    if (
+      isUnsafeMethod &&
+      !isSignatureAuthenticatedWebhook(pathname) &&
+      !isTrustedServerRequest(request) &&
+      !verifyCsrfToken(request)
+    ) {
       return NextResponse.json(
         { error: 'Invalid origin. Possible CSRF attack.' },
         { status: 403 }

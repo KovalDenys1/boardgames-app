@@ -6,7 +6,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { apiLogger } from '@/lib/logger'
 import { createGameEngine } from '@/lib/game-registry'
-import { hasBotSupport, getBotSupportedGameTypes, isSupportedGameType } from '@/lib/game-catalog'
+import { hasBotSupport, getAvailableGameTypes, isAvailableGameType, isSupportedGameType } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { generateLobbyCode, isLobbyCodeConflict } from '@/lib/lobby'
 import { toPersistedGameType } from '@/lib/game-type-storage'
@@ -18,11 +18,11 @@ import { resolveBotTarget } from '@/lib/quick-play'
 
 const log = apiLogger('/api/quick-play')
 
-const QUICK_PLAY_GAME_TYPES = getBotSupportedGameTypes()
+const QUICK_PLAY_GAME_TYPES = getAvailableGameTypes()
 
 const quickPlaySchema = z.object({
   gameType: z.string().refine(
-    (v) => isSupportedGameType(v) && hasBotSupport(v),
+    (v) => isSupportedGameType(v),
     { message: `gameType must be one of: ${QUICK_PLAY_GAME_TYPES.join(', ')}` }
   ),
   difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
@@ -97,12 +97,15 @@ export async function POST(req: NextRequest) {
 
   const { gameType, difficulty, forceSolo } = parsed.data
 
-  if (!hasBotSupport(gameType)) {
-    return NextResponse.json({ error: 'Bot support required for Quick Play' }, { status: 400 })
+  if (!isAvailableGameType(gameType) || isTemporarilyUnavailableGameType(gameType)) {
+    return NextResponse.json({ error: 'This game is temporarily unavailable' }, { status: 400 })
   }
 
-  if (isTemporarilyUnavailableGameType(gameType)) {
-    return NextResponse.json({ error: 'This game is temporarily unavailable' }, { status: 400 })
+  // Games without bot support still work via matchmaking (join-or-create),
+  // but can't be started solo — nobody would ever fill the lobby.
+  const supportsBots = hasBotSupport(gameType)
+  if (forceSolo && !supportsBots) {
+    return NextResponse.json({ error: 'This game does not support bots' }, { status: 400 })
   }
 
   log.info('Quick play request', { userId: user.id, gameType, difficulty, forceSolo })
@@ -274,20 +277,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to create lobby' }, { status: 503 })
   }
 
-  // Fill with bots (1 human already in, need botTarget - 1 bots) — see
-  // resolveBotTarget for why this isn't always just minPlayers.
-  const botTarget = resolveBotTarget(minPlayers, forceSolo)
-  try {
-    await fillWithBots(newCode, gameId, gameType, 1, botTarget, user.id, difficulty)
-  } catch (err) {
-    log.error('Quick play: bot fill failed', err as Error)
-    // Non-fatal — user is still in the lobby
+  if (supportsBots) {
+    // Fill with bots (1 human already in, need botTarget - 1 bots) — see
+    // resolveBotTarget for why this isn't always just minPlayers.
+    const botTarget = resolveBotTarget(minPlayers, forceSolo)
+    try {
+      await fillWithBots(newCode, gameId, gameType, 1, botTarget, user.id, difficulty)
+    } catch (err) {
+      log.error('Quick play: bot fill failed', err as Error)
+      // Non-fatal — user is still in the lobby
+    }
   }
 
-  log.info('Quick play: created new lobby with bots', {
+  log.info('Quick play: created new lobby', {
     userId: user.id,
     lobbyCode: newCode,
     gameType,
+    botFilled: supportsBots,
   })
 
   return NextResponse.json({ lobbyCode: newCode, isNew: true })

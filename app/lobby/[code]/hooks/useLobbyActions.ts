@@ -679,7 +679,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setRollHistory([])
       setCelebrationEvent(null)
 
-      const firstPlayerName = data.game.players[0]?.name || 'Player 1'
+      // The engine's actual current player (not players[0], which is API/join
+      // order and doesn't necessarily match who the engine gives the first
+      // turn to — was previously always crediting the wrong player in the
+      // "goes first" toast/chat message, e.g. always the bot even when the
+      // human host moves first).
+      const firstPlayerName = engine.getCurrentPlayer()?.name || data.game.players[0]?.name || 'Player 1'
 
       showToast.success('toast.gameStarted', undefined, { player: firstPlayerName }, { id: 'start-game' })
 

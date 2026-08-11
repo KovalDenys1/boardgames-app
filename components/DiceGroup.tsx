@@ -3,6 +3,7 @@
 import React from 'react'
 import Dice from './Dice'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { sounds } from '@/lib/sounds'
 
 interface DiceGroupProps {
   dice: number[]
@@ -11,9 +12,20 @@ interface DiceGroupProps {
   disabled?: boolean
   isRolling?: boolean
   isMyTurn?: boolean
+  /**
+   * Roll handler + whether it's currently valid to roll. The "Roll dice
+   * first" hint below is visually the most prominent, obviously-clickable
+   * element on the screen at this point in a turn — on short viewports the
+   * real Roll button can be scrolled below the fold (see the load-bearing
+   * overflow-y-auto comment in YahtzeeGameBoard.tsx), so this hint doubles
+   * as a roll trigger instead of being purely decorative text a player
+   * naturally taps and gets nothing from.
+   */
+  onRollDice?: () => void
+  canRoll?: boolean
 }
 
-const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disabled = false, isRolling = false, isMyTurn = false }: DiceGroupProps) {
+const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disabled = false, isRolling = false, isMyTurn = false, onRollDice, canRoll = false }: DiceGroupProps) {
   const { t } = useTranslation()
 
   return (
@@ -41,6 +53,18 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
             <span className="text-sm sm:text-base">⏳</span>
             <span className="break-words">{t('yahtzee.ui.waitTurnHint')}</span>
           </p>
+        ) : disabled && canRoll && onRollDice ? (
+          <button
+            type="button"
+            onClick={() => {
+              sounds.play('click', { force: true })
+              onRollDice()
+            }}
+            className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center w-full cursor-pointer transition-transform active:scale-[0.98]"
+          >
+            <span className="text-sm sm:text-base">🎲</span>
+            <span className="break-words">{t('yahtzee.ui.rollFirstHint')}</span>
+          </button>
         ) : disabled ? (
           <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
             <span className="text-sm sm:text-base">🎲</span>

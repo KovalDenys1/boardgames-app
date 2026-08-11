@@ -1,4 +1,4 @@
-import { sanitizeRpsStateForBroadcast } from '@/lib/games/rock-paper-scissors-game'
+import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 
 type JsonObject = Record<string, unknown>
 
@@ -67,15 +67,29 @@ export function sanitizeGameStateForSpectator(
     return parsed
   }
 
-  // Reveal spy identity once the game is finished — spectators can discuss who was the spy
-  if (gameType === 'guess_the_spy' && gameStatus !== 'finished') {
+  // A finished game has nothing left to hide, and every per-game sanitizer
+  // already encodes that rule via `status === 'finished'`. The authoritative
+  // status arrives as a separate argument here and isn't always present on the
+  // state blob itself, so apply it once up front rather than relying on each
+  // sanitizer to find it.
+  if (gameStatus === 'finished') {
+    return parsed
+  }
+
+  // Spy keeps its own key-name scrubber because it also has to reach spy
+  // identity nested inside serialized `state`/`initialState`/`game` strings,
+  // which the structured per-game sanitizers don't walk into.
+  if (gameType === 'guess_the_spy') {
     return scrubSpyIdentity(parsed)
   }
 
-  // Spectators never own a choice, so always redact a still-pending one (no viewer exception)
-  if (gameType === 'rock_paper_scissors' && typeof parsed === 'object' && parsed !== null) {
-    return sanitizeRpsStateForBroadcast(parsed as { data?: unknown; status?: string })
+  if (typeof parsed !== 'object' || parsed === null) {
+    return parsed
   }
 
-  return parsed
+  // A spectator is never a participant, so they get the no-viewer treatment:
+  // every per-game sanitizer redacts fully when viewerUserId is null. Routing
+  // through the shared dispatcher means a newly added game is covered here the
+  // moment it's registered, instead of needing a second edit that gets forgotten.
+  return sanitizeStateForBroadcast(gameType, parsed as { data?: unknown; status?: string }, null)
 }
