@@ -370,6 +370,7 @@ export class SpyGame extends GameEngine {
     }
 
     data.phase = SpyGamePhase.RESULTS
+    this.finishGameIfFinalRound()
   }
 
   private calculateResults(): void {
@@ -421,7 +422,24 @@ export class SpyGame extends GameEngine {
     }
 
     data.phase = SpyGamePhase.RESULTS
+    this.finishGameIfFinalRound()
     this.state.updatedAt = new Date()
+  }
+
+  // The final round's results conclude the game even without a single winner.
+  // The base makeMove() already finishes when checkWinCondition() returns a
+  // player, but on a tied top score it returns null — and with the client
+  // hiding "Next Round" on the last round and spy-init rejecting init once all
+  // rounds are done, a tied final round left the game in 'playing' forever.
+  // Finish it as a draw instead (#729).
+  private finishGameIfFinalRound(): void {
+    const data = this.state.data as SpyGameData
+    if (data.currentRound >= data.totalRounds) {
+      const winner = this.checkWinCondition()
+      this.state.status = 'finished'
+      // Tie on total score → no single winner: finished as a draw.
+      this.state.winner = winner?.id
+    }
   }
 
   checkWinCondition(): Player | null {

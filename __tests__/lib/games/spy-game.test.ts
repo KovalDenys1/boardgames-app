@@ -569,5 +569,44 @@ describe('SpyGame', () => {
       expect(finalState.status).toBe('finished')
       expect(finalState.winner).toBe('p1')
     })
+
+    it('finishes as a draw when the final round ends with a tied top score (#729)', () => {
+      game.addPlayer({ id: 'p4', name: 'Player 4' })
+      game.startGame()
+      game.initializeRound(mockLocations)
+
+      const state = game.getState()
+      const data = state.data as any
+
+      data.phase = SpyGamePhase.VOTING
+      data.currentRound = data.totalRounds
+      data.spyPlayerId = 'p1'
+      // Engineered so the post-award totals tie at the top:
+      // 2-2 vote tie → spy escapes (+300 to p1); bonuses: p2/p3 +50, p1/p4 -10.
+      // p1: 0+300-10 = 290, p2: 240+50 = 290 → tied top score.
+      data.scores = { p1: 0, p2: 240, p3: 0, p4: 0 }
+      data.votes = {}
+
+      for (const [voterId, targetId] of [['p2', 'p1'], ['p1', 'p2'], ['p3', 'p1'], ['p4', 'p2']]) {
+        expect(
+          game.makeMove({
+            playerId: voterId,
+            type: 'vote',
+            data: { targetId },
+            timestamp: new Date(),
+          })
+        ).toBe(true)
+      }
+
+      const finalState = game.getState()
+      const finalData = finalState.data as any
+
+      expect(finalData.scores.p1).toBe(290)
+      expect(finalData.scores.p2).toBe(290)
+      // Before #729 a tied final round never left 'playing' — the client hides
+      // "Next Round" on the last round, so the game hung at RESULTS forever.
+      expect(finalState.status).toBe('finished')
+      expect(finalState.winner).toBeUndefined()
+    })
   })
 })

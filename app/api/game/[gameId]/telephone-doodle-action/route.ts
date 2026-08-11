@@ -12,6 +12,7 @@ import {
   TelephoneDoodleDrawingPayload,
 } from '@/lib/validation/telephone-doodle'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
 import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
 
 const limiter = rateLimit(rateLimitPresets.game)
@@ -136,48 +137,75 @@ export async function POST(
     ) => {
       const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
 
+      // #729: a transition into a terminal status must also write the
+      // per-player isWinner/finalScore/placement fields stats derive from.
+      const terminalUpdate = buildPartyGameTerminalUpdate({
+        previousStatus: game.status,
+        state: nextState,
+        startedAt: game.startedAt,
+        dbPlayers: game.players,
+      })
+
       await prisma.games.update({
         where: { id: gameId },
         data: {
           state: toPersistedGameStateInput(nextState),
           status: nextState.status,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+          ...(terminalUpdate ? terminalUpdate.terminalFields : {}),
           updatedAt: new Date(),
         },
       })
 
-      const scoreUpdates: Array<Promise<unknown>> = []
-      const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-      for (const statePlayer of statePlayers) {
-        if (!statePlayer || typeof statePlayer !== 'object') continue
-
-        const playerId = (statePlayer as { id?: unknown }).id
-        if (typeof playerId !== 'string') continue
-
-        const dbPlayer = gamePlayersByUserId.get(playerId)
-        if (!dbPlayer) continue
-
-        const rawScore = (statePlayer as { score?: unknown }).score
-        const nextScore =
-          typeof rawScore === 'number' && Number.isFinite(rawScore)
-            ? Math.floor(rawScore)
-            : 0
-
-        if (dbPlayer.score === nextScore) continue
-
-        scoreUpdates.push(
+      if (terminalUpdate) {
+        // The terminal diff supersedes the per-move score sync below — one
+        // update per player carrying score + finalScore/placement/isWinner.
+        await Promise.all(terminalUpdate.changedPlayerUpdates.map((update) =>
           prisma.players.update({
-            where: { id: dbPlayer.id },
+            where: { id: update.id },
             data: {
-              score: nextScore,
+              score: update.score,
+              scorecard: update.scorecard,
+              finalScore: update.finalScore,
+              placement: update.placement,
+              isWinner: update.isWinner,
             },
           })
-        )
-        dbPlayer.score = nextScore
-      }
+        ))
+      } else {
+        const scoreUpdates: Array<Promise<unknown>> = []
+        const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+        for (const statePlayer of statePlayers) {
+          if (!statePlayer || typeof statePlayer !== 'object') continue
 
-      if (scoreUpdates.length > 0) {
-        await Promise.all(scoreUpdates)
+          const playerId = (statePlayer as { id?: unknown }).id
+          if (typeof playerId !== 'string') continue
+
+          const dbPlayer = gamePlayersByUserId.get(playerId)
+          if (!dbPlayer) continue
+
+          const rawScore = (statePlayer as { score?: unknown }).score
+          const nextScore =
+            typeof rawScore === 'number' && Number.isFinite(rawScore)
+              ? Math.floor(rawScore)
+              : 0
+
+          if (dbPlayer.score === nextScore) continue
+
+          scoreUpdates.push(
+            prisma.players.update({
+              where: { id: dbPlayer.id },
+              data: {
+                score: nextScore,
+              },
+            })
+          )
+          dbPlayer.score = nextScore
+        }
+
+        if (scoreUpdates.length > 0) {
+          await Promise.all(scoreUpdates)
+        }
       }
 
       await appendGameReplaySnapshot({
