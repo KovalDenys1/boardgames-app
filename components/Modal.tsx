@@ -150,8 +150,8 @@ export default function Modal({
         tabIndex={-1}
         className={`relative z-10 flex w-full flex-col shadow-2xl animate-scale-in ${
           mobileFullscreen
-            ? 'h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:max-h-[92vh] sm:rounded-3xl sm:border'
-            : 'max-h-[90vh] rounded-2xl border'
+            ? 'h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:border'
+            : 'max-h-[90dvh] rounded-2xl border'
         }`}
         style={{
           background: 'var(--bd-card-warm)',

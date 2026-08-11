@@ -172,6 +172,10 @@ html.dark {
   }
 
   .home-marquee-anchor {
+    /* bottom must be reset: the base rule's bottom offset combined with
+       position: relative shifts the strip ~42px UP over the hero's last
+       button (guest hero's "Exit Guest Mode" was clipped by it). */
+    bottom: auto;
     left: auto;
     margin: 0 0 28px;
     position: relative;
