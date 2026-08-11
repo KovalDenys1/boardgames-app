@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -30,6 +30,28 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
   const { t } = useTranslation()
   const [showPicker, setShowPicker] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
+  // Narrow screens get a single column of horizontal rows (roomy but short);
+  // wider screens get a 3-column grid of vertical cards in a wide modal. On
+  // the very narrowest screens the mode badge moves under the text — kept on
+  // the right it starves the game name into ugly 3-line wraps.
+  const [isNarrow, setIsNarrow] = useState(false)
+  const [isTiny, setIsTiny] = useState(false)
+
+  useEffect(() => {
+    const narrowQuery = window.matchMedia('(max-width: 639px)')
+    const tinyQuery = window.matchMedia('(max-width: 379px)')
+    const update = () => {
+      setIsNarrow(narrowQuery.matches)
+      setIsTiny(tinyQuery.matches)
+    }
+    update()
+    narrowQuery.addEventListener('change', update)
+    tinyQuery.addEventListener('change', update)
+    return () => {
+      narrowQuery.removeEventListener('change', update)
+      tinyQuery.removeEventListener('change', update)
+    }
+  }, [])
 
   const handleGameSelect = async (gameType: GameType, supportsBots: boolean) => {
     setIsSearching(true)
@@ -81,7 +103,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
           if (!isSearching) setShowPicker(false)
         }}
         title={`⚡ ${t('home.quickPlay', 'Quick Play')}`}
-        maxWidth="md"
+        maxWidth="2xl"
       >
         {isSearching ? (
           <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
@@ -103,14 +125,14 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
           </div>
         ) : (
           <>
-            <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', marginBottom: 24 }}>
               {t('quickPlay.pickGame', "Pick a game — we'll find or create a match instantly.")}
             </p>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                gap: 10,
+                gridTemplateColumns: isNarrow ? '1fr' : 'repeat(3, 1fr)',
+                gap: isNarrow ? 12 : 16,
               }}
             >
               {QUICK_PLAY_GAMES.map((game) => (
@@ -119,10 +141,10 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                   onClick={() => handleGameSelect(game.type, game.supportsBots)}
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                    padding: '12px 14px',
+                    flexDirection: isNarrow ? 'row' : 'column',
+                    alignItems: isNarrow ? 'center' : 'flex-start',
+                    gap: isNarrow ? 14 : 12,
+                    padding: isNarrow ? '14px 16px' : '18px 18px 16px',
                     background: 'var(--bd-bg)',
                     border: '2px solid var(--bd-ink)',
                     borderRadius: 12,
@@ -142,8 +164,8 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                 >
                   <span
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 44,
+                      height: 44,
                       display: 'grid',
                       placeItems: 'center',
                       background: 'var(--bd-sun)',
@@ -155,47 +177,77 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 512 512"
-                      width={20}
-                      height={20}
+                      width={22}
+                      height={22}
                       style={{ color: 'var(--bd-ink)' }}
                       dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
                     />
                   </span>
-                  <div style={{ minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: isNarrow ? 1 : undefined }}>
                     <p
                       style={{
                         fontFamily: 'var(--bd-font-display)',
                         fontWeight: 700,
-                        fontSize: 14,
+                        fontSize: 15,
                         color: 'var(--bd-ink)',
                         lineHeight: 1.2,
-                        marginBottom: 4,
+                        marginBottom: 6,
                       }}
                     >
                       {game.label}
                     </p>
-                    <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginBottom: 4 }}>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--bd-ink-muted)',
+                        marginBottom: isNarrow && !isTiny ? 0 : 10,
+                      }}
+                    >
                       {game.players} {t('quickPlay.players')}
                     </p>
+                    {(!isNarrow || isTiny) && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '3px 10px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: 'var(--bd-ink)',
+                          background: game.supportsBots ? 'var(--bd-sun)' : 'var(--bd-bg2)',
+                          border: '1.5px solid var(--bd-ink)',
+                          borderRadius: 999,
+                        }}
+                      >
+                        {game.supportsBots
+                          ? `🤖 ${t('quickPlay.vsBots', 'Vs bots')}`
+                          : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
+                      </span>
+                    )}
+                  </div>
+                  {isNarrow && !isTiny && (
                     <span
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 4,
-                        padding: '2px 8px',
+                        padding: '3px 10px',
                         fontSize: 11,
                         fontWeight: 700,
                         color: 'var(--bd-ink)',
                         background: game.supportsBots ? 'var(--bd-sun)' : 'var(--bd-bg2)',
                         border: '1.5px solid var(--bd-ink)',
                         borderRadius: 999,
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {game.supportsBots
                         ? `🤖 ${t('quickPlay.vsBots', 'Vs bots')}`
                         : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
                     </span>
-                  </div>
+                  )}
                 </button>
               ))}
             </div>
