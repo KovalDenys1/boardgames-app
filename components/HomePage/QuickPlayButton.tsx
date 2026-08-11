@@ -112,7 +112,6 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
         }}
         title={`⚡ ${t('home.quickPlay', 'Quick Play')}`}
         maxWidth="2xl"
-        mobileFullscreen
       >
         {isSearching ? (
           <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
