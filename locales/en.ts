@@ -1937,6 +1937,9 @@ const en = {
     starting: 'Starting…',
     signInToPlay: 'Sign in to play vs bot',
     players: 'players',
+    vsBots: 'Vs bots',
+    withPlayers: 'With players',
+    waitingForPlayers: 'Room created — waiting for players to join!',
   },
   leaderboard: {
     title: 'Leaderboard',

@@ -1926,6 +1926,9 @@ const ru = {
     starting: 'Запускаем…',
     signInToPlay: 'Войдите, чтобы играть против бота',
     players: 'игроки',
+    vsBots: 'С ботами',
+    withPlayers: 'С игроками',
+    waitingForPlayers: 'Комната создана — ждём игроков!',
   },
   leaderboard: {
     title: 'Таблица лидеров',

@@ -1939,6 +1939,9 @@ const uk: Translation = {
     starting: 'Запускаємо…',
     signInToPlay: 'Увійдіть, щоб грати проти бота',
     players: 'гравці',
+    vsBots: 'З ботами',
+    withPlayers: 'З гравцями',
+    waitingForPlayers: 'Кімнату створено — чекаємо на гравців!',
   },
   leaderboard: {
     title: 'Таблиця лідерів',

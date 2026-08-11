@@ -1926,6 +1926,9 @@ const no = {
     starting: 'Starter…',
     signInToPlay: 'Logg inn for å spille mot bot',
     players: 'spillere',
+    vsBots: 'Mot boter',
+    withPlayers: 'Med spillere',
+    waitingForPlayers: 'Rom opprettet — venter på spillere!',
   },
   leaderboard: {
     title: 'Toppliste',

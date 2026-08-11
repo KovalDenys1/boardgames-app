@@ -121,6 +121,10 @@ apply these whenever touching any game board or in-game mobile view.
     screens: `LobbyInfo.tsx`'s `overflow-x-auto` rail (no
     scrollbar-hiding utility exists in this codebase — don't add one,
     the native thin scrollbar is the accepted look).
+- **Every UI change must be comfortable on ALL screen sizes — small,
+  medium, and large — as a standing rule, not only when the task mentions
+  mobile.** Check at minimum ~320px, ~390px, ~768px, and a desktop width
+  before calling UI work done.
 
 ## Adding a new game — checklist
 
