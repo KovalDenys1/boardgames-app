@@ -422,41 +422,68 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* RIGHT: illustrated panel */}
+        {/* RIGHT: illustrated panel — height tracks the viewport (capped) so
+            the page never scrolls just because of decoration; the old
+            aspect-ratio sizing made it width-driven and taller than the
+            screen on wide windows. */}
         <div style={{
           position: 'relative',
           background: 'linear-gradient(135deg, var(--bd-coral) 0%, var(--bd-sun) 100%)',
-          borderRadius: 36, padding: 48, aspectRatio: '4 / 5', overflow: 'hidden',
+          borderRadius: 36, padding: 40, overflow: 'hidden',
+          height: 'clamp(480px, calc(100svh - 2 * clamp(24px, 5vw, 40px) - 12px), 640px)',
           border: '3px solid var(--bd-ink)',
           boxShadow: '10px 10px 0 var(--bd-ink)',
         }} className="hidden lg:block">
           <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3 }} />
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink)', lineHeight: 0.95, marginBottom: 12 }}>
-                &ldquo;Best<br />Friday<br />night ever&rdquo;
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink)', lineHeight: 0.95, marginBottom: 12, whiteSpace: 'pre-line' }}>
+                {t('auth.login.heroQuote', '“Best\nFriday\nnight ever”')}
               </div>
               <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.7)', maxWidth: 200 }}>
-                — our players about boardly
+                {t('auth.login.heroQuoteBy', '— our players about boardly')}
               </div>
             </div>
             {/* floating dice */}
-            <div style={{ position: 'absolute', top: '30%', right: '10%' }} className="bd-float">
+            <div style={{ position: 'absolute', top: '26%', right: '8%' }} className="bd-float">
               <Die value={6} size={72} rotate="-4deg" />
             </div>
-            <div style={{ position: 'absolute', top: '50%', right: '40%' }} className="bd-float">
+            <div style={{ position: 'absolute', top: '46%', right: '34%' }} className="bd-float">
               <Die value={3} size={56} rotate="-8deg" animationDelay="0.4s" />
             </div>
-            <div style={{ position: 'absolute', top: '62%', right: '12%' }} className="bd-float">
+            <div style={{ position: 'absolute', top: '58%', right: '10%' }} className="bd-float">
               <Die value={5} size={64} rotate="10deg" animationDelay="0.8s" />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-              <div style={{ display: 'flex' }}>
-                {[['A','bd-avatar-mint'],['L','bd-avatar-lav'],['M','bd-avatar-sky']].map(([l, cls], i) => (
-                  <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+                {[
+                  ['🎲', t('auth.login.heroChipGames', '6 games ready to play')],
+                  ['⚡', t('auth.login.heroChipInstant', 'No download — play in the browser')],
+                  ['👥', t('auth.login.heroChipGuests', 'Friends join with one link')],
+                ].map(([icon, label]) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '7px 14px', borderRadius: 999,
+                      background: 'rgba(255,248,235,0.85)',
+                      border: '1.5px solid var(--bd-ink)',
+                      fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)',
+                    }}
+                  >
+                    <span>{icon}</span>
+                    <span>{label}</span>
+                  </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--bd-ink)', fontWeight: 500 }}>180,000+ players already here</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex' }}>
+                  {[['A','bd-avatar-mint'],['L','bd-avatar-lav'],['M','bd-avatar-sky']].map(([l, cls], i) => (
+                    <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--bd-ink)', fontWeight: 500 }}>{t('auth.login.heroPlayers', '180,000+ players already here')}</div>
+              </div>
             </div>
           </div>
         </div>

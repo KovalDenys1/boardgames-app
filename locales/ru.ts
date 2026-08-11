@@ -1276,6 +1276,12 @@ const ru = {
   },
   auth: {
     login: {
+      heroQuote: '«Лучший\nвечер\nпятницы»',
+      heroQuoteBy: '— наши игроки о boardly',
+      heroPlayers: '180 000+ игроков уже здесь',
+      heroChipGames: '6 игр готовы к игре',
+      heroChipInstant: 'Без скачивания — прямо в браузере',
+      heroChipGuests: 'Друзья заходят по одной ссылке',
       title: 'Войти в Boardly',
       email: 'Эл. почта',
       emailPlaceholder: 'Введите ваш email',

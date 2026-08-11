@@ -1276,6 +1276,12 @@ const en = {
   },
   auth: {
     login: {
+      heroQuote: '“Best\nFriday\nnight ever”',
+      heroQuoteBy: '— our players about boardly',
+      heroPlayers: '180,000+ players already here',
+      heroChipGames: '6 games ready to play',
+      heroChipInstant: 'No download — play in the browser',
+      heroChipGuests: 'Friends join with one link',
       title: 'Login to Boardly',
       email: 'Email',
       emailPlaceholder: 'Enter your email',

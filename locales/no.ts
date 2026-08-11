@@ -1276,6 +1276,12 @@ const no = {
   },
   auth: {
     login: {
+      heroQuote: '«Beste\nfredagskvelden\nnoensinne»',
+      heroQuoteBy: '— spillerne våre om boardly',
+      heroPlayers: '180 000+ spillere er her allerede',
+      heroChipGames: '6 spill klare til å spille',
+      heroChipInstant: 'Ingen nedlasting — spill i nettleseren',
+      heroChipGuests: 'Venner blir med via én lenke',
       title: 'Logg inn på Boardly',
       email: 'E-post',
       emailPlaceholder: 'Skriv inn e-posten din',

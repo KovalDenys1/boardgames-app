@@ -1278,6 +1278,12 @@ const uk: Translation = {
   },
   auth: {
     login: {
+      heroQuote: '«Найкращий\nвечір\nпʼятниці»',
+      heroQuoteBy: '— наші гравці про boardly',
+      heroPlayers: '180 000+ гравців вже тут',
+      heroChipGames: '6 ігор готові до гри',
+      heroChipInstant: 'Без завантаження — просто в браузері',
+      heroChipGuests: 'Друзі приєднуються за одним посиланням',
       title: 'Вхід до Boardly',
       email: 'Електронна пошта',
       emailPlaceholder: 'Введіть ваш email',
