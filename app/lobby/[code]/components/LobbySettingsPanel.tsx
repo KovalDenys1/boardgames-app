@@ -188,7 +188,7 @@ export default function LobbySettingsPanel({
       {rows.map((row) => {
         const isActive = activeSettingEditor === row.key
         const chipClass = (selected: boolean, locked = false) =>
-          `flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+          `flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
             selected
               ? 'border-bd-ink bg-bd-ink text-bd-bg'
               : locked
@@ -206,7 +206,9 @@ export default function LobbySettingsPanel({
               isActive ? 'border-bd-mint/60 bg-bd-mint/12' : 'border-bd-line bg-bd-card-warm'
             } ${canEditLobbySettings && !isActive ? 'cursor-pointer hover:border-bd-ink' : ''}`}
           >
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* min-h keeps the row height identical between the value state
+                and the (taller) chips state — no jump when opening. */}
+            <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-2">
               {/* Label — keyboard-accessible toggle (whole row is clickable too) */}
               <button
                 type="button"
