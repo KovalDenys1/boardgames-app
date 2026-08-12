@@ -15,28 +15,42 @@ double-render bug class. Tracking issue: #733.
 
 | Token | Where | Status |
 |---|---|---|
-| `--bd-header-h` (64px) | `app/globals.css` `:root`, inside the primitives block | pending (tokens issue) |
-| `HEADER_HEIGHT_PX` | `lib/responsive-tokens.ts` | pending (tokens issue) |
-| `DESKTOP_MIN_WIDTH_PX` | `lib/responsive-tokens.ts` | pending (breakpoint decision) |
-| `MOBILE_MAX_MEDIA_QUERY` | `lib/responsive-tokens.ts` | pending (breakpoint decision) |
-| `desk:` Tailwind screen | `tailwind.config.ts` (imported from tokens) | pending (breakpoint decision) |
-| `useIsMobileViewport()` | `hooks/useIsMobileViewport.ts` | pending (tokens issue) |
+| `--bd-header-h` (64px) | `app/globals.css` `:root`, inside the primitives block | live (#734) |
+| `HEADER_HEIGHT_PX` | `lib/responsive-tokens.ts` | live (#734) |
+| `DESKTOP_MIN_WIDTH_PX` = 1024 | `lib/responsive-tokens.ts` | live (#734) |
+| `MOBILE_MAX_MEDIA_QUERY` | `lib/responsive-tokens.ts` | live (#734) |
+| `desk:` Tailwind screen | `tailwind.config.ts` (imported from tokens) | live (#734) |
+| `useIsMobileViewport()` | `hooks/useIsMobileViewport.ts` | live (#734), consumers migrate in later phases |
 
 **Why three carriers for one value:** CSS custom properties cannot appear inside
 `@media (...)` conditions, so media queries must use a raw px literal. The audit
-script (check R2) fails CI on any width media query outside the set derived from
-`DESKTOP_MIN_WIDTH_PX` — that is what makes "change the breakpoint in one place"
-honest. Until the tokens land, the audit allows the transitional set
-{767, 768, 899, 900, 1023, 1024}.
+script (check R2) fails CI on any width media query outside
+{`DESKTOP_MIN_WIDTH_PX`, `DESKTOP_MIN_WIDTH_PX − 1`} — that is what makes
+"change the breakpoint in one place" honest. Legacy off-token values (767, 899,
+900, homepage one-offs) live in the baseline and shrink per migration phase. The
+audit also fails if `--bd-header-h` in globals.css drifts from `HEADER_HEIGHT_PX`.
 
 ## Breakpoint decision record
 
-**Pending.** Candidates: 900 (current game CSS) vs 1024 (Tailwind `lg`, current
-MobileTabs). To be decided by comparing real screens (iPad portrait 768/820, iPad
-landscape 1024+, large phone landscape ~850–930) — the deciding question is whether
-a portrait tablet gets the desktop side-panel layout or the mobile-tabs layout, and
-whether the desktop layout genuinely fits at 900. Record the decision, the
-screenshots, and the rationale here when made.
+**Decided 2026-08-12 (#734): `DESKTOP_MIN_WIDTH_PX = 1024`.** Candidates were 900
+(the game CSS threshold) and 1024 (Tailwind `lg`, MobileTabs). Playwright sweep of
+the in-game Tic-Tac-Toe screen:
+
+- 768×1024 (iPad portrait) → mobile-tabs layout, comfortable.
+- 900×1024 (tall) → desktop layout fits, but only because of the generous height.
+- **900×390 (phone landscape, the decisive case)** → desktop layout is broken:
+  the board is pushed out of the viewport and the post-game overlay buttons are
+  clipped. Real phones in landscape are ~850–930px wide — a 900 breakpoint gives
+  them this broken desktop layout; 1024 gives them the mobile layout, which is
+  designed for constrained heights.
+- 1024×700 → desktop layout fits.
+
+Secondary reasons: 1024 equals the `lg:` threshold that `MobileTabs` /
+`MobileTabPanel` / `LobbyPageClient` already use (smallest migration), and iPad
+portrait/landscape land on the same side under both candidates. Cost: 900–1023px
+windows lose the desktop side panels and get the mobile-tabs layout — acceptable,
+it is fully functional. The value lives in one token; reversing the decision is a
+one-line change plus audit-guided CSS fixes.
 
 ## Primitive catalog
 
@@ -157,8 +171,8 @@ Every UI change, before it is "done":
 
 | Area | Shell today | Target | Issue |
 |---|---|---|---|
-| Rule + audit + baseline | — | this document | #733 (this) |
-| Tokens + breakpoint decision | 64px hardcoded ×14, three breakpoints | `--bd-header-h`, `responsive-tokens.ts`, `desk:` | planned |
+| Rule + audit + baseline | — | this document | #733 ✅ |
+| Tokens + breakpoint decision | 64px hardcoded ×14, three breakpoints | `--bd-header-h`, `responsive-tokens.ts`, `desk:` = 1024 | #734 ✅ |
 | Tic-Tac-Toe + Connect Four | `.ttt-*` | `.game-screen` | planned |
 | Memory | `.memory-*` (position:fixed) | `.game-screen` | planned |
 | LobbyPageClient (Yahtzee/Alias/Spy/Sketch/RPS) | inline fixed + JS scroll-lock | `.game-screen` | planned |

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
+import { DESKTOP_MIN_WIDTH_PX, HEADER_HEIGHT_PX } from '../lib/responsive-tokens'
 
 /**
  * Responsive layout audit — enforces the Responsive UI Definition of Done
@@ -38,10 +39,10 @@ const ignoredDirectories = new Set(['node_modules', '.next', '.git', 'coverage',
 const baselinePath = path.join(repoRoot, 'scripts', 'responsive-audit-baseline.json')
 const updateBaseline = process.argv.includes('--update-baseline')
 
-// Transitional allowed set until the single breakpoint token lands (issue #733
-// follow-up): the three thresholds currently in legitimate use, min/max pairs.
-// Once lib/responsive-tokens.ts exists, this becomes the token-derived pair only.
-const allowedMediaWidthsPx = new Set([767, 768, 899, 900, 1023, 1024])
+// The only allowed width media-query values: the shared breakpoint's min/max
+// pair, derived from lib/responsive-tokens.ts. Legacy off-token values live in
+// the baseline and shrink with each migration phase.
+const allowedMediaWidthsPx = new Set([DESKTOP_MIN_WIDTH_PX, DESKTOP_MIN_WIDTH_PX - 1])
 
 const checkHints: Record<CheckId, string> = {
   R1: 'raw header-offset viewport math — use .page-shell / .game-screen or var(--bd-header-h)',
@@ -246,6 +247,16 @@ function loadBaseline(): BaselineEntry[] {
     return []
   }
   return JSON.parse(readFileSync(baselinePath, 'utf8')) as BaselineEntry[]
+}
+
+// Token-sync guard: the CSS carrier of the header height must match the TS
+// constant (they live in different languages, so nothing else ties them).
+const globalsCss = readFileSync(path.join(repoRoot, 'app', 'globals.css'), 'utf8')
+if (!globalsCss.includes(`--bd-header-h: ${HEADER_HEIGHT_PX}px`)) {
+  console.error(
+    `Responsive layout audit failed: app/globals.css must declare --bd-header-h: ${HEADER_HEIGHT_PX}px (in sync with HEADER_HEIGHT_PX in lib/responsive-tokens.ts).`
+  )
+  process.exit(1)
 }
 
 const violations: Violation[] = []
