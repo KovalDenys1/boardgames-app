@@ -1993,8 +1993,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     : 'text-bd-ink-soft'
                 }`}
               >
-                {tab === 'players' ? '👥' : '💬'}
-                {tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}
+                <span aria-hidden>{tab === 'players' ? '👥' : '💬'}</span>
+                <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
                   <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-white">
                     {unreadMessageCount}
