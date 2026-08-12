@@ -134,7 +134,7 @@ export default function LobbySettingsPanel({
       {/* Panel header */}
       <div className="flex items-center justify-between pb-1">
         <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
-          <span aria-hidden>⚙</span>
+          <span aria-hidden className="text-base leading-none">⚙️</span>
           {t('game.ui.settings')}
         </h2>
         <button

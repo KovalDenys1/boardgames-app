@@ -120,7 +120,7 @@ export default function LobbyInfo({
                 aria-expanded={settingsOpen}
                 className={`bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3 ${settingsOpen ? 'bg-bd-bg2' : ''}`}
               >
-                <span aria-hidden>⚙</span>
+                <span aria-hidden className="text-base leading-none">⚙️</span>
               </button>
             )}
             <button
