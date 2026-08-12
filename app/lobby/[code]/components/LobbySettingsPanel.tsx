@@ -56,7 +56,7 @@ function AnimatedSettingRow({
   })
 
   return (
-    <div ref={ref} onClick={onClick} className={`overflow-hidden ${className}`}>
+    <div ref={ref} onClick={onClick} className={`flex flex-col justify-center overflow-hidden ${className}`}>
       {children}
     </div>
   )
@@ -168,7 +168,10 @@ export default function LobbySettingsPanel({
   ]
 
   return (
-    <div className="space-y-2 px-4 py-4 sm:px-6">
+    /* min-h-full + flex column: the rows share the leftover height evenly
+       (flex-grow with basis auto), so the panel fills its area instead of
+       leaving a dead gap under the last row on tall/narrow screens. */
+    <div className="flex min-h-full flex-col space-y-2 px-4 py-4 sm:px-6">
       {/* Panel header */}
       <div className="flex items-center justify-between pb-1">
         <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
@@ -202,7 +205,7 @@ export default function LobbySettingsPanel({
             /* The whole row opens the editor; while open it does nothing
                (chip clicks bubble here harmlessly, closing is ✕ / label). */
             onClick={canEditLobbySettings && !isActive ? () => openEditor(row.key) : undefined}
-            className={`rounded-xl border px-3 py-3 transition-colors sm:px-4 ${
+            className={`flex-[1_0_auto] rounded-xl border px-3 py-3 transition-colors sm:px-4 ${
               isActive ? 'border-bd-mint/60 bg-bd-mint/12' : 'border-bd-line bg-bd-card-warm'
             } ${canEditLobbySettings && !isActive ? 'cursor-pointer hover:border-bd-ink' : ''}`}
           >
