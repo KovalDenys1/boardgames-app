@@ -1,0 +1,137 @@
+[
+  {
+    "file": "app/auth/login/LoginForm.tsx",
+    "check": "R5",
+    "count": 1
+  },
+  {
+    "file": "app/games/components/GameDetailPage.tsx",
+    "check": "R1",
+    "count": 1
+  },
+  {
+    "file": "app/games/GamesClient.tsx",
+    "check": "R1",
+    "count": 1
+  },
+  {
+    "file": "app/globals.css",
+    "check": "R1",
+    "count": 4
+  },
+  {
+    "file": "app/globals.css",
+    "check": "R2",
+    "count": 4
+  },
+  {
+    "file": "app/globals.css",
+    "check": "R4",
+    "count": 1
+  },
+  {
+    "file": "app/globals.css",
+    "check": "R7",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/[code]/alias-page.tsx",
+    "check": "R1",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/alias-page.tsx",
+    "check": "R3",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/alias-page.tsx",
+    "check": "R5",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/components/LobbyPageFallbacks.tsx",
+    "check": "R1",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/[code]/connect-four-page.tsx",
+    "check": "R3",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/liars-party-page.tsx",
+    "check": "R1",
+    "count": 9
+  },
+  {
+    "file": "app/lobby/[code]/LobbyPageClient.tsx",
+    "check": "R1",
+    "count": 3
+  },
+  {
+    "file": "app/lobby/[code]/LobbyPageClient.tsx",
+    "check": "R3",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/LobbyPageClient.tsx",
+    "check": "R4",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/LobbyPageClient.tsx",
+    "check": "R5",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/rock-paper-scissors-page.tsx",
+    "check": "R1",
+    "count": 4
+  },
+  {
+    "file": "app/lobby/[code]/sketch-and-guess-page.tsx",
+    "check": "R1",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/spectate/page.tsx",
+    "check": "R1",
+    "count": 6
+  },
+  {
+    "file": "app/lobby/[code]/spectate/page.tsx",
+    "check": "R5",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/page.tsx",
+    "check": "R1",
+    "count": 1
+  },
+  {
+    "file": "app/maintenance/MaintenanceContent.tsx",
+    "check": "R5",
+    "count": 1
+  },
+  {
+    "file": "components/Chat.tsx",
+    "check": "R5",
+    "count": 1
+  },
+  {
+    "file": "components/HomePage/QuickPlayButton.tsx",
+    "check": "R3",
+    "count": 2
+  },
+  {
+    "file": "components/PublicProfileView.tsx",
+    "check": "R1",
+    "count": 2
+  },
+  {
+    "file": "components/PublicProfileView.tsx",
+    "check": "R5",
+    "count": 1
+  }
+]

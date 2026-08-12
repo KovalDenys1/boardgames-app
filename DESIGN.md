@@ -216,6 +216,10 @@ Dark mode is implemented via CSS variable swapping. **Do not use `dark:` Tailwin
 
 ## Layout
 
-- Page-level containers: `page-shell` (calc height minus header) or `page-shell-full` CSS classes from `globals.css`
-- Responsive fluid sizing: use `clamp()` in inline styles for text and spacing that should respond to viewport
-- Game screens (tic-tac-toe etc.): grid layout defined in `globals.css` under `/* === TTT GAME SCREEN === */`
+Full pattern reference: [docs/RESPONSIVE.md](docs/RESPONSIVE.md) — enforced by `scripts/audit-responsive.ts` (part of `ci:quick`).
+
+- Page-level containers: `.page-shell` (full height under the header, incl. loading/error screens) or `.page-shell-full`
+- Game screens: the shared `.game-screen` family (`--game-h`); until it lands, the `.ttt-*` family in `globals.css` is the pattern to copy — never invent a new screen family
+- Header offset: `var(--bd-header-h)` / `HEADER_HEIGHT_PX` (pending tokens issue) — never a raw `64px`/`4rem`
+- Mobile/desktop split: one shared breakpoint (`desk:` screen / `useIsMobileViewport()`), never a raw px value
+- Responsive fluid sizing: use `clamp()` for text and spacing that should respond to viewport
