@@ -1438,6 +1438,8 @@ const uk: Translation = {
     achievements: {
       title: 'Досягнення',
       unlockedOn: 'Отримано {{date}}',
+      showAll: 'Показати всі ({{count}})',
+      showLess: 'Згорнути',
     },
     saving: 'Збереження...',
     sending: 'Надсилання...',

@@ -1436,6 +1436,8 @@ const en = {
     achievements: {
       title: 'Achievements',
       unlockedOn: 'Unlocked {{date}}',
+      showAll: 'Show all ({{count}})',
+      showLess: 'Show less',
     },
     saving: 'Saving...',
     sending: 'Sending...',

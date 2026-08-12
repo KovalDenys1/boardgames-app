@@ -1436,6 +1436,8 @@ const ru = {
     achievements: {
       title: 'Достижения',
       unlockedOn: 'Получено {{date}}',
+      showAll: 'Показать все ({{count}})',
+      showLess: 'Свернуть',
     },
     saving: 'Сохранение...',
     sending: 'Отправка...',

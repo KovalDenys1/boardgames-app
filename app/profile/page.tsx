@@ -8,6 +8,7 @@ import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
+import AchievementsGrid from '@/components/AchievementsGrid'
 import Friends from '@/components/Friends'
 import PlayerStatsDashboard from '@/components/PlayerStatsDashboard'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -1416,15 +1417,14 @@ export default function ProfilePage() {
   )
   const achievementItems = ACHIEVEMENTS.map((achievement) => {
     const unlockedAt = unlockedAchievementsByKey.get(achievement.key) ?? null
-    const name = t(`achievements.${achievement.key}.name` as TranslationKeys)
-    const description = t(`achievements.${achievement.key}.description` as TranslationKeys)
     return {
       id: achievement.key,
       icon: achievement.icon,
-      label: name,
-      tooltip: unlockedAt
-        ? `${description} — ${t('profile.achievements.unlockedOn' as TranslationKeys, { date: new Date(unlockedAt).toLocaleDateString(i18n.language || undefined) })}`
-        : description,
+      label: t(`achievements.${achievement.key}.name` as TranslationKeys),
+      description: t(`achievements.${achievement.key}.description` as TranslationKeys),
+      unlockedOnLabel: unlockedAt
+        ? t('profile.achievements.unlockedOn' as TranslationKeys, { date: new Date(unlockedAt).toLocaleDateString(i18n.language || undefined) })
+        : null,
       earned: unlockedAt !== null,
     }
   })
@@ -1801,32 +1801,7 @@ export default function ProfilePage() {
 
                   <div className="mt-5 w-full">
                     <div className="rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-800">
-                      <div className="flex items-center justify-between gap-3">
-                        <h2 className="font-display text-2xl font-bold text-bd-ink dark:text-white">
-                          {t('profile.achievements.title')}
-                        </h2>
-                        <span className="rounded-full bg-bd-bg2 px-3 py-1 text-xs font-bold text-bd-ink-soft dark:bg-slate-700 dark:text-slate-200">
-                          {achievementItems.filter((item) => item.earned).length} / {achievementItems.length}
-                        </span>
-                      </div>
-                      <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3">
-                        {achievementItems.map((item) => (
-                          <div
-                            key={item.id}
-                            title={item.tooltip}
-                            className={`flex min-h-28 flex-col rounded-2xl border-[1.5px] p-3 transition-opacity ${
-                              item.earned
-                                ? 'border-bd-line bg-bd-card-warm opacity-100 dark:border-slate-700 dark:bg-slate-900/70'
-                                : 'border-bd-line/70 bg-transparent opacity-50 dark:border-slate-700'
-                            }`}
-                          >
-                            <div className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink text-lg shadow-[2px_2px_0_#1F1B16] ${item.earned ? 'bg-bd-sun' : 'bg-bd-bg2 grayscale'}`}>
-                              {item.earned ? item.icon : '🔒'}
-                            </div>
-                            <p className="mt-auto pt-3 text-sm font-bold leading-tight text-bd-ink dark:text-slate-100">{item.label}</p>
-                          </div>
-                        ))}
-                      </div>
+                      <AchievementsGrid items={achievementItems} />
                     </div>
                   </div>
                 </div>

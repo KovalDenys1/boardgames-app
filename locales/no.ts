@@ -1436,6 +1436,8 @@ const no = {
     achievements: {
       title: 'Prestasjoner',
       unlockedOn: 'Låst opp {{date}}',
+      showAll: 'Vis alle ({{count}})',
+      showLess: 'Vis færre',
     },
     saving: 'Lagrer...',
     sending: 'Sender...',
