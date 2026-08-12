@@ -24,39 +24,23 @@ interface LobbySettingsPanelProps {
 
 type EditableSettingKey = 'maxPlayers' | 'turnTimer' | 'allowSpectators' | 'theme' | 'gameType'
 
-/**
- * Row wrapper that smoothly animates its own height whenever the content
- * swap (value <-> choice chips) changes it — without this the row jumps.
- * Runs after every render, measures, and animates only on an actual change.
- */
-function AnimatedSettingRow({
+function SettingRow({
+  rowKey,
   className,
   onClick,
   children,
 }: {
+  rowKey: string
   className: string
   onClick?: () => void
   children: ReactNode
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const previousHeight = useRef<number | null>(null)
-
-  useLayoutEffect(() => {
-    const element = ref.current
-    if (!element) return
-    const newHeight = element.getBoundingClientRect().height
-    const oldHeight = previousHeight.current
-    previousHeight.current = newHeight
-    if (oldHeight === null || Math.abs(oldHeight - newHeight) < 1) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    element.animate(
-      [{ height: `${oldHeight}px` }, { height: `${newHeight}px` }],
-      { duration: 200, easing: 'ease-out' },
-    )
-  })
-
   return (
-    <div ref={ref} onClick={onClick} className={`flex flex-col justify-center overflow-hidden ${className}`}>
+    <div
+      data-setting-row={rowKey}
+      onClick={onClick}
+      className={`flex flex-col justify-center overflow-hidden ${className}`}
+    >
       {children}
     </div>
   )
@@ -80,6 +64,41 @@ export default function LobbySettingsPanel({
   const canEditLobbySettings = Boolean(canEdit && onUpdateSettings)
   const [activeSettingEditor, setActiveSettingEditor] = useState<EditableSettingKey | null>(null)
   const [updatingSetting, setUpdatingSetting] = useState<EditableSettingKey | null>(null)
+
+  // FLIP: after every render, compare each row's rect with the previous one
+  // and animate from the old position/height to the new — so when an opened
+  // editor makes a row grow (wrapped chips on narrow screens), every plate
+  // glides into place instead of snapping.
+  const listRef = useRef<HTMLDivElement>(null)
+  const previousRects = useRef<Map<string, DOMRect>>(new Map())
+  useLayoutEffect(() => {
+    const root = listRef.current
+    if (!root) return
+    const rowElements = Array.from(root.querySelectorAll<HTMLElement>('[data-setting-row]'))
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const nextRects = new Map(previousRects.current)
+    for (const el of rowElements) {
+      const key = el.dataset.settingRow as string
+      // While a FLIP animation is in flight, rects are mid-animation values —
+      // don't restart the animation or store them (that reads as stutter).
+      if (el.getAnimations().length > 0) continue
+      const next = el.getBoundingClientRect()
+      const prev = previousRects.current.get(key)
+      nextRects.set(key, next)
+      if (reduceMotion || !prev) continue
+      const deltaY = prev.top - next.top
+      const deltaH = prev.height - next.height
+      if (Math.abs(deltaY) < 1 && Math.abs(deltaH) < 1) continue
+      el.animate(
+        [
+          { transform: `translateY(${deltaY}px)`, height: `${prev.height}px` },
+          { transform: 'translateY(0)', height: `${next.height}px` },
+        ],
+        { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      )
+    }
+    previousRects.current = nextRects
+  })
 
   const currentTheme = LOBBY_THEMES[((lobby?.theme as LobbyTheme) in LOBBY_THEMES ? lobby?.theme : 'default') as LobbyTheme]
 
@@ -171,7 +190,7 @@ export default function LobbySettingsPanel({
     /* min-h-full + flex column: the rows share the leftover height evenly
        (flex-grow with basis auto), so the panel fills its area instead of
        leaving a dead gap under the last row on tall/narrow screens. */
-    <div className="flex min-h-full flex-col space-y-2 px-4 py-4 sm:px-6">
+    <div ref={listRef} className="flex min-h-full flex-col space-y-2 px-4 py-4 sm:px-6">
       {/* Panel header */}
       <div className="flex items-center justify-between pb-1">
         <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
@@ -200,8 +219,9 @@ export default function LobbySettingsPanel({
           }`
 
         return (
-          <AnimatedSettingRow
+          <SettingRow
             key={row.key}
+            rowKey={row.key}
             /* The whole row opens the editor; while open it does nothing
                (chip clicks bubble here harmlessly, closing is ✕ / label). */
             onClick={canEditLobbySettings && !isActive ? () => openEditor(row.key) : undefined}
@@ -372,7 +392,7 @@ export default function LobbySettingsPanel({
                 </div>
               )}
             </div>
-          </AnimatedSettingRow>
+          </SettingRow>
         )
       })}
     </div>
