@@ -64,41 +64,27 @@ export default function LobbySettingsPanel({
   const canEditLobbySettings = Boolean(canEdit && onUpdateSettings)
   const [activeSettingEditor, setActiveSettingEditor] = useState<EditableSettingKey | null>(null)
   const [updatingSetting, setUpdatingSetting] = useState<EditableSettingKey | null>(null)
+  // 'games' = the whole panel crossfades to a vertically scrollable game list
+  // (same mechanic as the players <-> settings swap one level up).
+  const [view, setView] = useState<'settings' | 'games'>('settings')
 
-  // FLIP: after every render, compare each row's rect with the previous one
-  // and animate from the old position/height to the new — so when an opened
-  // editor makes a row grow (wrapped chips on narrow screens), every plate
-  // glides into place instead of snapping.
-  const listRef = useRef<HTMLDivElement>(null)
-  const previousRects = useRef<Map<string, DOMRect>>(new Map())
+  // The active editor's chip rail: detect horizontal overflow (to show the
+  // fade mask only when there is actually something to scroll to) and start
+  // with the selected chip in view. Only one rail exists at a time.
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const [railOverflows, setRailOverflows] = useState(false)
   useLayoutEffect(() => {
-    const root = listRef.current
-    if (!root) return
-    const rowElements = Array.from(root.querySelectorAll<HTMLElement>('[data-setting-row]'))
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const nextRects = new Map(previousRects.current)
-    for (const el of rowElements) {
-      const key = el.dataset.settingRow as string
-      // While a FLIP animation is in flight, rects are mid-animation values —
-      // don't restart the animation or store them (that reads as stutter).
-      if (el.getAnimations().length > 0) continue
-      const next = el.getBoundingClientRect()
-      const prev = previousRects.current.get(key)
-      nextRects.set(key, next)
-      if (reduceMotion || !prev) continue
-      const deltaY = prev.top - next.top
-      const deltaH = prev.height - next.height
-      if (Math.abs(deltaY) < 1 && Math.abs(deltaH) < 1) continue
-      el.animate(
-        [
-          { transform: `translateY(${deltaY}px)`, height: `${prev.height}px` },
-          { transform: 'translateY(0)', height: `${next.height}px` },
-        ],
-        { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-      )
+    const rail = railRef.current
+    if (!rail) {
+      setRailOverflows(false)
+      return
     }
-    previousRects.current = nextRects
-  })
+    setRailOverflows(rail.scrollWidth > rail.clientWidth + 1)
+    const selected = rail.querySelector<HTMLElement>('[data-selected="true"]')
+    if (selected) {
+      rail.scrollLeft = Math.max(0, selected.offsetLeft - (rail.clientWidth - selected.offsetWidth) / 2)
+    }
+  }, [activeSettingEditor, lobby?.allowSpectators])
 
   const currentTheme = LOBBY_THEMES[((lobby?.theme as LobbyTheme) in LOBBY_THEMES ? lobby?.theme : 'default') as LobbyTheme]
 
@@ -122,6 +108,12 @@ export default function LobbySettingsPanel({
 
   const openEditor = (key: EditableSettingKey) => {
     if (!canEditLobbySettings) return
+    if (key === 'gameType') {
+      // Game gets a full drill-down view instead of an inline rail.
+      setActiveSettingEditor(null)
+      setView('games')
+      return
+    }
     setActiveSettingEditor((prev) => (prev === key ? null : key))
   }
 
@@ -134,6 +126,7 @@ export default function LobbySettingsPanel({
     try {
       await onUpdateSettings(updates)
       setActiveSettingEditor(null)
+      setView('settings')
       showToast.success('profile.settings.saved')
     } catch (error) {
       showToast.errorFrom(error, 'toast.error')
@@ -149,6 +142,12 @@ export default function LobbySettingsPanel({
     value: string
     hostOnly?: boolean
   }> = [
+    {
+      key: 'gameType',
+      icon: gameMeta?.icon ?? '🎮',
+      label: t('lobby.changeGame'),
+      value: gameMeta?.name ?? '—',
+    },
     {
       key: 'maxPlayers',
       icon: '👥',
@@ -168,12 +167,6 @@ export default function LobbySettingsPanel({
       value: spectatorsLabel,
     },
     {
-      key: 'gameType',
-      icon: gameMeta?.icon ?? '🎮',
-      label: t('lobby.changeGame'),
-      value: gameMeta?.name ?? '—',
-    },
-    {
       key: 'theme',
       icon: (
         <span
@@ -187,10 +180,17 @@ export default function LobbySettingsPanel({
   ]
 
   return (
-    /* min-h-full + flex column: the rows share the leftover height evenly
-       (flex-grow with basis auto), so the panel fills its area instead of
-       leaving a dead gap under the last row on tall/narrow screens. */
-    <div ref={listRef} className="flex min-h-full flex-col space-y-2 px-4 py-4 sm:px-6">
+    <div className="relative h-full">
+      {/* Layer 1: the settings list. min-h-full + flex column: the rows share
+          the leftover height evenly (flex-grow with basis auto), so the panel
+          fills its area instead of leaving a dead gap under the last row. */}
+      <div
+        aria-hidden={view === 'games'}
+        className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+          view === 'games' ? 'pointer-events-none opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div className="flex min-h-full flex-col space-y-2 px-4 py-4 sm:px-6">
       {/* Panel header */}
       <div className="flex items-center justify-between pb-1">
         <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
@@ -210,7 +210,7 @@ export default function LobbySettingsPanel({
       {rows.map((row) => {
         const isActive = activeSettingEditor === row.key
         const chipClass = (selected: boolean, locked = false) =>
-          `flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+          `flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
             selected
               ? 'border-bd-ink bg-bd-ink text-bd-bg'
               : locked
@@ -231,7 +231,7 @@ export default function LobbySettingsPanel({
           >
             {/* min-h keeps the row height identical between the value state
                 and the (taller) chips state — no jump when opening. */}
-            <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="flex min-h-7 items-center gap-3">
               {/* Label — keyboard-accessible toggle (whole row is clickable too) */}
               <button
                 type="button"
@@ -254,8 +254,22 @@ export default function LobbySettingsPanel({
                   {canEditLobbySettings && <span className="shrink-0 text-bd-ink-muted">›</span>}
                 </span>
               ) : (
-                /* The value smoothly becomes the choice chips, inline in the row */
-                <div className="animate-fade-in ml-auto flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
+                /* The value smoothly becomes a single-line chip rail: it scrolls
+                   horizontally when options don't fit, so the row height NEVER
+                   changes — nothing to jerk on any screen, and it scales to any
+                   number of future games. */
+                <div
+                  ref={railRef}
+                  className="animate-fade-in ml-auto flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto"
+                  style={
+                    railOverflows
+                      ? {
+                          WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent 100%)',
+                          maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent 100%)',
+                        }
+                      : undefined
+                  }
+                >
                   {row.key === 'maxPlayers' &&
                     maxPlayersOptions.map((value) => (
                       <button
@@ -263,6 +277,7 @@ export default function LobbySettingsPanel({
                         type="button"
                         disabled={updatingSetting === 'maxPlayers' || value === maxPlayers}
                         onClick={() => void applySettingUpdate('maxPlayers', { maxPlayers: value })}
+                        data-selected={value === maxPlayers}
                         className={chipClass(value === maxPlayers)}
                       >
                         {value}
@@ -276,6 +291,7 @@ export default function LobbySettingsPanel({
                         type="button"
                         disabled={updatingSetting === 'turnTimer' || seconds === lobby?.turnTimer}
                         onClick={() => void applySettingUpdate('turnTimer', { turnTimer: seconds })}
+                        data-selected={seconds === lobby?.turnTimer}
                         className={chipClass(seconds === lobby?.turnTimer)}
                       >
                         {seconds}s
@@ -309,9 +325,8 @@ export default function LobbySettingsPanel({
                       </button>
                       {lobby?.allowSpectators && (
                         <>
-                          {/* Force the limit picker onto its own wrap line */}
-                          <span aria-hidden className="w-full" />
-                          <span className="text-[11px] font-semibold text-bd-mint-deep">{t('lobby.maxSpectatorsLabel')}</span>
+                          <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-bd-line" />
+                          <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold text-bd-mint-deep">{t('lobby.maxSpectatorsLabel')}</span>
                           {([0, 5, 10, 20] as const).map((limit) => {
                             const isLimitActive = (lobby?.maxSpectators ?? 0) === limit
                             return (
@@ -331,24 +346,6 @@ export default function LobbySettingsPanel({
                     </>
                   )}
 
-                  {row.key === 'gameType' &&
-                    availableGames.map((g) => {
-                      const meta = g.gameType ? getGameMetadata(g.gameType) : null
-                      const isGameActive = g.gameType === lobby?.gameType
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          disabled={updatingSetting === 'gameType' || isGameActive}
-                          onClick={() => g.gameType && void applySettingUpdate('gameType', { gameType: g.gameType })}
-                          className={chipClass(isGameActive)}
-                        >
-                          <span aria-hidden>{meta?.icon ?? '🎮'}</span>
-                          <span className="truncate">{meta?.name ?? g.id}</span>
-                        </button>
-                      )
-                    })}
-
                   {row.key === 'theme' &&
                     LOBBY_THEME_IDS.map((themeId) => {
                       const theme = LOBBY_THEMES[themeId]
@@ -367,6 +364,7 @@ export default function LobbySettingsPanel({
                             void applySettingUpdate('theme', { theme: themeId })
                           }}
                           title={isLocked ? '👑 Premium' : theme.name}
+                          data-selected={isThemeActive}
                           className={chipClass(isThemeActive, isLocked)}
                         >
                           <span
@@ -380,21 +378,88 @@ export default function LobbySettingsPanel({
                       )
                     })}
 
-                  {/* Collapse back to the value */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveSettingEditor(null)}
-                    aria-label={t('common.close')}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
-                  >
-                    ✕
-                  </button>
                 </div>
+              )}
+
+              {/* Collapse back to the value — pinned outside the scroll rail */}
+              {isActive && (
+                <button
+                  type="button"
+                  onClick={() => setActiveSettingEditor(null)}
+                  aria-label={t('common.close')}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
+                >
+                  ✕
+                </button>
               )}
             </div>
           </SettingRow>
         )
       })}
+        </div>
+      </div>
+
+      {/* Layer 2: the Games drill-down — a vertically scrollable list that
+          replaces the whole settings list (crossfade), scales to any number
+          of future games. */}
+      <div
+        aria-hidden={view !== 'games'}
+        className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+          view === 'games' ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        <div className="flex min-h-full flex-col space-y-2 px-4 py-4 sm:px-6">
+          <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setView('settings')}
+                aria-label={t('common.back')}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
+              >
+                ←
+              </button>
+              <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
+                <span aria-hidden className="text-base leading-none">{gameMeta?.icon ?? '🎮'}</span>
+                {t('lobby.changeGame')}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setView('settings')
+                onClose()
+              }}
+              aria-label={t('common.close')}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
+            >
+              ✕
+            </button>
+          </div>
+
+          {availableGames.map((g) => {
+            const meta = g.gameType ? getGameMetadata(g.gameType) : null
+            const isGameActive = g.gameType === lobby?.gameType
+            return (
+              <button
+                key={g.id}
+                type="button"
+                disabled={updatingSetting === 'gameType' || isGameActive}
+                onClick={() => g.gameType && void applySettingUpdate('gameType', { gameType: g.gameType })}
+                className={`flex w-full flex-[1_0_auto] items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors disabled:opacity-100 sm:px-4 ${
+                  isGameActive
+                    ? 'border-bd-mint/60 bg-bd-mint/12 cursor-default'
+                    : 'border-bd-line bg-bd-card-warm hover:border-bd-ink'
+                } ${updatingSetting === 'gameType' && !isGameActive ? 'opacity-50' : ''}`}
+              >
+                <span aria-hidden className="flex w-6 shrink-0 items-center justify-center text-base">{meta?.icon ?? '🎮'}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-bd-ink">{meta?.name ?? g.id}</span>
+                {isGameActive && <span className="shrink-0 text-sm font-bold text-bd-mint-deep">✓</span>}
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
