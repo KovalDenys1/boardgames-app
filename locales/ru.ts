@@ -1088,6 +1088,8 @@ const ru = {
       playerFallback: 'Игрок',
       startGame: 'Начать игру',
       addBotPlayer: 'Добавить бота',
+      tabPlayers: 'Игроки',
+      tabChat: 'Чат',
       slotInvite: 'Пригласить',
       slotAddBot: 'Бот',
       botDifficulty: 'Сложность бота',

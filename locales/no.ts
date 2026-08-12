@@ -1088,6 +1088,8 @@ const no = {
       playerFallback: 'Spiller',
       startGame: 'Start spill',
       addBotPlayer: 'Legg til bot-spiller',
+      tabPlayers: 'Spillere',
+      tabChat: 'Chat',
       slotInvite: 'Inviter',
       slotAddBot: 'Bot',
       botDifficulty: 'Bot-vanskelighetsgrad',

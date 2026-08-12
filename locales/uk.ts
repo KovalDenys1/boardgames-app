@@ -1090,6 +1090,8 @@ const uk: Translation = {
       playerFallback: 'Гравець',
       startGame: 'Почати гру',
       addBotPlayer: 'Додати бота',
+      tabPlayers: 'Гравці',
+      tabChat: 'Чат',
       slotInvite: 'Запросити',
       slotAddBot: 'Бот',
       botDifficulty: 'Складність бота',
