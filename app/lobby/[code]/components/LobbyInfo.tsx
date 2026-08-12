@@ -47,7 +47,12 @@ export default function LobbyInfo({
   const maxPlayers = typeof lobby?.maxPlayers === 'number' ? lobby.maxPlayers : 0
   const isPrivate = Boolean(lobby?.isPrivate)
   const isPlaying = game?.status === 'playing'
-  const creatorName = lobby?.creator?.username || t('lobby.ownerFallback')
+  // Auto-generated names ("Quick Play 5093") already contain the code — the
+  // clickable code chip next to the title is the single place it's shown.
+  const displayName = (() => {
+    const withoutCode = lobby.name?.replace(new RegExp(`\\s*${lobby.code}\\s*$`), '') ?? ''
+    return withoutCode.trim() || lobby.name
+  })()
   const spectatorsLabel = lobby?.allowSpectators
     ? t('lobby.spectators', { count: lobby?.spectatorCount ?? 0 })
     : t('game.ui.spectatorsDisabled')
@@ -146,9 +151,9 @@ export default function LobbyInfo({
       {/* Top row: game identity left, utility buttons right */}
       <div className="flex items-start gap-3">
 
-        {/* Game icon — 56 px focal point */}
+        {/* Game icon — compact on phones so the text column keeps its width */}
         <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-[28px] shadow-[3px_3px_0_var(--bd-ink)]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xl shadow-[2px_2px_0_var(--bd-ink)] sm:h-14 sm:w-14 sm:rounded-2xl sm:text-[28px] sm:shadow-[3px_3px_0_var(--bd-ink)]"
           aria-hidden="true"
         >
           {gameMeta?.icon ?? '🎮'}
@@ -156,40 +161,40 @@ export default function LobbyInfo({
 
         {/* Identity text */}
         <div className="min-w-0 flex-1">
-          {/* Breadcrumbs — ultra-compact */}
-          <nav className="mb-1.5 flex flex-wrap items-center gap-0.5 text-[10px] text-bd-ink-muted" aria-label="breadcrumb">
+          {/* Breadcrumbs — ultra-compact, single line (truncates instead of wrapping) */}
+          <nav className="mb-1.5 flex items-center gap-0.5 overflow-hidden whitespace-nowrap text-[10px] text-bd-ink-muted" aria-label="breadcrumb">
             <button
               onClick={() => router.push('/')}
               aria-label={t('common.goHome')}
-              className="rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
+              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
             >
               🏠 {t('breadcrumbs.home')}
             </button>
-            <span aria-hidden="true" className="opacity-30">›</span>
+            <span aria-hidden="true" className="shrink-0 opacity-30">›</span>
             <button
               onClick={() => router.push('/games')}
               aria-label={t('games.title')}
-              className="rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
+              className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
             >
               🎮 {t('breadcrumbs.games')}
             </button>
-            <span aria-hidden="true" className="opacity-30">›</span>
+            <span aria-hidden="true" className="shrink-0 opacity-30">›</span>
             <button
               onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
               aria-label={t('lobby.activeLobbies')}
-              className="rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
+              className="min-w-0 truncate rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
             >
               {gameMeta?.name ?? 'Game'}
             </button>
           </nav>
 
-          {/* Lobby name + clickable code chip */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Lobby name + clickable code chip + inline status chips */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h1
               className="truncate text-xl font-extrabold leading-tight tracking-tight text-bd-ink sm:text-2xl"
               style={{ fontFamily: 'var(--bd-font-display)' }}
             >
-              {lobby.name}
+              {displayName}
             </h1>
             {/* Code chip — clicking copies the invite link */}
             <button
@@ -199,18 +204,11 @@ export default function LobbyInfo({
             >
               {lobby.code}
             </button>
-          </div>
-
-          {/* Status chips */}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span className={`bd-chip text-[10px] px-2 py-0.5 ${isPrivate ? 'border-bd-coral/45 bg-bd-coral/15 text-bd-coral-deep' : 'bd-chip-mint'}`}>
               {isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
             </span>
             <span className="bd-chip text-[10px] px-2 py-0.5">
               {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
-            </span>
-            <span className="text-[10px] text-bd-ink-muted">
-              👤 {creatorName}
             </span>
           </div>
         </div>
