@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { sounds } from '@/lib/sounds'
 import { hasBotSupport } from '@/lib/game-catalog'
-import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 
@@ -10,44 +8,29 @@ interface WaitingRoomActionsProps {
   game: Game | null
   lobby: Lobby
   minPlayers: number
-  botDifficulty: BotDifficulty
   canStartGame: boolean
   startingGame: boolean
   onStartGame: () => void
-  onAddBot: () => void
-  onBotDifficultyChange: (difficulty: BotDifficulty) => void
-  onInviteFriends?: () => void
 }
 
 export default function WaitingRoomActions({
   game,
   lobby,
   minPlayers,
-  botDifficulty,
   canStartGame,
   startingGame,
   onStartGame,
-  onAddBot,
-  onBotDifficultyChange,
-  onInviteFriends,
 }: WaitingRoomActionsProps) {
   const { t } = useTranslation()
-  const [showSettings, setShowSettings] = useState(false)
 
   const playerCount = game?.players?.length || 0
   const maxPlayers = lobby?.maxPlayers || 4
   const hasBot = game?.players?.some((p: GamePlayer) => !!p.user?.bot)
   const supportsBots = hasBotSupport(lobby.gameType)
   const canAddMorePlayers = playerCount < maxPlayers
-  const canConfigureBots = supportsBots && canAddMorePlayers
   const canStartWithAutoBot = supportsBots && !hasBot && playerCount > 0 && playerCount < minPlayers && canAddMorePlayers
   const canStartImmediately = playerCount >= minPlayers || canStartWithAutoBot
   const creatorName = lobby?.creator?.username || t('lobby.ownerFallback')
-  const difficultyLabelMap: Record<BotDifficulty, string> = {
-    easy: t('game.ui.botDifficultyEasy'),
-    medium: t('game.ui.botDifficultyMedium'),
-    hard: t('game.ui.botDifficultyHard'),
-  }
 
   if (startingGame) {
     return (
@@ -86,27 +69,11 @@ export default function WaitingRoomActions({
     )
   }
 
-  // Host view
+  // Host view — invite/add-bot live inline in the player list's empty slots
+  // (WaitingRoom.tsx); this bar only carries lobby status + Start Game.
   return (
     <div className="flex-shrink-0 space-y-3 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
-      {/* Lobby full badge OR settings toggle */}
-      {canAddMorePlayers ? (
-        (canConfigureBots || onInviteFriends) && (
-          <button
-            onClick={() => {
-              sounds.play('click')
-              setShowSettings((s) => !s)
-            }}
-            className="bd-btn bd-btn-soft w-full justify-between px-3 py-2.5 text-sm"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span>⚙</span>
-              <span>{t('game.ui.settings')}</span>
-            </span>
-            <span className={`text-bd-ink-muted transition-transform duration-150 ${showSettings ? 'rotate-90' : ''}`}>›</span>
-          </button>
-        )
-      ) : (
+      {!canAddMorePlayers && (
         <div className="flex items-center justify-between rounded-xl border border-bd-mint/45 bg-bd-mint/15 px-4 py-2.5">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 relative">
@@ -116,70 +83,6 @@ export default function WaitingRoomActions({
             <span className="text-sm font-semibold text-bd-mint-deep">{t('game.ui.lobbyFull')}</span>
           </div>
           <span className="text-xs text-bd-mint-deep/75">{playerCount}/{maxPlayers}</span>
-        </div>
-      )}
-
-      {/* Collapsible settings panel */}
-      {showSettings && canAddMorePlayers && (
-        <div className="rounded-xl border border-bd-line bg-bd-bg2/60 px-3 py-3 space-y-3">
-          {/* Invite Friends */}
-          {onInviteFriends && (
-            <button
-              onClick={() => {
-                sounds.play('click')
-                onInviteFriends()
-              }}
-              className="bd-btn bd-btn-soft w-full justify-center px-3 py-2.5 text-sm"
-            >
-              <span className="inline-flex items-center justify-center gap-1.5">
-                <span>👥</span>
-                <span>{t('lobby.invite.title')}</span>
-              </span>
-            </button>
-          )}
-
-          {/* Add Bot */}
-          {supportsBots && (
-            <button
-              onClick={() => {
-                sounds.play('click')
-                onAddBot()
-              }}
-              className="bd-btn bd-btn-soft w-full justify-center px-3 py-2.5 text-sm"
-            >
-              <span className="inline-flex items-center justify-center gap-1.5">
-                <span>🤖</span>
-                <span>{t('game.ui.addBotPlayer')}</span>
-              </span>
-            </button>
-          )}
-
-          {/* Bot difficulty segmented control */}
-          {canConfigureBots && (
-            <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-bd-ink-muted">{t('game.ui.botDifficulty')}</p>
-              <div className="flex rounded-lg border border-bd-line bg-bd-bg2 p-0.5">
-                {BOT_DIFFICULTIES.map((difficulty) => (
-                  <button
-                    key={difficulty}
-                    type="button"
-                    onClick={() => {
-                      sounds.play('click')
-                      onBotDifficultyChange(difficulty)
-                    }}
-                    className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-all ${
-                      botDifficulty === difficulty
-                        ? 'bg-bd-ink text-bd-bg shadow-sm'
-                        : 'text-bd-ink-soft hover:text-bd-ink'
-                    }`}
-                    aria-pressed={botDifficulty === difficulty}
-                  >
-                    {difficultyLabelMap[difficulty]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

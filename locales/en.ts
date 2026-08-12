@@ -1088,6 +1088,8 @@ const en = {
       playerFallback: 'Player',
       startGame: 'Start Game',
       addBotPlayer: 'Add Bot Player',
+      slotInvite: 'Invite',
+      slotAddBot: 'Bot',
       botDifficulty: 'Bot difficulty',
       botDifficultyEasy: 'Easy',
       botDifficultyMedium: 'Medium',

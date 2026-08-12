@@ -1478,8 +1478,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     navigateAfterLeave()
   }
 
-  const handleAddBot = async () => {
-    await addBotToLobby({ difficulty: selectedBotDifficulty })
+  const handleAddBot = async (difficulty: BotDifficulty) => {
+    // Remember the choice so the auto-bot on Start Game uses the same level.
+    setSelectedBotDifficulty(difficulty)
+    await addBotToLobby({ difficulty })
   }
 
   const handleInviteFriends = useCallback(async (friendIds: string[]) => {
@@ -2021,6 +2023,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 onKickBot={kickBot}
                 onKickPlayer={kickPlayer}
                 onProfileClick={setProfileUserId}
+                onInviteFriends={canStartGame && !isGuest ? () => setShowFriendsModal(true) : undefined}
+                onAddBot={canStartGame ? handleAddBot : undefined}
               />
             </div>
             {/* Chat - mobile only, inside card */}
@@ -2048,13 +2052,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             game={game}
             lobby={lobby}
             minPlayers={minPlayersRequired}
-            botDifficulty={selectedBotDifficulty}
             canStartGame={canStartGame}
             startingGame={startingGame}
             onStartGame={handleStartGame}
-            onAddBot={handleAddBot}
-            onBotDifficultyChange={setSelectedBotDifficulty}
-            onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
           />
         </div>
       ) : (

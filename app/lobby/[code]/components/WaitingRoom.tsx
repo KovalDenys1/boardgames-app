@@ -1,11 +1,19 @@
+import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
-import type { BotDifficulty } from '@/lib/bot-profiles'
+import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { getLobbyTheme, type LobbyTheme } from '@/lib/lobby-themes'
 import { hasBotSupport } from '@/lib/game-catalog'
+import { sounds } from '@/lib/sounds'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 import TryBotGamesBanner from './TryBotGamesBanner'
+
+const BOT_DIFFICULTY_EMOJI: Record<BotDifficulty, string> = {
+  easy: '🙂',
+  medium: '😐',
+  hard: '😈',
+}
 
 interface WaitingRoomProps {
   game: Game | null
@@ -18,6 +26,8 @@ interface WaitingRoomProps {
   onKickBot?: (botPlayerId: string) => void
   onKickPlayer?: (playerId: string) => void
   onProfileClick?: (userId: string) => void
+  onInviteFriends?: () => void
+  onAddBot?: (difficulty: BotDifficulty) => Promise<void> | void
 }
 
 export default function WaitingRoom({
@@ -30,8 +40,12 @@ export default function WaitingRoom({
   onKickBot,
   onKickPlayer,
   onProfileClick,
+  onInviteFriends,
+  onAddBot,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
+  const [pickingBotDifficulty, setPickingBotDifficulty] = useState(false)
+  const [addingBot, setAddingBot] = useState(false)
 
   const playerCount = game?.players?.length || 0
   const maxPlayers = lobby?.maxPlayers || 4
@@ -143,14 +157,18 @@ export default function WaitingRoom({
         )
       })}
 
-      {/* Empty slots */}
+      {/* Empty slots — the first one carries the invite / add-bot actions */}
       {Array.from({ length: openSlots }).map((_, i) => {
         const isRequired = i < missingPlayers
         const isPulse = isRequired && i === 0
+        const showBotAction = i === 0 && !!onAddBot && !!canManageBots && hasBotSupport(lobby?.gameType)
+        const showInviteAction = i === 0 && !!onInviteFriends
+        const showActions = showBotAction || showInviteAction
+
         return (
           <div
             key={`empty-${i}`}
-            className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-4 sm:px-4"
+            className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
           >
             <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
               isPulse
@@ -159,9 +177,81 @@ export default function WaitingRoom({
             }`}>
               {playerCount + i + 1}
             </div>
-            <span className={`text-sm italic ${isRequired ? 'text-bd-ink-soft' : 'text-bd-ink-muted'}`}>
-              {isRequired ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
-            </span>
+
+            {showActions && pickingBotDifficulty ? (
+              /* Bot difficulty choice takes over the row — picking adds the bot */
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                {BOT_DIFFICULTIES.map((difficulty) => (
+                  <button
+                    key={difficulty}
+                    type="button"
+                    disabled={addingBot}
+                    onClick={async () => {
+                      sounds.play('click')
+                      setAddingBot(true)
+                      try {
+                        await onAddBot?.(difficulty)
+                      } finally {
+                        setAddingBot(false)
+                        setPickingBotDifficulty(false)
+                      }
+                    }}
+                    className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink disabled:opacity-50"
+                  >
+                    <span aria-hidden>{BOT_DIFFICULTY_EMOJI[difficulty]}</span>
+                    <span className="truncate">
+                      {t(`game.ui.botDifficulty${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` as Parameters<typeof t>[0])}
+                    </span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={addingBot}
+                  onClick={() => setPickingBotDifficulty(false)}
+                  aria-label={t('common.cancel')}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-coral/15 hover:text-bd-coral-deep disabled:opacity-50"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className={`min-w-0 flex-1 truncate text-sm italic ${isRequired ? 'text-bd-ink-soft' : 'text-bd-ink-muted'}`}>
+                  {isRequired ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
+                </span>
+                {showActions && (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {showInviteAction && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sounds.play('click')
+                          onInviteFriends?.()
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
+                      >
+                        <span aria-hidden>💌</span>
+                        <span>{t('game.ui.slotInvite')}</span>
+                      </button>
+                    )}
+                    {showBotAction && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sounds.play('click')
+                          setPickingBotDifficulty(true)
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
+                      >
+                        <span aria-hidden>🤖</span>
+                        <span>{t('game.ui.slotAddBot')}</span>
+                        <span aria-hidden className="text-bd-ink-muted">▾</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )
       })}
