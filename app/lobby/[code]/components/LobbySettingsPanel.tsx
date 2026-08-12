@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata, getCatalogAvailableGames } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -23,6 +23,44 @@ interface LobbySettingsPanelProps {
 }
 
 type EditableSettingKey = 'maxPlayers' | 'turnTimer' | 'allowSpectators' | 'theme' | 'gameType'
+
+/**
+ * Row wrapper that smoothly animates its own height whenever the content
+ * swap (value <-> choice chips) changes it — without this the row jumps.
+ * Runs after every render, measures, and animates only on an actual change.
+ */
+function AnimatedSettingRow({
+  className,
+  onClick,
+  children,
+}: {
+  className: string
+  onClick?: () => void
+  children: ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const previousHeight = useRef<number | null>(null)
+
+  useLayoutEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const newHeight = element.getBoundingClientRect().height
+    const oldHeight = previousHeight.current
+    previousHeight.current = newHeight
+    if (oldHeight === null || Math.abs(oldHeight - newHeight) < 1) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    element.animate(
+      [{ height: `${oldHeight}px` }, { height: `${newHeight}px` }],
+      { duration: 200, easing: 'ease-out' },
+    )
+  })
+
+  return (
+    <div ref={ref} onClick={onClick} className={`overflow-hidden ${className}`}>
+      {children}
+    </div>
+  )
+}
 
 export default function LobbySettingsPanel({
   lobby,
@@ -149,73 +187,78 @@ export default function LobbySettingsPanel({
 
       {rows.map((row) => {
         const isActive = activeSettingEditor === row.key
-        return (
-          <div key={row.key}>
-            <button
-              type="button"
-              onClick={() => openEditor(row.key)}
-              disabled={!canEditLobbySettings}
-              aria-expanded={canEditLobbySettings ? isActive : undefined}
-              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors sm:px-4 ${
-                isActive
-                  ? 'border-bd-mint/60 bg-bd-mint/12'
-                  : 'border-bd-line bg-bd-card-warm'
-              } ${canEditLobbySettings ? 'cursor-pointer hover:border-bd-ink' : 'cursor-default'}`}
-            >
-              <span aria-hidden className="flex w-6 shrink-0 items-center justify-center text-base">{row.icon}</span>
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-bd-ink">{row.label}</span>
-              <span className={`shrink-0 text-xs font-semibold ${isActive ? 'text-bd-mint-deep' : 'text-bd-ink-soft'}`}>{row.value}</span>
-              {canEditLobbySettings && (
-                <span className={`shrink-0 text-bd-ink-muted transition-transform duration-150 ${isActive ? 'rotate-90' : ''}`}>›</span>
-              )}
-            </button>
+        const chipClass = (selected: boolean, locked = false) =>
+          `flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            selected
+              ? 'border-bd-ink bg-bd-ink text-bd-bg'
+              : locked
+                ? 'border-bd-line bg-bd-bg2 text-bd-ink-muted cursor-not-allowed opacity-60'
+                : 'border-bd-line bg-bd-bg text-bd-ink hover:border-bd-ink'
+          }`
 
-            {/* Inline editor under the active row */}
-            {canEditLobbySettings && isActive && (
-              <div className="mt-1.5 rounded-xl border border-bd-mint/45 bg-bd-mint/10 px-3 py-3">
-                {row.key === 'maxPlayers' && (
-                  <div className="flex flex-wrap gap-2">
-                    {maxPlayersOptions.map((value) => (
+        return (
+          <AnimatedSettingRow
+            key={row.key}
+            /* The whole row opens the editor; while open it does nothing
+               (chip clicks bubble here harmlessly, closing is ✕ / label). */
+            onClick={canEditLobbySettings && !isActive ? () => openEditor(row.key) : undefined}
+            className={`rounded-xl border px-3 py-3 transition-colors sm:px-4 ${
+              isActive ? 'border-bd-mint/60 bg-bd-mint/12' : 'border-bd-line bg-bd-card-warm'
+            } ${canEditLobbySettings && !isActive ? 'cursor-pointer hover:border-bd-ink' : ''}`}
+          >
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* Label — keyboard-accessible toggle (whole row is clickable too) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openEditor(row.key)
+                }}
+                disabled={!canEditLobbySettings}
+                aria-expanded={canEditLobbySettings ? isActive : undefined}
+                className={`flex shrink-0 items-center gap-3 text-left ${canEditLobbySettings ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <span aria-hidden className="flex w-6 shrink-0 items-center justify-center text-base">{row.icon}</span>
+                <span className="text-sm font-semibold text-bd-ink">{row.label}</span>
+              </button>
+
+              {!isActive ? (
+                /* Value + chevron on the right */
+                <span className="ml-auto flex min-w-0 shrink items-center gap-1.5 text-right">
+                  <span className="truncate text-xs font-semibold text-bd-ink-soft">{row.value}</span>
+                  {canEditLobbySettings && <span className="shrink-0 text-bd-ink-muted">›</span>}
+                </span>
+              ) : (
+                /* The value smoothly becomes the choice chips, inline in the row */
+                <div className="animate-fade-in ml-auto flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
+                  {row.key === 'maxPlayers' &&
+                    maxPlayersOptions.map((value) => (
                       <button
                         key={value}
                         type="button"
                         disabled={updatingSetting === 'maxPlayers' || value === maxPlayers}
                         onClick={() => void applySettingUpdate('maxPlayers', { maxPlayers: value })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          value === maxPlayers
-                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                            : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={chipClass(value === maxPlayers)}
                       >
                         {value}
                       </button>
                     ))}
-                  </div>
-                )}
 
-                {row.key === 'turnTimer' && (
-                  <div className="flex flex-wrap gap-2">
-                    {turnTimerOptions.map((seconds) => (
+                  {row.key === 'turnTimer' &&
+                    turnTimerOptions.map((seconds) => (
                       <button
                         key={seconds}
                         type="button"
                         disabled={updatingSetting === 'turnTimer' || seconds === lobby?.turnTimer}
                         onClick={() => void applySettingUpdate('turnTimer', { turnTimer: seconds })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          seconds === lobby?.turnTimer
-                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                            : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={chipClass(seconds === lobby?.turnTimer)}
                       >
                         {seconds}s
                       </button>
                     ))}
-                  </div>
-                )}
 
-                {row.key === 'allowSpectators' && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
+                  {row.key === 'allowSpectators' && (
+                    <>
                       <button
                         type="button"
                         disabled={isPremium && (updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true)}
@@ -227,13 +270,7 @@ export default function LobbySettingsPanel({
                           void applySettingUpdate('allowSpectators', { allowSpectators: true })
                         }}
                         title={isPremium ? undefined : '👑 Premium'}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          lobby?.allowSpectators
-                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                            : !isPremium
-                              ? 'border-bd-line bg-bd-bg2 text-bd-ink-muted opacity-60'
-                              : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={chipClass(Boolean(lobby?.allowSpectators), !isPremium)}
                       >
                         {t('common.enabled')}{!isPremium && ' 👑'}
                       </button>
@@ -241,47 +278,36 @@ export default function LobbySettingsPanel({
                         type="button"
                         disabled={updatingSetting === 'allowSpectators' || lobby?.allowSpectators === false}
                         onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: false })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                          lobby?.allowSpectators === false
-                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                            : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={chipClass(lobby?.allowSpectators === false)}
                       >
                         {t('common.disabled')}
                       </button>
-                    </div>
-                    {lobby?.allowSpectators && (
-                      <div className="mt-3">
-                        <p className="mb-2 text-xs font-semibold text-bd-mint-deep">{t('lobby.maxSpectatorsLabel')}</p>
-                        <div className="flex flex-wrap gap-2">
+                      {lobby?.allowSpectators && (
+                        <>
+                          {/* Force the limit picker onto its own wrap line */}
+                          <span aria-hidden className="w-full" />
+                          <span className="text-[11px] font-semibold text-bd-mint-deep">{t('lobby.maxSpectatorsLabel')}</span>
                           {([0, 5, 10, 20] as const).map((limit) => {
-                            const current = lobby?.maxSpectators ?? 0
-                            const isLimitActive = current === limit
+                            const isLimitActive = (lobby?.maxSpectators ?? 0) === limit
                             return (
                               <button
                                 key={limit}
                                 type="button"
                                 disabled={updatingSetting === 'allowSpectators' || isLimitActive}
                                 onClick={() => void applySettingUpdate('allowSpectators', { maxSpectators: limit })}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                                  isLimitActive
-                                    ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                                    : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className={chipClass(isLimitActive)}
                               >
                                 {limit === 0 ? t('lobby.maxSpectatorsUnlimited') : String(limit)}
                               </button>
                             )
                           })}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+                        </>
+                      )}
+                    </>
+                  )}
 
-                {row.key === 'gameType' && (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {availableGames.map((g) => {
+                  {row.key === 'gameType' &&
+                    availableGames.map((g) => {
                       const meta = g.gameType ? getGameMetadata(g.gameType) : null
                       const isGameActive = g.gameType === lobby?.gameType
                       return (
@@ -290,27 +316,19 @@ export default function LobbySettingsPanel({
                           type="button"
                           disabled={updatingSetting === 'gameType' || isGameActive}
                           onClick={() => g.gameType && void applySettingUpdate('gameType', { gameType: g.gameType })}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
-                            isGameActive
-                              ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                              : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          className={chipClass(isGameActive)}
                         >
-                          <span>{meta?.icon ?? '🎮'}</span>
+                          <span aria-hidden>{meta?.icon ?? '🎮'}</span>
                           <span className="truncate">{meta?.name ?? g.id}</span>
                         </button>
                       )
                     })}
-                  </div>
-                )}
 
-                {row.key === 'theme' && (
-                  <div className="flex flex-wrap gap-2">
-                    {LOBBY_THEME_IDS.map((themeId) => {
+                  {row.key === 'theme' &&
+                    LOBBY_THEME_IDS.map((themeId) => {
                       const theme = LOBBY_THEMES[themeId]
                       const isThemeActive = (lobby?.theme ?? 'default') === themeId
-                      const isPremiumTheme = themeId !== FREE_LOBBY_THEME
-                      const isLocked = isPremiumTheme && !isPremium
+                      const isLocked = themeId !== FREE_LOBBY_THEME && !isPremium
                       return (
                         <button
                           key={themeId}
@@ -324,28 +342,32 @@ export default function LobbySettingsPanel({
                             void applySettingUpdate('theme', { theme: themeId })
                           }}
                           title={isLocked ? '👑 Premium' : theme.name}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                            isThemeActive
-                              ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                              : isLocked
-                                ? 'border-bd-line bg-bd-bg2 text-bd-ink-muted cursor-not-allowed opacity-60'
-                                : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          className={chipClass(isThemeActive, isLocked)}
                         >
                           <span
-                            className="inline-block h-3 w-3 rounded-full border border-bd-line/50 shrink-0"
+                            aria-hidden
+                            className="inline-block h-3 w-3 shrink-0 rounded-full border border-bd-line/50"
                             style={{ background: theme.accent }}
                           />
                           <span>{theme.name}</span>
-                          {isLocked && <span className="shrink-0">👑</span>}
+                          {isLocked && <span aria-hidden className="shrink-0">👑</span>}
                         </button>
                       )
                     })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+
+                  {/* Collapse back to the value */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingEditor(null)}
+                    aria-label={t('common.close')}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          </AnimatedSettingRow>
         )
       })}
     </div>
