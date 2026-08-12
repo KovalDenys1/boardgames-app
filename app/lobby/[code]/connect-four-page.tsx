@@ -1099,16 +1099,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         setChatInput('')
     }
 
-    const quickReact = (emoji: string) => {
-        if (isSpectator) return
-        const now = new Date()
-        const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
-        const myColor = isSpectator ? 'sky' : (myDisc === 1 ? 'coral' : 'sun')
-        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
-    }
-
     // ─── Sections ─────────────────────────────────────────────────────────────
 
     const headerSection = (
@@ -1307,11 +1297,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)' }}>
                 {!isSpectator && (
                     <>
-                        <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
-                            {['gg', 'nice', '😂', '🔥', '🤝'].map(e => (
-                                <button key={e} onClick={() => quickReact(e)} style={{ padding: '3px 8px', borderRadius: 999, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', fontSize: 11, cursor: 'pointer', fontWeight: 600, color: 'var(--bd-ink-soft)', fontFamily: 'inherit' }}>{e}</button>
-                            ))}
-                        </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                             <input
                                 style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
