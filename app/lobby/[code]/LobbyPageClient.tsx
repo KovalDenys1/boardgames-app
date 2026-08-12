@@ -99,6 +99,7 @@ import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
+import LeaveIcon from '@/components/LeaveIcon'
 
 function CenteredLoadingFallback() {
   return (
@@ -2178,7 +2179,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       aria-label={t('game.ui.leave')}
                       className="bd-btn-coral flex h-7 w-7 items-center justify-center !rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                     >
-                      🚪
+                      <LeaveIcon />
                     </button>
                   </div>
                 </div>
@@ -2243,7 +2244,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         aria-label={t('game.ui.leave')}
                         className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
-                        <span className="text-base">🚪</span>
+                        <LeaveIcon />
                         <span>{t('game.ui.leave')}</span>
                       </button>
                     </div>
