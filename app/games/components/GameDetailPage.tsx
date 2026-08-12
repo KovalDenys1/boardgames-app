@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useGuest } from '@/contexts/GuestContext'
 import PlayVsBotButton from './PlayVsBotButton'
 
 type DetailStep = {
@@ -94,6 +96,10 @@ export default function GameDetailPage({
   playVsBotGameType,
 }: GameDetailPageProps) {
   const { t } = useTranslation()
+  const { status } = useSession()
+  const { isGuest } = useGuest()
+  // The "you can play as a guest" pitch only makes sense for anonymous visitors.
+  const showGuestHint = status === 'unauthenticated' && !isGuest
   return (
     <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
@@ -105,10 +111,12 @@ export default function GameDetailPage({
           <span className="text-bd-ink">{gameName}</span>
         </nav>
 
-        <section className="bd-card relative mb-8 overflow-hidden p-6 sm:p-8">
-          <div className="bd-dot-grid pointer-events-none absolute inset-0 opacity-30" />
+        {/* No overflow-hidden here — the Play vs Bot dropdown must escape the
+            card; decorative layers clip themselves via rounded-[inherit]. */}
+        <section className="bd-card relative mb-8 p-6 sm:p-8">
+          <div className="bd-dot-grid pointer-events-none absolute inset-0 rounded-[inherit] opacity-30" />
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-1.5"
+            className="pointer-events-none absolute inset-x-0 top-0 h-1.5 rounded-t-[inherit]"
             style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
           />
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
@@ -219,9 +227,11 @@ export default function GameDetailPage({
               {t('games.startPlaying')}
             </Link>
           )}
-          <p className="mt-4 text-sm font-medium text-bd-ink-muted">
-            {primaryCtaDisabled ? t('games.stillBeingPolished') : t('games.noDownloadNeeded')}
-          </p>
+          {(primaryCtaDisabled || showGuestHint) && (
+            <p className="mt-4 text-sm font-medium text-bd-ink-muted">
+              {primaryCtaDisabled ? t('games.stillBeingPolished') : t('games.noDownloadNeeded')}
+            </p>
+          )}
         </div>
       </main>
       <Footer />
