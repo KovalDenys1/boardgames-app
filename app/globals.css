@@ -2266,10 +2266,17 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-mobile-board-wrap {
-  /* Constrain by both viewport width and available height below fixed chrome */
-  width: min(calc(100vw - 24px), calc(var(--game-h) - 220px));
-  max-height: calc(var(--game-h) - 220px);
+  /* The wrap is flex-sized by the mobile column, so its box IS the available
+     space — the .memory-grid @container rule below sizes the grid from cqh
+     (same approach as desktop's .memory-board-panel). No magic px budgets. */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   overflow: hidden;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* spy mobile (unchanged from existing) */
