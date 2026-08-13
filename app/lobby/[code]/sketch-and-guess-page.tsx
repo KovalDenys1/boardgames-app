@@ -494,7 +494,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
     const isFinished = lobby.game.status === 'finished'
 
     return (
-        <div className="h-[calc(100dvh-4rem)] overflow-y-auto" style={getThemePageStyle(lobby?.theme)}>
+        <div className="h-[var(--game-h)] overflow-y-auto" style={getThemePageStyle(lobby?.theme)}>
             <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
                 <div className="mx-auto max-w-5xl space-y-5">
                     <header className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">

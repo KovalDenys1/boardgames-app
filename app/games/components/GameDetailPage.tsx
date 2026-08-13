@@ -101,7 +101,7 @@ export default function GameDetailPage({
   // The "you can play as a guest" pitch only makes sense for anonymous visitors.
   const showGuestHint = status === 'unauthenticated' && !isGuest
   return (
-    <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto text-bd-ink">
+    <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
         <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label="Breadcrumb">
           <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>

@@ -113,7 +113,7 @@ const linkBtn: React.CSSProperties = {
 
 function pageBg(theme?: string): React.CSSProperties {
   return {
-    height: 'calc(100dvh - 4rem)',
+    height: 'var(--game-h)',
     overflowY: 'auto',
     padding: '14px 24px',
     fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',

@@ -54,7 +54,7 @@ function LobbyListPageContent() {
     {authGateDest && (
       <AuthGateModal dest={authGateDest} onClose={() => setAuthGateDest(null)} />
     )}
-    <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto">
+    <div className="bd-page bd-screen flex min-h-[var(--game-h)] flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
 
         {activeLobby && (

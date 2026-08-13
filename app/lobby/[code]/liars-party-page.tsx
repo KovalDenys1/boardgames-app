@@ -67,7 +67,7 @@ function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLe
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-waiting-room"
     >
       <h1 className="text-3xl font-bold text-white drop-shadow">🎭 {t('liarsParty.name')}</h1>
@@ -143,7 +143,7 @@ function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRema
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-claim-screen"
     >
       <div className="text-white/80 text-sm font-mono">
@@ -215,7 +215,7 @@ function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, o
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-eliminated-claim-screen"
     >
       <div
@@ -256,7 +256,7 @@ function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timer
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-challenge-screen"
     >
       <div className="text-white/80 text-sm font-mono">
@@ -321,7 +321,7 @@ function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, onLeav
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-eliminated-challenge-screen"
     >
       <div
@@ -367,7 +367,7 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500 overflow-y-auto"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500 overflow-y-auto"
       data-testid="liars-party-reveal-screen"
     >
       <div className="text-white/80 text-sm font-mono">
@@ -469,7 +469,7 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
+      className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-game-over-screen"
     >
       <div className="text-5xl">🎭</div>
@@ -762,7 +762,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   if (loading) {
     return (
-      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
+      <div className="flex min-h-[var(--game-h)] items-center justify-center">
         <LoadingSpinner />
       </div>
     )
@@ -900,7 +900,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
+    <div className="flex min-h-[var(--game-h)] items-center justify-center">
       <LoadingSpinner />
     </div>
   )

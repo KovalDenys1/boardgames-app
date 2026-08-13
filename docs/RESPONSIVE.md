@@ -174,7 +174,7 @@ Every UI change, before it is "done":
 | Rule + audit + baseline | — | this document | #733 ✅ |
 | Tokens + breakpoint decision | 64px hardcoded ×14, three breakpoints | `--bd-header-h`, `responsive-tokens.ts`, `desk:` = 1024 | #734 ✅ |
 | Tic-Tac-Toe + Connect Four | `.game-screen` + `.ttt-*` on `--game-h`, breakpoint 1024 | done | #745 ✅ |
-| Memory | `.memory-*` (position:fixed) | `.game-screen` | planned |
-| LobbyPageClient (Yahtzee/Alias/Spy/Sketch/RPS) | inline fixed + JS scroll-lock | `.game-screen` | planned |
-| Spy CSS, Liar's Party, spectate, fallbacks, remaining raw calcs | ad-hoc | `.page-shell` / `.game-screen`; baseline deleted | planned |
+| Memory | fills the in-game container, `--game-h` | done | #746 ✅ |
+| LobbyPageClient (Yahtzee/Alias/Spy/Sketch/RPS) | `.game-screen`, `desk:`, no scroll-lock | done | #747 ✅ |
+| Spy CSS, Liar's Party, spectate, fallbacks, remaining raw calcs | `var(--game-h)` everywhere | done | #748 ✅ |
 | Homepage one-off breakpoints (639/720/1059/1060/1120) | ad-hoc | optional, low priority | planned |

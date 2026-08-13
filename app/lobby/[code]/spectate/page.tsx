@@ -456,7 +456,7 @@ export default function SpectatorLobbyPage() {
 
   if (isPlayerInGame) {
     return (
-      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             🎮
@@ -476,7 +476,7 @@ export default function SpectatorLobbyPage() {
 
   if (isLimitReached) {
     return (
-      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             👥
@@ -497,7 +497,7 @@ export default function SpectatorLobbyPage() {
 
   if (loading) {
     return (
-      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
         <div className="bd-card flex w-full max-w-sm flex-col items-center gap-4 p-8 text-center">
           <LoadingSpinner size="lg" />
           <div>
@@ -511,7 +511,7 @@ export default function SpectatorLobbyPage() {
 
   if (!data) {
     return (
-      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             👀
@@ -658,7 +658,7 @@ export default function SpectatorLobbyPage() {
           isMidMatch={data.activeGame?.status === 'playing'}
         />
         {yahtzeeEngine ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,6fr)', gap: 16, padding: '16px', height: 'calc(100dvh - 64px - 48px)', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,6fr)', gap: 16, padding: '16px', height: 'calc(var(--game-h) - 48px)', overflow: 'hidden' }}>
             <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <YahtzeeGameBoard
                 gameEngine={yahtzeeEngine}
@@ -718,7 +718,7 @@ export default function SpectatorLobbyPage() {
   const players = activeGamePlayers
 
   return (
-    <div className="bd-page bd-screen min-h-[calc(100dvh-64px)] text-bd-ink">
+    <div className="bd-page bd-screen min-h-[var(--game-h)] text-bd-ink">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {isAdminView && (

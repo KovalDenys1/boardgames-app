@@ -1856,10 +1856,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
+    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
       <div id="bd-lobby-portal" className="contents" />
-     <div className={!isGameStarted ? 'mx-auto max-w-7xl flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
+     <div className={!isGameStarted ? 'mx-auto max-w-7xl flex min-h-[var(--game-h)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
 
       {!isInGame && !isGameStarted ? (
         /* Join Prompt - centered in full height */

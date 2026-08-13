@@ -189,15 +189,6 @@ html.dark {
   transform: translateX(-50%) rotate(-1.1deg);
 }
 
-@supports not (height: 100dvh) {
-  .page-shell {
-    height: calc(100vh - 64px);
-  }
-  .page-shell-full {
-    height: 100vh;
-  }
-}
-
 @media (max-width: 767px) {
   .home-hero-shell {
     align-items: flex-start;
