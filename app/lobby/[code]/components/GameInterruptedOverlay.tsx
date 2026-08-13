@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import LeaveIcon from '@/components/LeaveIcon'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface GameInterruptedOverlayProps {
@@ -33,7 +34,7 @@ export default function GameInterruptedOverlay({ playerName, reason, onRedirect 
         className="w-full max-w-xs rounded-3xl p-7 text-center shadow-2xl"
         style={{ background: 'var(--bd-bg)', border: '1.5px solid var(--bd-line)' }}
       >
-        <div className="mb-3 text-5xl">🚪</div>
+        <div className="mb-3 flex justify-center" style={{ color: 'var(--bd-ink-soft)' }}><LeaveIcon size={48} /></div>
 
         <h2 className="mb-2 text-lg font-bold text-bd-ink">
           {t('lobby.gameAbandoned')}

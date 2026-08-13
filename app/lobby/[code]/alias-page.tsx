@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -1057,7 +1058,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             confirmText={t('common.confirm')}
             cancelText={t('common.cancel')}
             variant="danger"
-            icon="🚪"
+            icon={<LeaveIcon size={28} />}
           />
         )}
       </div>
@@ -1249,7 +1250,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             confirmText={t('common.confirm')}
             cancelText={t('common.cancel')}
             variant="danger"
-            icon="🚪"
+            icon={<LeaveIcon size={28} />}
           />
         )}
       </>
@@ -1362,7 +1363,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             confirmText={t('common.confirm')}
             cancelText={t('common.cancel')}
             variant="danger"
-            icon="🚪"
+            icon={<LeaveIcon size={28} />}
           />
         )}
       </>
@@ -1523,7 +1524,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             confirmText={t('common.confirm')}
             cancelText={t('common.cancel')}
             variant="danger"
-            icon="🚪"
+            icon={<LeaveIcon size={28} />}
           />
         )}
       </>
@@ -1644,7 +1645,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           confirmText={t('common.confirm')}
           cancelText={t('common.cancel')}
           variant="danger"
-          icon="🚪"
+          icon={<LeaveIcon size={28} />}
         />
       </div>
     )

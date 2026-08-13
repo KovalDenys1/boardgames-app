@@ -2635,7 +2635,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         confirmText={t('common.confirm')}
         cancelText={t('common.cancel')}
         variant="danger"
-        icon="🚪"
+        icon={<LeaveIcon size={28} />}
       />
 
       {isGameStarted && (

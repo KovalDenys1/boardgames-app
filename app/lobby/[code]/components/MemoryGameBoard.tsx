@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import LeaveIcon from '@/components/LeaveIcon'
 import type { Move, Player } from '@/lib/game-engine'
 import type { MemoryCard, MemoryGameData, MemoryMoveRecord } from '@/lib/games/memory-game'
 import type { ChatMessagePayload } from '@/types/game'
@@ -852,7 +853,7 @@ export default function MemoryGameBoard({
             />
             {onLeave && (
               <button type="button" onClick={onLeave} aria-label={t('game.ui.leave')} className="memory-leave-button">
-                <span aria-hidden>🚪</span>
+                <LeaveIcon />
                 <span>{t('game.ui.leave')}</span>
               </button>
             )}
@@ -894,7 +895,7 @@ export default function MemoryGameBoard({
           })}
           {onLeave && (
             <button type="button" onClick={onLeave} aria-label={t('game.ui.leave')} className="memory-leave-button" style={{ flexShrink: 0 }}>
-              <span aria-hidden>🚪</span>
+              <LeaveIcon />
               <span>{t('game.ui.leave')}</span>
             </button>
           )}
@@ -1025,7 +1026,7 @@ export default function MemoryGameBoard({
               className="memory-leave-button"
               style={{ minHeight: 36, padding: '6px 10px', fontSize: 12, flexShrink: 0 }}
             >
-              <span aria-hidden>🚪</span>
+              <LeaveIcon />
             </button>
           )}
         </div>

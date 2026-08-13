@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -1375,7 +1376,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
                     variant="danger"
-                    icon="🚪"
+                    icon={<LeaveIcon size={28} />}
                 />
             )}
             {!isSpectator && resolvedStatus === 'playing' && (

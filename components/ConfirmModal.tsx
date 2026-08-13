@@ -12,7 +12,7 @@ interface ConfirmModalProps {
   confirmText?: string
   cancelText?: string
   variant?: 'danger' | 'warning' | 'info'
-  icon?: string
+  icon?: React.ReactNode
 }
 
 export default function ConfirmModal({
