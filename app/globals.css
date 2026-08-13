@@ -1491,10 +1491,15 @@ input[type="range"].slider-thumb::-moz-range-track {
   width: 100%;
 }
 .ttt-center-col {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   height: 100%;
+  min-height: 0;
+}
+.ttt-center-col > * { flex-shrink: 0; }
+.ttt-center-col > .ttt-board-card {
+  flex: 1 1 auto;
   min-height: 0;
 }
 .ttt-right-col {
@@ -1516,6 +1521,12 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-sizing: border-box;
 }
 .ttt-board-card {
+  /* The ONLY place board-cell math lives. The card is flex-sized by its
+     column (definite height), so container units are the real available
+     space on every screen. 80/98 = the board's own internal chrome only
+     (card/grid paddings, gaps, drop-arrow row) — no screen-chrome guesses. */
+  container-type: size;
+  --c4-cell: clamp(22px, min(calc((100cqw - 80px) / 7), calc((100cqh - 98px) / 6)), 52px);
   background: #FFF8EC;
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
@@ -1590,7 +1601,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Board */
 .ttt-board-wrap {
-  width: min(100%, 560px);
+  width: min(100%, calc(100cqh - 24px), 560px);
   aspect-ratio: 1;
   height: auto;
   display: flex;
@@ -1690,32 +1701,11 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 @media (min-width: 1024px) {
   .ttt-mobile-layout { display: none !important; }
-  /* Enable height-based container queries on the board card so the board
-     shrinks to fit on short-viewport tablets (e.g. landscape iPad). */
-  .ttt-board-card { container-type: size; }
-  .ttt-board-wrap { width: min(100%, 560px, calc(100cqh - 24px)); }
 }
 @media (max-width: 1023px) {
   .ttt-desktop-layout { display: none !important; }
   .ttt-mobile-layout {
     height: 100%;
-  }
-  /* The board card is flex:1/min-height:0 in the mobile column, so its box
-     IS the real available space — size boards from it with container queries
-     (same approach as the desktop block below) instead of guessing the
-     screen chrome with magic px budgets, which drifted and clipped boards
-     (#688 and again after the 1024-breakpoint move). */
-  .ttt-mobile-content .ttt-board-card { container-type: size; }
-  .ttt-board-wrap {
-    width: min(100cqw, 100cqh);
-    height: auto;
-  }
-  /* Connect Four: 7 cols x 6 rows. Internal chrome only — horizontal:
-     card padding 24 + grid padding 16 + column gaps 36 = 76 (+4 buffer);
-     vertical: card padding 24 + arrow row 24 + grid padding 16 +
-     row gaps 30 = 94 (+4 buffer). */
-  .ttt-board-card {
-    --c4-cell: min(calc((100cqw - 80px) / 7), calc((100cqh - 98px) / 6));
   }
 }
 
