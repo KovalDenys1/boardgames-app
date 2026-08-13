@@ -118,17 +118,20 @@ html.dark {
 /* In-game screen shell: board + chrome under the header. Height-based on
    purpose — never position:fixed (worst iOS address-bar behavior, see
    docs/RESPONSIVE.md). Game families size their boards from --game-h. */
-.game-screen {
+:root {
   --game-h: calc(100vh - var(--bd-header-h));
-  height: var(--game-h);
-  overflow: hidden;
-  box-sizing: border-box;
 }
 
 @supports (height: 100dvh) {
-  .game-screen {
+  :root {
     --game-h: calc(100dvh - var(--bd-header-h));
   }
+}
+
+.game-screen {
+  height: var(--game-h);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 /* @responsive-primitives-end */
 
@@ -1765,19 +1768,15 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 /* Memory game surface — fixed below the nav, fills viewport, no page-flow hacks needed */
+/* Fills the in-game container (which owns the viewport height) — never
+   position:fixed (worst iOS address-bar behavior, docs/RESPONSIVE.md). */
 .memory-screen {
-  --memory-h: calc(100dvh - 64px);
-  position: fixed;
-  top: 64px;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  height: 100%;
   overflow: hidden;
   padding: 10px 20px 14px;
   background: var(--bd-bg);
   color: var(--bd-ink);
   box-sizing: border-box;
-  z-index: 1;
 }
 
 .memory-shell {
@@ -2197,12 +2196,12 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ===== MEMORY GAME — MOBILE LAYOUT ===== */
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .memory-desktop-layout { display: none !important; }
   .memory-mobile-layout  { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
   .memory-screen {
-    /* position: fixed already handles placement — just adjust padding and add flex */
+    /* the parent in-game container owns placement — just adjust padding and add flex */
     padding: 4px 0 0 0;
     display: flex;
     flex-direction: column;
@@ -2277,13 +2276,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .memory-mobile-board-wrap {
   /* Constrain by both viewport width and available height below fixed chrome */
-  width: min(calc(100vw - 24px), calc(var(--memory-h) - 220px));
-  max-height: calc(var(--memory-h) - 220px);
+  width: min(calc(100vw - 24px), calc(var(--game-h) - 220px));
+  max-height: calc(var(--game-h) - 220px);
   overflow: hidden;
 }
 
 /* spy mobile (unchanged from existing) */
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .spy-screen {
     padding: 10px;
   }

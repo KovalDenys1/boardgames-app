@@ -17,22 +17,12 @@
   {
     "file": "app/globals.css",
     "check": "R1",
-    "count": 2
+    "count": 1
   },
   {
     "file": "app/globals.css",
     "check": "R2",
-    "count": 9
-  },
-  {
-    "file": "app/globals.css",
-    "check": "R4",
-    "count": 1
-  },
-  {
-    "file": "app/globals.css",
-    "check": "R7",
-    "count": 1
+    "count": 7
   },
   {
     "file": "app/lobby/[code]/alias-page.tsx",
