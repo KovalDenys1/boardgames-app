@@ -100,6 +100,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
+import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 
 function CenteredLoadingFallback() {
   return (
@@ -1693,7 +1694,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
-    const isMobileViewport = window.matchMedia('(max-width: 767px)').matches
+    const isMobileViewport = window.matchMedia(MOBILE_MAX_MEDIA_QUERY).matches
     if (!isMobileViewport) {
       return
     }
@@ -1807,48 +1808,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
 
-  // Stabilize viewport/layout when game view mounts on mobile/tablet.
-  // Avoid hard reflow hacks (e.g. toggling body display) that can cause horizontal drift on iOS.
-  useEffect(() => {
-    if (!isGameStarted || typeof window === 'undefined') return
-
-    const { documentElement, body } = document
-    const prevHtmlOverflowX = documentElement.style.overflowX
-    const prevBodyOverflowX = body.style.overflowX
-    const prevHtmlOverflowY = documentElement.style.overflowY
-    const prevBodyOverflowY = body.style.overflowY
-
-    // Prevent page scroll while the fixed full-screen game viewport is active.
-    // Locking overflowY stops mobile Safari from toggling the address bar,
-    // which causes dvh to change and shifts the fixed game panel off-screen.
-    documentElement.style.overflowX = 'hidden'
-    body.style.overflowX = 'hidden'
-    documentElement.style.overflowY = 'hidden'
-    body.style.overflowY = 'hidden'
-
-    let raf1 = 0
-    let raf2 = 0
-
-    // Wait until layout settles, then normalize viewport scroll and notify listeners.
-    raf1 = window.requestAnimationFrame(() => {
-      raf2 = window.requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-        documentElement.scrollLeft = 0
-        body.scrollLeft = 0
-        window.dispatchEvent(new Event('resize'))
-      })
-    })
-
-    return () => {
-      window.cancelAnimationFrame(raf1)
-      window.cancelAnimationFrame(raf2)
-      documentElement.style.overflowX = prevHtmlOverflowX
-      body.style.overflowX = prevBodyOverflowX
-      documentElement.style.overflowY = prevHtmlOverflowY
-      body.style.overflowY = prevBodyOverflowY
-    }
-  }, [isGameStarted])
-
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
@@ -1900,7 +1859,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
       <div id="bd-lobby-portal" className="contents" />
-     <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
+     <div className={!isGameStarted ? 'mx-auto max-w-7xl flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
 
       {!isInGame && !isGameStarted ? (
         /* Join Prompt - centered in full height */
@@ -2076,18 +2035,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           />
         </div>
       ) : (
-        // Game Started - Mobile-optimized viewport
+        // Game Started - the shared .game-screen shell owns the viewport
+        // height (docs/RESPONSIVE.md) - no position:fixed, no scroll-lock.
         <div
-          className="flex flex-col overflow-hidden"
+          className="game-screen flex flex-col"
           style={{
             background: 'var(--bd-bg)',
-            position: 'fixed' as const,
-            top: '4rem',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100%',
-            height: 'calc(100dvh - 4rem)',
             overscrollBehavior: 'none',
           }}
         >
@@ -2255,7 +2208,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {/* Main Game Area - More spacing between columns */}
               <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
-                <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
+                <div className="hidden desk:grid grid-cols-1 desk:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
                   <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
                     <GameBoard
@@ -2350,7 +2303,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Mobile: Tabbed Layout */}
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="lg:hidden relative"
+                  className="desk:hidden relative"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2473,7 +2426,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
               {/* Desktop Chat - Minimized Button */}
               {hasMultipleHumans && (
-              <div className="hidden lg:block">
+              <div className="hidden desk:block">
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -357,16 +358,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [gameEngine, setGameEngine] = useState<AliasGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const isMobile = useIsMobileViewport()
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)')
-    setIsMobile(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
 
   // Live timer
   const [remaining, setRemaining] = useState(0)
