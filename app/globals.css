@@ -1700,22 +1700,22 @@ input[type="range"].slider-thumb::-moz-range-track {
   .ttt-mobile-layout {
     height: 100%;
   }
-  /* overhead = screen-padding(24) + header(80) + status(50) + tabs(46) + gaps(40) + actions(48) + card-padding(24) + buffer(13) */
+  /* The board card is flex:1/min-height:0 in the mobile column, so its box
+     IS the real available space — size boards from it with container queries
+     (same approach as the desktop block below) instead of guessing the
+     screen chrome with magic px budgets, which drifted and clipped boards
+     (#688 and again after the 1024-breakpoint move). */
+  .ttt-mobile-content .ttt-board-card { container-type: size; }
   .ttt-board-wrap {
-    width: min(calc(100vw - 52px), calc(var(--game-h) - 325px));
+    width: min(100cqw, 100cqh);
     height: auto;
   }
-  /* Connect Four's board is 7 cols x 6 rows, not square like TTT's 3x3 — sizing
-     cells from 100vw alone (its original formula) ignores vertical space
-     entirely, so the board's real height (6 rows tall) can run past the
-     bottom of the screen and get clipped by .ttt-board-card's overflow:hidden
-     on shorter phone viewports (confirmed live on a real iPhone, #688).
-     Overhead = .ttt-board-wrap's 325px budget above (identical header/status/
-     tabs/actions shell) + this board's own 28px drop-arrow row + the grid's
-     own 46px of internal padding(16)/row-gaps(30) that .ttt-board-wrap doesn't
-     need to account for separately (its square sizing wraps the whole card). */
+  /* Connect Four: 7 cols x 6 rows. Internal chrome only — horizontal:
+     card padding 24 + grid padding 16 + column gaps 36 = 76 (+4 buffer);
+     vertical: card padding 24 + arrow row 24 + grid padding 16 +
+     row gaps 30 = 94 (+4 buffer). */
   .ttt-board-card {
-    --c4-cell: min(calc((100vw - 104px) / 7), calc((var(--game-h) - 420px) / 6));
+    --c4-cell: min(calc((100cqw - 80px) / 7), calc((100cqh - 98px) / 6));
   }
 }
 

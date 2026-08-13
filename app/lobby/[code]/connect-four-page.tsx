@@ -180,8 +180,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                 disabled={disabled || colFull}
                                 aria-label={`column ${c + 1}`}
                                 style={{
-                                    width: 'clamp(30px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
-                                    height: 'clamp(30px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
+                                    width: 'clamp(22px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
+                                    height: 'clamp(22px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
                                     background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
@@ -410,10 +410,9 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
         }}>
         <div style={{
             margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 16, padding: 24, width: '100%',
+            gap: 10, padding: 16, width: '100%',
         }}>
-            <div style={{ fontSize: 40 }}>{isDraw ? '🤝' : isMyWin ? '🏆' : '😔'}</div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, color: 'white', textAlign: 'center' }}>
                 {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
