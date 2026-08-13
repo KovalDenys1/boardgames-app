@@ -58,7 +58,7 @@ one-line change plus audit-guided CSS fixes.
 |---|---|---|
 | `.page-shell` | Full-height app page under the header (incl. loading/error/fallback screens) | exists (`globals.css`) |
 | `.page-shell-full` | Full-height page without the header | exists |
-| `.game-screen` family (`--game-h`) | In-game screen: board + chrome, mobile tabs + desktop grid | pending — until it lands, copy the `.ttt-*` family |
+| `.game-screen` family (`--game-h`) | In-game screen: board + chrome, mobile tabs + desktop grid | live (#745) — pair with a per-game skin class (`.ttt-screen`) |
 | `MobileTabs` / `MobileTabPanel` | Mobile in-game navigation (`app/lobby/[code]/components/`) | exists |
 | Height-aware cell sizing idiom | Any multi-row board | exists (see below) |
 
@@ -87,7 +87,7 @@ Rules that apply to all of them:
 |---|---|
 | Regular page (lists, profile, auth, lobby browser) | `.page-shell` |
 | Loading / error / fallback screen | `.page-shell` (same as the page it replaces) |
-| In-game screen (any game) | `.game-screen` family (until it lands: `.ttt-*`) |
+| In-game screen (any game) | `.game-screen` (+ per-game skin; layout family: `.ttt-*` for board games) |
 | In-game mobile navigation | `MobileTabs` + `MobileTabPanel` |
 | Header offset in any calc | `var(--bd-header-h)` / `HEADER_HEIGHT_PX` |
 | Mobile/desktop conditional in TSX | `useIsMobileViewport()` — never raw `matchMedia('(max-width: Npx)')` |
@@ -173,7 +173,7 @@ Every UI change, before it is "done":
 |---|---|---|---|
 | Rule + audit + baseline | — | this document | #733 ✅ |
 | Tokens + breakpoint decision | 64px hardcoded ×14, three breakpoints | `--bd-header-h`, `responsive-tokens.ts`, `desk:` = 1024 | #734 ✅ |
-| Tic-Tac-Toe + Connect Four | `.ttt-*` | `.game-screen` | planned |
+| Tic-Tac-Toe + Connect Four | `.game-screen` + `.ttt-*` on `--game-h`, breakpoint 1024 | done | #745 ✅ |
 | Memory | `.memory-*` (position:fixed) | `.game-screen` | planned |
 | LobbyPageClient (Yahtzee/Alias/Spy/Sketch/RPS) | inline fixed + JS scroll-lock | `.game-screen` | planned |
 | Spy CSS, Liar's Party, spectate, fallbacks, remaining raw calcs | ad-hoc | `.page-shell` / `.game-screen`; baseline deleted | planned |

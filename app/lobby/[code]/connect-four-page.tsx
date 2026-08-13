@@ -399,11 +399,17 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
+        // Outer layer scrolls; the inner wrapper's margin:auto centers the
+        // content when it fits and lets it scroll from the top when it
+        // doesn't — the buttons can never be clipped on short screens (#737).
         <div style={{
             position: 'absolute', inset: 0, borderRadius: 16,
-            background: 'rgba(31,27,22,0.82)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 16, padding: 24, backdropFilter: 'blur(4px)',
+            background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
+            display: 'flex', overflowY: 'auto',
+        }}>
+        <div style={{
+            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 16, padding: 24, width: '100%',
         }}>
             <div style={{ fontSize: 40 }}>{isDraw ? '🤝' : isMyWin ? '🏆' : '😔'}</div>
             <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center' }}>
@@ -471,6 +477,7 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
                     <GuestConversionNudge registerUrl={registerUrl} />
                 </div>
             )}
+        </div>
         </div>
     )
 }
@@ -556,7 +563,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
-    const [isMobile, setIsMobile] = useState(false)
     const [overlayInspecting, setOverlayInspecting] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
@@ -957,14 +963,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         }
     }, [code, getCurrentUserId, lobby, onGameReset, router])
 
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 899px)')
-        setIsMobile(mq.matches)
-        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-        mq.addEventListener('change', handler)
-        return () => mq.removeEventListener('change', handler)
-    }, [])
-
     // Scroll chat to bottom
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
@@ -1316,7 +1314,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const themeStyle = getThemePageStyle(lobby.theme)
 
     return (
-        <div className="ttt-screen" style={themeStyle}>
+        <div className="game-screen ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">

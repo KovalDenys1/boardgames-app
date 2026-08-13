@@ -114,6 +114,22 @@ html.dark {
     height: 100dvh;
   }
 }
+
+/* In-game screen shell: board + chrome under the header. Height-based on
+   purpose — never position:fixed (worst iOS address-bar behavior, see
+   docs/RESPONSIVE.md). Game families size their boards from --game-h. */
+.game-screen {
+  --game-h: calc(100vh - var(--bd-header-h));
+  height: var(--game-h);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@supports (height: 100dvh) {
+  .game-screen {
+    --game-h: calc(100dvh - var(--bd-header-h));
+  }
+}
 /* @responsive-primitives-end */
 
 /* Homepage viewport shells: fill the first view, but let content grow naturally. */
@@ -1457,13 +1473,11 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ============ END BD SHARED CLASSES ============ */
 
+/* Visual skin for the shared .game-screen primitive (docs/RESPONSIVE.md) —
+   the screen height/overflow and --game-h come from .game-screen. */
 .ttt-screen {
-  --ttt-h: calc(100dvh - 64px);
-  height: var(--ttt-h);
   padding: 10px 20px 14px;
-  overflow: hidden;
   background: var(--bd-bg);
-  box-sizing: border-box;
 }
 
 /* Desktop layout */
@@ -1680,25 +1694,21 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .ttt-tab.ttt-tab-active { background: var(--bd-ink); color: var(--bd-bg); }
 
-@media (min-width: 900px) {
+@media (min-width: 1024px) {
   .ttt-mobile-layout { display: none !important; }
   /* Enable height-based container queries on the board card so the board
      shrinks to fit on short-viewport tablets (e.g. landscape iPad). */
   .ttt-board-card { container-type: size; }
   .ttt-board-wrap { width: min(100%, 560px, calc(100cqh - 24px)); }
 }
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .ttt-desktop-layout { display: none !important; }
-  .ttt-screen {
-    height: var(--ttt-h);
-    overflow: hidden;
-  }
   .ttt-mobile-layout {
     height: 100%;
   }
   /* overhead = screen-padding(24) + header(80) + status(50) + tabs(46) + gaps(40) + actions(48) + card-padding(24) + buffer(13) */
   .ttt-board-wrap {
-    width: min(calc(100vw - 52px), calc(var(--ttt-h) - 325px));
+    width: min(calc(100vw - 52px), calc(var(--game-h) - 325px));
     height: auto;
   }
   /* Connect Four's board is 7 cols x 6 rows, not square like TTT's 3x3 — sizing
@@ -1709,12 +1719,9 @@ input[type="range"].slider-thumb::-moz-range-track {
      Overhead = .ttt-board-wrap's 325px budget above (identical header/status/
      tabs/actions shell) + this board's own 28px drop-arrow row + the grid's
      own 46px of internal padding(16)/row-gaps(30) that .ttt-board-wrap doesn't
-     need to account for separately (its square sizing wraps the whole card).
-     Not live-verified against a real device this session (tooling outage) —
-     erred toward a larger overhead (safety buffer ~20px) so a slightly-smaller
-     board is the failure mode, not a re-cropped one. */
+     need to account for separately (its square sizing wraps the whole card). */
   .ttt-board-card {
-    --c4-cell: min(calc((100vw - 104px) / 7), calc((var(--ttt-h) - 420px) / 6));
+    --c4-cell: min(calc((100vw - 104px) / 7), calc((var(--game-h) - 420px) / 6));
   }
 }
 

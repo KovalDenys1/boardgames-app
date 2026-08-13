@@ -269,11 +269,17 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
         border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
     }
     return (
+        // Outer layer scrolls; the inner wrapper's margin:auto centers the
+        // content when it fits and lets it scroll from the top when it
+        // doesn't — the buttons can never be clipped on short screens (#737).
         <div style={{
             position: 'absolute', inset: 0, borderRadius: 'inherit',
             background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 4, padding: 24,
+            display: 'flex', overflowY: 'auto',
+        }}>
+        <div style={{
+            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 4, padding: 24, width: '100%',
         }}>
             {isDraw ? (
                 <div style={{ fontSize: 40, marginBottom: 8 }}>🤝</div>
@@ -337,6 +343,7 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
                     <GuestConversionNudge registerUrl={registerUrl} />
                 </div>
             )}
+        </div>
         </div>
     )
 }
@@ -1335,7 +1342,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const themeStyle = getThemePageStyle(lobby.theme)
 
     return (
-        <div className="ttt-screen" style={themeStyle}>
+        <div className="game-screen ttt-screen" style={themeStyle}>
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
