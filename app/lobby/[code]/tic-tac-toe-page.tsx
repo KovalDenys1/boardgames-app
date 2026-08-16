@@ -1369,9 +1369,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 {requestSection}
                 <div className="ttt-tabs">
                     {([
-                        { id: 'board', label: 'Board' },
-                        { id: 'history', label: `Moves (${moveHistory.length})` },
-                        { id: 'chat', label: 'Chat' },
+                        { id: 'board', label: t('game.ui.tabBoard') },
+                        { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                        { id: 'chat', label: t('game.ui.tabChat') },
                     ] as const).map(tab => (
                         <button
                             key={tab.id}

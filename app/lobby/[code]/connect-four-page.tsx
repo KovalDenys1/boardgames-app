@@ -281,7 +281,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
                             background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
                             boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-                        }}>WIN</span>
+                        }}>{t('games.connect_four.game.winBadge')}</span>
                     )}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>
@@ -1111,7 +1111,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
                     </div>
                     <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                        wins
+                        {t('games.connect_four.game.winsLabel')}
                     </div>
                 </div>
                 <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} isPremium={p2IsPremium} t={t} />
@@ -1339,9 +1339,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 {requestSection}
                 <div className="ttt-tabs">
                     {([
-                        { id: 'board', label: 'Board' },
-                        { id: 'history', label: `Moves (${moveHistory.length})` },
-                        { id: 'chat', label: 'Chat' },
+                        { id: 'board', label: t('game.ui.tabBoard') },
+                        { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                        { id: 'chat', label: t('game.ui.tabChat') },
                     ] as const).map(tab => (
                         <button
                             key={tab.id}

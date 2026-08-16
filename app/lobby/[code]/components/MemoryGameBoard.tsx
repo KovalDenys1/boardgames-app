@@ -146,19 +146,11 @@ function MemoryResultModal({
     width: '100%',
   }
 
-  const title = isDraw
-    ? t('games.memory.game.tieLabel')
-    : isMyWin
-      ? t('lobby.game.playAgain').replace('Play Again', 'You win!')  // fallback
-      : t('games.memory.game.winnerLabel', { player: winnerName })
-
   const displayTitle = isDraw
     ? t('games.memory.game.tieLabel')
     : isMyWin
-      ? '🎉 You win!'
+      ? t('games.memory.game.youWin')
       : t('games.memory.game.winnerLabel', { player: winnerName })
-
-  void title
 
   return (
     // Outer layer scrolls; the inner wrapper's margin:auto centers the content
@@ -197,7 +189,7 @@ function MemoryResultModal({
           textTransform: 'uppercase',
         }}
       >
-        ROUND OVER
+        {t('games.memory.game.roundOver')}
       </p>
 
       {isDraw ? (
