@@ -161,6 +161,9 @@ function MemoryResultModal({
   void title
 
   return (
+    // Outer layer scrolls; the inner wrapper's margin:auto centers the content
+    // when it fits and lets it scroll from the top when it doesn't — the
+    // buttons can never be clipped on short screens (#737 pattern, #752).
     <div
       style={{
         position: 'absolute',
@@ -169,12 +172,19 @@ function MemoryResultModal({
         background: 'rgba(31,27,22,0.82)',
         backdropFilter: 'blur(4px)',
         display: 'flex',
+        overflowY: 'auto',
+        zIndex: 10,
+      }}
+    >
+    <div
+      style={{
+        margin: 'auto',
+        display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: 14,
         padding: '20px 16px',
-        zIndex: 10,
+        width: '100%',
       }}
     >
       <p
@@ -282,6 +292,7 @@ function MemoryResultModal({
           <GuestConversionNudge registerUrl={registerUrl} />
         </div>
       )}
+    </div>
     </div>
   )
 }
@@ -1066,40 +1077,43 @@ export default function MemoryGameBoard({
         {/* Tab content */}
         <div className="memory-mobile-content">
           {mobileTab === 'board' && (
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' }}>
-              <div className="memory-mobile-board-wrap" style={{ position: 'relative' }}>
+            // The overlay mounts on this full board area (not inside the grid
+            // wrap) so the result modal covers the whole tab, not just the
+            // grid — on small grids the modal used to shrink with it (#752).
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px', position: 'relative' }}>
+              <div className="memory-mobile-board-wrap">
                 {cardGrid}
-                {isFinished && !overlayInspecting && !isSpectator && (
-                  <MemoryResultModal
-                    winnerId={winnerId}
-                    winnerName={winnerName}
-                    isDraw={isDraw}
-                    isMyWin={isMyWin}
-                    canStartGame={!!canStartGame}
-                    onPlayAgain={onPlayAgain}
-                    onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
-                    onLeave={onLeave}
-                    onInspect={() => setOverlayInspecting(true)}
-                    isGuest={isGuest}
-                    registerUrl={registerUrl}
-                    t={t}
-                  />
-                )}
-                {isFinished && overlayInspecting && (
-                  <button
-                    onClick={() => setOverlayInspecting(false)}
-                    style={{
-                      position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-                      background: 'rgba(31,27,22,0.75)', color: '#fff',
-                      border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
-                      padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                      zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {t('games.memory.game.showResults')}
-                  </button>
-                )}
               </div>
+              {isFinished && !overlayInspecting && !isSpectator && (
+                <MemoryResultModal
+                  winnerId={winnerId}
+                  winnerName={winnerName}
+                  isDraw={isDraw}
+                  isMyWin={isMyWin}
+                  canStartGame={!!canStartGame}
+                  onPlayAgain={onPlayAgain}
+                  onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
+                  onLeave={onLeave}
+                  onInspect={() => setOverlayInspecting(true)}
+                  isGuest={isGuest}
+                  registerUrl={registerUrl}
+                  t={t}
+                />
+              )}
+              {isFinished && overlayInspecting && (
+                <button
+                  onClick={() => setOverlayInspecting(false)}
+                  style={{
+                    position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+                    background: 'rgba(31,27,22,0.75)', color: '#fff',
+                    border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
+                    padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t('games.memory.game.showResults')}
+                </button>
+              )}
             </div>
           )}
 
