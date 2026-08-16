@@ -1332,6 +1332,22 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 </div>
             </div>
 
+            {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
+            {/* Mounted before the mobile tree so refs attached inside shared
+                sections (chatRef) keep landing on the mobile copy. */}
+            <div className="ttt-landscape-layout">
+                <div className="ttt-landscape-board">
+                    {renderBoardSection()}
+                </div>
+                <div className="ttt-landscape-side">
+                    {headerSection}
+                    {statusSection}
+                    {requestSection}
+                    {chatSection}
+                    {actionsSection}
+                </div>
+            </div>
+
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
                 {headerSection}

@@ -26,3 +26,11 @@ export const MOBILE_MAX_WIDTH_PX = DESKTOP_MIN_WIDTH_PX - 1
 export const MOBILE_MAX_MEDIA_QUERY = `(max-width: ${MOBILE_MAX_WIDTH_PX}px)`
 
 export const DESKTOP_MIN_MEDIA_QUERY = `(min-width: ${DESKTOP_MIN_WIDTH_PX}px)`
+
+/**
+ * Phone landscape: a mobile-width viewport that is wider than tall. Within
+ * mobile widths, orientation picks the layout — portrait gets the stacked
+ * mobile layout, landscape gets side-by-side panes (board left, chrome
+ * right). See docs/RESPONSIVE.md#phone-landscape (#749).
+ */
+export const PHONE_LANDSCAPE_MEDIA_QUERY = `${MOBILE_MAX_MEDIA_QUERY} and (orientation: landscape)`

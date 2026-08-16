@@ -52,6 +52,22 @@ windows lose the desktop side panels and get the mobile-tabs layout — acceptab
 it is fully functional. The value lives in one token; reversing the decision is a
 one-line change plus audit-guided CSS fixes.
 
+## Phone landscape
+
+**Decided 2026-08-16 (#749).** Within mobile widths, orientation picks the layout:
+portrait gets the stacked mobile layout, landscape gets side-by-side panes. The
+condition is `(max-width: 1023px) and (orientation: landscape)`
+(`PHONE_LANDSCAPE_MEDIA_QUERY` in `lib/responsive-tokens.ts`) — the width literal
+stays on the shared breakpoint, so R2 stays clean.
+
+Rationale: a phone in landscape is ~330–430px tall; the portrait stack
+(header → status → tabs → content) cannot fit and the height-locked shells clip.
+A full landscape layout matrix is not worth it — only height-locked screens get a
+dedicated landscape tree (`.ttt-landscape-layout`: board pane left at full
+height, narrow chrome column right). Boards are container-sized, so the tree
+needs zero sizing math. Scrollable game surfaces (RPS, Sketch, Liar's Party,
+Alias, Spy) stay as-is — they scroll and remain usable.
+
 ## Primitive catalog
 
 | Primitive | Use for | Status |
