@@ -438,10 +438,10 @@ export default function PublicProfileView({
       className={`relative overflow-hidden text-bd-ink ${
         isEmbeddedPreview
           ? 'rounded-[2rem] border-[1.5px] border-bd-line bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700'
-          : 'flex min-h-[calc(100vh-64px)] items-center safe-left safe-right'
+          : 'flex min-h-[var(--game-h)] items-center safe-left safe-right'
       } ${isDark ? 'text-white' : 'bg-bd-bg'}`}
       style={{
-        ...(isEmbeddedPreview ? undefined : { minHeight: 'calc(100dvh - 64px)' }),
+        ...(isEmbeddedPreview ? undefined : { minHeight: 'var(--game-h)' }),
         ...(pageTheme && !isEmbeddedPreview ? { background: pageTheme.pageBg } : {}),
       }}
     >

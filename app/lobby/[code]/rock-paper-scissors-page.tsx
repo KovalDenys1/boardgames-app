@@ -432,7 +432,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     if (loading) {
         return (
-            <div className="h-[calc(100dvh-4rem)] flex items-center justify-center" style={getThemePageStyle(lobby?.theme)}>
+            <div className="h-[var(--game-h)] flex items-center justify-center" style={getThemePageStyle(lobby?.theme)}>
                 <LoadingSpinner size="lg" />
             </div>
         )
@@ -440,7 +440,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     if (error || !lobby || !lobby.game) {
         return (
-            <div className="h-[calc(100dvh-4rem)] flex items-center justify-center p-4" style={getThemePageStyle(lobby?.theme)}>
+            <div className="h-[var(--game-h)] flex items-center justify-center p-4" style={getThemePageStyle(lobby?.theme)}>
                 <div className="rounded-2xl border border-rose-200 bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
                     <p className="text-rose-700">{error || t('errors.gameNotFound')}</p>
                     <button
@@ -460,7 +460,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     if (!currentPlayer && !isSpectator) {
         return (
-            <div className="h-[calc(100dvh-4rem)] flex items-center justify-center p-4" style={getThemePageStyle(lobby?.theme)}>
+            <div className="h-[var(--game-h)] flex items-center justify-center p-4" style={getThemePageStyle(lobby?.theme)}>
                 <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
                     <p className="text-bd-ink-soft mb-4">{t('lobby.game.notPartOfMatch')}</p>
                     <button
@@ -475,7 +475,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
     }
 
     return (
-        <div className="h-[calc(100dvh-4rem)] overflow-y-auto" style={getThemePageStyle(lobby?.theme)}>
+        <div className="h-[var(--game-h)] overflow-y-auto" style={getThemePageStyle(lobby?.theme)}>
         <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
             <div className="mx-auto max-w-5xl space-y-5">
                 <header className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">

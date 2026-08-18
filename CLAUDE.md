@@ -83,48 +83,31 @@ Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based 
 - Auth: NextAuth, Supabase Realtime (Broadcast + Postgres Changes)
 - Deployed on Vercel (iad1 / US East)
 
-## Mobile responsiveness rules
+## Responsive UI — Definition of Done (details: docs/RESPONSIVE.md)
 
-Learned from real bugs (#687, #688) that emulated-viewport testing missed —
-apply these whenever touching any game board or in-game mobile view.
+Any change touching layout, a game board, or an in-game view is NOT done until all of:
 
-- **Never size a multi-row grid/board from `100vw` alone.** Any board taller
-  than it is a single row (Connect Four's 7x6, not Tic-Tac-Toe's square 3x3)
-  needs its cell size to be the `min()` of a width-derived value AND a
-  height-derived value using the shared `--ttt-h` custom property
-  (`app/globals.css`, `.ttt-screen`). Width-only sizing is blind to vertical
-  space and can produce a board taller than the real usable viewport,
-  silently clipped by `overflow:hidden` — this is exactly what happened in
-  #688. See `.ttt-board-card`'s `--c4-cell` rule for the pattern to copy.
-- **Emulated viewports (Playwright/Chrome DevTools device mode) do not
-  reproduce real mobile browser chrome.** iOS Safari's address bar
-  show/hide animation changes the resolved `100dvh` of any `position:fixed`
-  element sized with `calc(100dvh - ...)` — this can only be observed on a
-  real device, never in a resized desktop browser window. A mobile
-  responsiveness fix is not "verified" until checked on a real phone
-  screenshot. If browser automation tooling is unavailable, say so
-  explicitly rather than claiming a fix works.
-- **Budget vertical space deliberately in mobile game views — don't stack
-  full-size info cards.** Prefer one thin, always-shrinkable region (the
-  actual board/scorecard) surrounded by as few `flex-shrink-0` chrome
-  blocks as possible. Before adding a new status banner/card to a mobile
-  game view, check whether the info already exists somewhere else on
-  screen (Yahtzee had a "Your Turn" banner duplicating both the Next Move
-  card's copy and the timer's color-coded urgency). Reuse the codebase's
-  own compact patterns instead of inventing new ones:
-  - Compact multi-stat header row: `MemoryGameBoard.tsx`'s
-    `.memory-mobile-header` (`app/globals.css`) — 24px avatars,
-    `padding:4px 8px`, `fontSize:10-11px`.
-  - Collapse-on-tap for secondary info: `WaitingRoomActions.tsx`'s
-    `useState` toggle + rotating-chevron button idiom.
-  - Horizontal scroll instead of wrap for a chip/pill row on narrow
-    screens: `LobbyInfo.tsx`'s `overflow-x-auto` rail (no
-    scrollbar-hiding utility exists in this codebase — don't add one,
-    the native thin scrollbar is the accepted look).
-- **Every UI change must be comfortable on ALL screen sizes — small,
-  medium, and large — as a standing rule, not only when the task mentions
-  mobile.** Check at minimum ~320px, ~390px, ~768px, and a desktop width
-  before calling UI work done.
+1. **Uses a shared primitive, never ad-hoc viewport math:**
+   - Full-height app page under the header → `.page-shell`
+   - Full-height page without header → `.page-shell-full`
+   - In-game screen (board + chrome) → `.game-screen` family (`--game-h`); until it
+     lands, copy the `.ttt-*` family — never invent a new one
+   - Mobile in-game navigation → `MobileTabs` / `MobileTabPanel`
+   - Header offset → `var(--bd-header-h)` / `HEADER_HEIGHT_PX` (pending tokens issue)
+   - Mobile/desktop split → the shared breakpoint (`desk:` screen,
+     `MOBILE_MAX_MEDIA_QUERY`, `useIsMobileViewport()`) — never a raw px value
+2. **`npm run ci:quick` passes** — includes `scripts/audit-responsive.ts` (checks
+   R1–R7: raw `calc(100dvh - 64px)`, off-token media queries/matchMedia,
+   `position:fixed` + hardcoded top, inline vh calc in TSX, width-only board
+   sizing, new `--*-h` screen families). Legacy debt lives in
+   `scripts/responsive-audit-baseline.json` — migrations must shrink it, new code
+   must never grow it.
+3. **Playwright MCP screenshot sweep** of every touched route at 320 / 390 / 768 /
+   1280 px width (docs/RESPONSIVE.md#verification-procedure covers reaching
+   in-game states and breakpoint-boundary checks).
+4. **Game-board or mobile fixes: real-device check is the final gate** — emulated
+   viewports do not reproduce iOS Safari address-bar dvh behavior. If you cannot
+   verify on a real device, say so explicitly instead of claiming the fix works.
 
 ## Adding a new game — checklist
 

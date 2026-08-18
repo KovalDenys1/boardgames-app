@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -179,8 +180,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                 disabled={disabled || colFull}
                                 aria-label={`column ${c + 1}`}
                                 style={{
-                                    width: 'clamp(30px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
-                                    height: 'clamp(30px, var(--c4-cell, calc((100vw - 104px) / 7)), 52px)',
+                                    width: 'var(--c4-cell, 44px)',
+                                    height: 'var(--c4-cell, 44px)',
                                     borderRadius: '50%',
                                     padding: 3,
                                     background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
@@ -280,7 +281,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
                             background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
                             boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-                        }}>WIN</span>
+                        }}>{t('games.connect_four.game.winBadge')}</span>
                     )}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>
@@ -399,14 +400,19 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
+        // Outer layer scrolls; the inner wrapper's margin:auto centers the
+        // content when it fits and lets it scroll from the top when it
+        // doesn't — the buttons can never be clipped on short screens (#737).
         <div style={{
             position: 'absolute', inset: 0, borderRadius: 16,
-            background: 'rgba(31,27,22,0.82)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 16, padding: 24, backdropFilter: 'blur(4px)',
+            background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
+            display: 'flex', overflowY: 'auto',
         }}>
-            <div style={{ fontSize: 40 }}>{isDraw ? '🤝' : isMyWin ? '🏆' : '😔'}</div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center' }}>
+        <div style={{
+            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 10, padding: 16, width: '100%',
+        }}>
+            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, color: 'white', textAlign: 'center' }}>
                 {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
@@ -471,6 +477,7 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
                     <GuestConversionNudge registerUrl={registerUrl} />
                 </div>
             )}
+        </div>
         </div>
     )
 }
@@ -556,7 +563,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
-    const [isMobile, setIsMobile] = useState(false)
     const [overlayInspecting, setOverlayInspecting] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
@@ -957,14 +963,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         }
     }, [code, getCurrentUserId, lobby, onGameReset, router])
 
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 899px)')
-        setIsMobile(mq.matches)
-        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-        mq.addEventListener('change', handler)
-        return () => mq.removeEventListener('change', handler)
-    }, [])
-
     // Scroll chat to bottom
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
@@ -1099,16 +1097,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         setChatInput('')
     }
 
-    const quickReact = (emoji: string) => {
-        if (isSpectator) return
-        const now = new Date()
-        const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
-        const myColor = isSpectator ? 'sky' : (myDisc === 1 ? 'coral' : 'sun')
-        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
-    }
-
     // ─── Sections ─────────────────────────────────────────────────────────────
 
     const headerSection = (
@@ -1123,7 +1111,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
                     </div>
                     <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                        wins
+                        {t('games.connect_four.game.winsLabel')}
                     </div>
                 </div>
                 <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} isPremium={p2IsPremium} t={t} />
@@ -1307,11 +1295,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)' }}>
                 {!isSpectator && (
                     <>
-                        <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
-                            {['gg', 'nice', '😂', '🔥', '🤝'].map(e => (
-                                <button key={e} onClick={() => quickReact(e)} style={{ padding: '3px 8px', borderRadius: 999, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', fontSize: 11, cursor: 'pointer', fontWeight: 600, color: 'var(--bd-ink-soft)', fontFamily: 'inherit' }}>{e}</button>
-                            ))}
-                        </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                             <input
                                 style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
@@ -1331,7 +1314,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const themeStyle = getThemePageStyle(lobby.theme)
 
     return (
-        <div className="ttt-screen" style={themeStyle}>
+        <div className="game-screen ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
@@ -1349,6 +1332,22 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 </div>
             </div>
 
+            {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
+            {/* Mounted before the mobile tree so refs attached inside shared
+                sections (chatRef) keep landing on the mobile copy. */}
+            <div className="ttt-landscape-layout">
+                <div className="ttt-landscape-board">
+                    {renderBoardSection()}
+                </div>
+                <div className="ttt-landscape-side">
+                    {headerSection}
+                    {statusSection}
+                    {requestSection}
+                    {chatSection}
+                    {actionsSection}
+                </div>
+            </div>
+
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
                 {headerSection}
@@ -1356,9 +1355,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 {requestSection}
                 <div className="ttt-tabs">
                     {([
-                        { id: 'board', label: 'Board' },
-                        { id: 'history', label: `Moves (${moveHistory.length})` },
-                        { id: 'chat', label: 'Chat' },
+                        { id: 'board', label: t('game.ui.tabBoard') },
+                        { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                        { id: 'chat', label: t('game.ui.tabChat') },
                     ] as const).map(tab => (
                         <button
                             key={tab.id}
@@ -1392,7 +1391,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
                     variant="danger"
-                    icon="🚪"
+                    icon={<LeaveIcon size={28} />}
                 />
             )}
             {!isSpectator && resolvedStatus === 'playing' && (

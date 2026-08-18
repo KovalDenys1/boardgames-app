@@ -99,6 +99,8 @@ import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
+import LeaveIcon from '@/components/LeaveIcon'
+import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 
 function CenteredLoadingFallback() {
   return (
@@ -123,6 +125,7 @@ const GameInterruptedOverlay = dynamic(() => import('./components/GameInterrupte
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
 const WaitingRoomActions = dynamic(() => import('./components/WaitingRoomActions'))
+const LobbySettingsPanel = dynamic(() => import('./components/LobbySettingsPanel'))
 const JoinPrompt = dynamic(() => import('./components/JoinPrompt'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
@@ -202,6 +205,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
   const [waitingRoomTab, setWaitingRoomTab] = useState<'players' | 'chat'>('players')
+  const [showLobbySettings, setShowLobbySettings] = useState(false)
 
   // Bot visualization state
   const [botMoveSteps, setBotMoveSteps] = useState<BotMoveStep[]>([])
@@ -1478,8 +1482,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     navigateAfterLeave()
   }
 
-  const handleAddBot = async () => {
-    await addBotToLobby({ difficulty: selectedBotDifficulty })
+  const handleAddBot = async (difficulty: BotDifficulty) => {
+    // Remember the choice so the auto-bot on Start Game uses the same level.
+    setSelectedBotDifficulty(difficulty)
+    await addBotToLobby({ difficulty })
   }
 
   const handleInviteFriends = useCallback(async (friendIds: string[]) => {
@@ -1688,7 +1694,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
-    const isMobileViewport = window.matchMedia('(max-width: 767px)').matches
+    const isMobileViewport = window.matchMedia(MOBILE_MAX_MEDIA_QUERY).matches
     if (!isMobileViewport) {
       return
     }
@@ -1802,48 +1808,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
 
-  // Stabilize viewport/layout when game view mounts on mobile/tablet.
-  // Avoid hard reflow hacks (e.g. toggling body display) that can cause horizontal drift on iOS.
-  useEffect(() => {
-    if (!isGameStarted || typeof window === 'undefined') return
-
-    const { documentElement, body } = document
-    const prevHtmlOverflowX = documentElement.style.overflowX
-    const prevBodyOverflowX = body.style.overflowX
-    const prevHtmlOverflowY = documentElement.style.overflowY
-    const prevBodyOverflowY = body.style.overflowY
-
-    // Prevent page scroll while the fixed full-screen game viewport is active.
-    // Locking overflowY stops mobile Safari from toggling the address bar,
-    // which causes dvh to change and shifts the fixed game panel off-screen.
-    documentElement.style.overflowX = 'hidden'
-    body.style.overflowX = 'hidden'
-    documentElement.style.overflowY = 'hidden'
-    body.style.overflowY = 'hidden'
-
-    let raf1 = 0
-    let raf2 = 0
-
-    // Wait until layout settles, then normalize viewport scroll and notify listeners.
-    raf1 = window.requestAnimationFrame(() => {
-      raf2 = window.requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-        documentElement.scrollLeft = 0
-        body.scrollLeft = 0
-        window.dispatchEvent(new Event('resize'))
-      })
-    })
-
-    return () => {
-      window.cancelAnimationFrame(raf1)
-      window.cancelAnimationFrame(raf2)
-      documentElement.style.overflowX = prevHtmlOverflowX
-      body.style.overflowX = prevBodyOverflowX
-      documentElement.style.overflowY = prevHtmlOverflowY
-      body.style.overflowY = prevBodyOverflowY
-    }
-  }, [isGameStarted])
-
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
@@ -1892,10 +1856,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
+    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
       <div id="bd-lobby-portal" className="contents" />
-     <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
+     <div className={!isGameStarted ? 'mx-auto max-w-7xl flex min-h-[var(--game-h)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : ''}>
 
       {!isInGame && !isGameStarted ? (
         /* Join Prompt - centered in full height */
@@ -1964,18 +1928,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         /* Waiting Room - unified card with pinned actions */
         <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
           <LobbyInfo
-            variant="header"
             lobby={lobby}
             game={game}
-            soundEnabled={soundEnabled}
-            canEditSettings={isCreator && !startingGame}
-            isPremium={isCurrentUserPremium}
-            onUpdateSettings={updateLobbySettings}
-            onSoundToggle={() => {
-              sounds.toggle()
-              setSoundEnabled(sounds.isEnabled())
-              showToast.success(sounds.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
-            }}
+            settingsOpen={showLobbySettings}
+            onToggleSettings={() => setShowLobbySettings((value) => !value)}
             onLeave={handleLeaveLobby}
           />
 
@@ -1986,17 +1942,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 key={tab}
                 type="button"
                 onClick={() => {
+                  setShowLobbySettings(false)
                   setWaitingRoomTab(tab)
                   if (tab === 'chat') setUnreadMessageCount(0)
                 }}
                 className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                  waitingRoomTab === tab
+                  waitingRoomTab === tab && !showLobbySettings
                     ? 'border-b-2 border-bd-ink text-bd-ink'
                     : 'text-bd-ink-soft'
                 }`}
               >
-                {tab === 'players' ? '👥' : '💬'}
-                {tab === 'players' ? 'Players' : 'Chat'}
+                <span aria-hidden>{tab === 'players' ? '👥' : '💬'}</span>
+                <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
                   <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-white">
                     {unreadMessageCount}
@@ -2006,70 +1963,84 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             ))}
           </div>
 
-          {/* Scrollable player list / chat */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {/* Players list - hidden on mobile when chat tab active */}
-            <div className={`h-full overflow-y-auto ${waitingRoomTab === 'chat' ? 'hidden sm:block' : ''}`}>
-              <WaitingRoom
-                game={game}
-                lobby={lobby}
-                gameEngine={gameEngine}
-                minPlayers={minPlayersRequired}
-                getCurrentUserId={getCurrentUserId}
-                canManageBots={canStartGame}
-                canKickPlayers={isCreator}
-                onKickBot={kickBot}
-                onKickPlayer={kickPlayer}
-                onProfileClick={setProfileUserId}
-              />
-            </div>
-            {/* Chat - mobile only, inside card */}
-            {hasMultipleHumans && waitingRoomTab === 'chat' && (
-              <div className="h-full sm:hidden">
-                <Chat
-                  messages={chatMessages}
-                  onSendMessage={(message) => {
-                    sendChatMessage(message)
-                  }}
-                  currentUserId={getCurrentUserId()}
-                  playerProfiles={chatPlayerProfiles}
-                  isMinimized={false}
-                  onToggleMinimize={() => {}}
-                  unreadCount={0}
-                  someoneTyping={someoneTyping}
-                  fullScreen={true}
+          {/* Scrollable area: players/chat crossfades with the settings view */}
+          <div className="relative flex-1 min-h-0 overflow-hidden">
+            <div
+              aria-hidden={showLobbySettings}
+              className={`absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none ${
+                showLobbySettings ? 'pointer-events-none opacity-0' : 'opacity-100'
+              }`}
+            >
+              {/* Players list - hidden on mobile when chat tab active */}
+              <div className={`h-full overflow-y-auto ${waitingRoomTab === 'chat' ? 'hidden sm:block' : ''}`}>
+                <WaitingRoom
+                  game={game}
+                  lobby={lobby}
+                  gameEngine={gameEngine}
+                  minPlayers={minPlayersRequired}
+                  getCurrentUserId={getCurrentUserId}
+                  canManageBots={canStartGame}
+                  canKickPlayers={isCreator}
+                  onKickBot={kickBot}
+                  onKickPlayer={kickPlayer}
                   onProfileClick={setProfileUserId}
+                  onInviteFriends={canStartGame && !isGuest ? () => setShowFriendsModal(true) : undefined}
+                  onAddBot={canStartGame ? handleAddBot : undefined}
                 />
               </div>
-            )}
+              {/* Chat - mobile only, inside card */}
+              {hasMultipleHumans && waitingRoomTab === 'chat' && (
+                <div className="h-full sm:hidden">
+                  <Chat
+                    messages={chatMessages}
+                    onSendMessage={(message) => {
+                      sendChatMessage(message)
+                    }}
+                    currentUserId={getCurrentUserId()}
+                    playerProfiles={chatPlayerProfiles}
+                    isMinimized={false}
+                    onToggleMinimize={() => {}}
+                    unreadCount={0}
+                    someoneTyping={someoneTyping}
+                    fullScreen={true}
+                    onProfileClick={setProfileUserId}
+                  />
+                </div>
+              )}
+            </div>
+            <div
+              aria-hidden={!showLobbySettings}
+              className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+                showLobbySettings ? 'opacity-100' : 'pointer-events-none opacity-0'
+              }`}
+            >
+              <LobbySettingsPanel
+                lobby={lobby}
+                game={game}
+                isPremium={isCurrentUserPremium}
+                canEdit={isCreator && !startingGame}
+                onUpdateSettings={updateLobbySettings}
+                onClose={() => setShowLobbySettings(false)}
+              />
+            </div>
           </div>
 
           <WaitingRoomActions
             game={game}
             lobby={lobby}
             minPlayers={minPlayersRequired}
-            botDifficulty={selectedBotDifficulty}
             canStartGame={canStartGame}
             startingGame={startingGame}
             onStartGame={handleStartGame}
-            onAddBot={handleAddBot}
-            onBotDifficultyChange={setSelectedBotDifficulty}
-            onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
           />
         </div>
       ) : (
-        // Game Started - Mobile-optimized viewport
+        // Game Started - the shared .game-screen shell owns the viewport
+        // height (docs/RESPONSIVE.md) - no position:fixed, no scroll-lock.
         <div
-          className="flex flex-col overflow-hidden"
+          className="game-screen flex flex-col"
           style={{
             background: 'var(--bd-bg)',
-            position: 'fixed' as const,
-            top: '4rem',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100%',
-            height: 'calc(100dvh - 4rem)',
             overscrollBehavior: 'none',
           }}
         >
@@ -2161,7 +2132,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       aria-label={t('game.ui.leave')}
                       className="bd-btn-coral flex h-7 w-7 items-center justify-center !rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                     >
-                      🚪
+                      <LeaveIcon />
                     </button>
                   </div>
                 </div>
@@ -2226,7 +2197,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         aria-label={t('game.ui.leave')}
                         className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
-                        <span className="text-base">🚪</span>
+                        <LeaveIcon />
                         <span>{t('game.ui.leave')}</span>
                       </button>
                     </div>
@@ -2237,7 +2208,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {/* Main Game Area - More spacing between columns */}
               <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
-                <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
+                <div className="hidden desk:grid grid-cols-1 desk:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
                   <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
                     <GameBoard
@@ -2332,7 +2303,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Mobile: Tabbed Layout */}
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="lg:hidden relative"
+                  className="desk:hidden relative"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2455,7 +2426,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
               {/* Desktop Chat - Minimized Button */}
               {hasMultipleHumans && (
-              <div className="hidden lg:block">
+              <div className="hidden desk:block">
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {
@@ -2489,8 +2460,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 tabs={[
                   { id: 'game' as const, label: 'Game', icon: '🎲' },
                   { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
-                  { id: 'players' as const, label: 'Players', icon: '👥' },
-                  ...(hasMultipleHumans ? [{ id: 'chat' as const, label: 'Chat', icon: '💬', badge: unreadMessageCount }] : []),
+                  { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: '👥' },
+                  ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: '💬', badge: unreadMessageCount }] : []),
                 ]}
                 unreadChatCount={unreadMessageCount}
               />
@@ -2617,7 +2588,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         confirmText={t('common.confirm')}
         cancelText={t('common.cancel')}
         variant="danger"
-        icon="🚪"
+        icon={<LeaveIcon size={28} />}
       />
 
       {isGameStarted && (

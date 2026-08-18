@@ -1,3 +1,5 @@
+const { DESKTOP_MIN_WIDTH_PX } = require('./lib/responsive-tokens')
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
@@ -7,6 +9,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        // The single mobile/desktop switch point (docs/RESPONSIVE.md).
+        // Same value as `lg` today, but semantic and re-pointable in one place.
+        desk: `${DESKTOP_MIN_WIDTH_PX}px`,
+      },
       colors: {
         primary: '#3b82f6',
         secondary: '#8b5cf6',

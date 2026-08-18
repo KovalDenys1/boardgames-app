@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
@@ -11,11 +11,11 @@ import { AuthGateModal } from '@/components/AuthGateModal'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
-const DIFFICULTY_KEYS: Record<Difficulty, TranslationKeys> = {
-  easy: 'lobby.create.difficultyEasy',
-  medium: 'lobby.create.difficultyMedium',
-  hard: 'lobby.create.difficultyHard',
-}
+const DIFFICULTIES: { id: Difficulty; emoji: string; labelKey: TranslationKeys }[] = [
+  { id: 'easy', emoji: '🙂', labelKey: 'lobby.create.difficultyEasy' },
+  { id: 'medium', emoji: '😐', labelKey: 'lobby.create.difficultyMedium' },
+  { id: 'hard', emoji: '😈', labelKey: 'lobby.create.difficultyHard' },
+]
 
 interface PlayVsBotButtonProps {
   gameType: string
@@ -31,6 +31,23 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [pendingDifficulty, setPendingDifficulty] = useState<Difficulty | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
 
   const startQuickPlay = async (difficulty: Difficulty) => {
     setLoading(true)
@@ -64,45 +81,41 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
   }
 
   return (
-    <div className={`relative ${className}`} style={{ minHeight: 58 }}>
-      {/* Original button — fades out when open */}
+    <div ref={rootRef} className={`relative ${className}`}>
       <button
-        onClick={() => setOpen(true)}
-        className={`bd-btn bd-btn-soft bd-btn-lg w-full justify-center absolute inset-0 transition-opacity duration-200 ${
-          open ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        onClick={() => setOpen((value) => !value)}
+        disabled={loading}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`bd-btn bd-btn-soft bd-btn-lg w-full justify-center disabled:opacity-60 ${
+          open ? 'bg-bd-bg2' : ''
         }`}
       >
-        🤖 {t('quickPlay.playVsBot')}
+        🤖 {loading ? '…' : t('quickPlay.playVsBot')}
       </button>
 
-      {/* Difficulty picker — fades in when open */}
-      <div
-        className={`absolute inset-0 flex items-center gap-1.5 transition-opacity duration-200 ${
-          open ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {(['easy', 'medium', 'hard'] as Difficulty[]).map((diff) => (
-          <button
-            key={diff}
-            onClick={() => handleDifficulty(diff)}
-            disabled={loading}
-            className="flex-1 rounded-2xl border-2 border-bd-ink py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-ink hover:text-bd-bg disabled:opacity-50"
-            style={{ background: 'var(--bd-bg2)' }}
-          >
-            {loading ? '…' : t(DIFFICULTY_KEYS[diff])}
-          </button>
-        ))}
-        {!loading && (
-          <button
-            onClick={() => setOpen(false)}
-            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border-2 border-bd-line text-base text-bd-ink-muted transition-colors hover:border-bd-ink hover:text-bd-ink"
-            style={{ background: 'var(--bd-bg2)' }}
-            aria-label="Cancel"
-          >
-            ✕
-          </button>
-        )}
-      </div>
+      {open && (
+        <div
+          role="menu"
+          className="absolute left-0 right-0 top-full z-30 mt-2 min-w-44 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.85)]"
+        >
+          {DIFFICULTIES.map(({ id, emoji, labelKey }) => (
+            <button
+              key={id}
+              role="menuitem"
+              disabled={loading}
+              onClick={() => {
+                setOpen(false)
+                void handleDifficulty(id)
+              }}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-bold text-bd-ink transition-colors hover:bg-bd-bg2 disabled:opacity-50"
+            >
+              <span aria-hidden className="text-lg">{emoji}</span>
+              {t(labelKey)}
+            </button>
+          ))}
+        </div>
+      )}
       {pendingDifficulty && (
         <AuthGateModal
           dest={pathname}

@@ -8,7 +8,7 @@ describe('LobbyPage fallback components', () => {
 
     const root = container.firstChild as HTMLElement | null
     expect(root).not.toBeNull()
-    expect(root?.className).toContain('min-h-[calc(100dvh-64px)]')
+    expect(root?.className).toContain('min-h-[var(--game-h)]')
   })
 
   it('renders error fallback with action button', () => {

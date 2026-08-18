@@ -2,8 +2,7 @@
 
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useEffect, useState } from 'react'
-
-const HEADER_HEIGHT_PX = 64
+import { HEADER_HEIGHT_PX } from '@/lib/responsive-tokens'
 const MAINTENANCE_CONTACT_EMAIL = 'kovaldenys@icloud.com'
 const MAINTENANCE_VIEWPORT_STYLE = { minHeight: `calc(100vh - ${HEADER_HEIGHT_PX}px)` }
 

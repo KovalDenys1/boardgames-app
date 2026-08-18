@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -269,11 +270,17 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
         border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
     }
     return (
+        // Outer layer scrolls; the inner wrapper's margin:auto centers the
+        // content when it fits and lets it scroll from the top when it
+        // doesn't — the buttons can never be clipped on short screens (#737).
         <div style={{
             position: 'absolute', inset: 0, borderRadius: 'inherit',
             background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 4, padding: 24,
+            display: 'flex', overflowY: 'auto',
+        }}>
+        <div style={{
+            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 4, padding: 24, width: '100%',
         }}>
             {isDraw ? (
                 <div style={{ fontSize: 40, marginBottom: 8 }}>🤝</div>
@@ -337,6 +344,7 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
                     <GuestConversionNudge registerUrl={registerUrl} />
                 </div>
             )}
+        </div>
         </div>
     )
 }
@@ -1043,16 +1051,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         setChatInput('')
     }
 
-    const quickReact = (emoji: string) => {
-        if (isSpectator) return
-        const now = new Date()
-        const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
-        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
-        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
-    }
-
     // ─── Sections ─────────────────────────────────────────────────────────────
 
     const headerSection = (
@@ -1316,14 +1314,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
             {!isSpectator && (
                 <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)' }}>
-                    <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
-                        {['gg', 'nice', '😂', '🔥', '🤝'].map(e => (
-                            <button key={e} onClick={() => quickReact(e)} style={{
-                                padding: '3px 8px', borderRadius: 999, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)',
-                                fontSize: 11, cursor: 'pointer', fontWeight: 600, color: 'var(--bd-ink-soft)', fontFamily: 'inherit',
-                            }}>{e}</button>
-                        ))}
-                    </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                         <input
                             style={{
@@ -1353,7 +1343,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const themeStyle = getThemePageStyle(lobby.theme)
 
     return (
-        <div className="ttt-screen" style={themeStyle}>
+        <div className="game-screen ttt-screen" style={themeStyle}>
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
@@ -1372,6 +1362,22 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 </div>
             </div>
 
+            {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
+            {/* Mounted before the mobile tree so refs attached inside shared
+                sections (chatRef) keep landing on the mobile copy. */}
+            <div className="ttt-landscape-layout">
+                <div className="ttt-landscape-board">
+                    {renderBoardSection('ttt-board-landscape')}
+                </div>
+                <div className="ttt-landscape-side">
+                    {headerSection}
+                    {statusSection}
+                    {requestSection}
+                    {chatSection}
+                    {actionsSection}
+                </div>
+            </div>
+
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
                 {headerSection}
@@ -1379,9 +1385,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 {requestSection}
                 <div className="ttt-tabs">
                     {([
-                        { id: 'board', label: 'Board' },
-                        { id: 'history', label: `Moves (${moveHistory.length})` },
-                        { id: 'chat', label: 'Chat' },
+                        { id: 'board', label: t('game.ui.tabBoard') },
+                        { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                        { id: 'chat', label: t('game.ui.tabChat') },
                     ] as const).map(tab => (
                         <button
                             key={tab.id}
@@ -1415,7 +1421,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     confirmText={t('common.confirm')}
                     cancelText={t('common.cancel')}
                     variant="danger"
-                    icon="🚪"
+                    icon={<LeaveIcon size={28} />}
                 />
             )}
             {!isSpectator && resolvedStatus === 'playing' && (

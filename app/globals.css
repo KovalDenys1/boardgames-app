@@ -68,6 +68,15 @@ html.dark {
 
 /* ============ END BOARDLY DESIGN SYSTEM ============ */
 
+/* @responsive-primitives-start
+   Shared viewport/layout primitives — the ONLY place raw viewport math is
+   allowed (enforced by scripts/audit-responsive.ts; see docs/RESPONSIVE.md).
+   Header height also exists as HEADER_HEIGHT_PX in lib/responsive-tokens.ts —
+   keep them in sync. */
+:root {
+  --bd-header-h: 64px;
+}
+
 /* Mobile viewport height fix - Support for dynamic viewport units */
 @supports (height: 100dvh) {
   .mobile-vh-100 {
@@ -83,18 +92,59 @@ html.dark {
 
 /* Viewport-fit shells — prevents page-level scroll on app pages */
 .page-shell {
-  height: calc(100dvh - 64px);
+  height: calc(100vh - var(--bd-header-h));
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .page-shell-full {
-  height: 100dvh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
+
+@supports (height: 100dvh) {
+  .page-shell {
+    height: calc(100dvh - var(--bd-header-h));
+  }
+
+  .page-shell-full {
+    height: 100dvh;
+  }
+}
+
+/* In-game screen shell: board + chrome under the header. Height-based on
+   purpose — never position:fixed (worst iOS address-bar behavior, see
+   docs/RESPONSIVE.md). Game families size their boards from --game-h. */
+:root {
+  --game-h: calc(100vh - var(--bd-header-h));
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --game-h: calc(100dvh - var(--bd-header-h));
+  }
+}
+
+.game-screen {
+  height: var(--game-h);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Phone landscape (mobile width, wider than tall): portrait's stacked mobile
+   layouts can be taller than the ~330-390px viewport. Families that ship a
+   dedicated landscape tree (.ttt-screen) re-lock overflow themselves; every
+   other game keeps its height but gains scroll so controls below the fold
+   stay reachable (#749, docs/RESPONSIVE.md#phone-landscape). */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-screen {
+    overflow-y: auto;
+  }
+}
+/* @responsive-primitives-end */
 
 /* Homepage viewport shells: fill the first view, but let content grow naturally. */
 .home-page-shell {
@@ -131,7 +181,11 @@ html.dark {
 .home-first-screen > .home-hero-shell {
   flex: 1 1 auto;
   min-height: 0;
-  padding-bottom: clamp(112px, 16svh, 148px);
+  /* Reserve the marquee's REAL footprint: strip box (88px) + rotation growth
+     (~2.2vw for a 110vw strip at -1.1deg) + max bottom offset (46px) + margin.
+     The old clamp(112px, 16svh, 148px) scaled with the wrong axis (height) and
+     under-reserved on short windows — hero buttons slid under the strip. */
+  padding-bottom: calc(146px + 2.2vw);
 }
 
 .home-marquee-anchor {
@@ -144,15 +198,6 @@ html.dark {
 
 .home-marquee-anchor > * {
   transform: translateX(-50%) rotate(-1.1deg);
-}
-
-@supports not (height: 100dvh) {
-  .page-shell {
-    height: calc(100vh - 64px);
-  }
-  .page-shell-full {
-    height: 100vh;
-  }
 }
 
 @media (max-width: 767px) {
@@ -172,6 +217,10 @@ html.dark {
   }
 
   .home-marquee-anchor {
+    /* bottom must be reset: the base rule's bottom offset combined with
+       position: relative shifts the strip ~42px UP over the hero's last
+       button (guest hero's "Exit Guest Mode" was clipped by it). */
+    bottom: auto;
     left: auto;
     margin: 0 0 28px;
     position: relative;
@@ -197,7 +246,9 @@ html.dark {
 
     .home-first-screen > .home-hero-shell {
       min-height: 0;
-      padding-bottom: clamp(112px, 16dvh, 148px);
+      /* Must match the base .home-first-screen > .home-hero-shell reservation
+         above — the marquee footprint scales with width, not height. */
+      padding-bottom: calc(146px + 2.2vw);
     }
   }
 }
@@ -1427,13 +1478,11 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ============ END BD SHARED CLASSES ============ */
 
+/* Visual skin for the shared .game-screen primitive (docs/RESPONSIVE.md) —
+   the screen height/overflow and --game-h come from .game-screen. */
 .ttt-screen {
-  --ttt-h: calc(100dvh - 64px);
-  height: var(--ttt-h);
   padding: 10px 20px 14px;
-  overflow: hidden;
   background: var(--bd-bg);
-  box-sizing: border-box;
 }
 
 /* Desktop layout */
@@ -1453,10 +1502,15 @@ input[type="range"].slider-thumb::-moz-range-track {
   width: 100%;
 }
 .ttt-center-col {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   height: 100%;
+  min-height: 0;
+}
+.ttt-center-col > * { flex-shrink: 0; }
+.ttt-center-col > .ttt-board-card {
+  flex: 1 1 auto;
   min-height: 0;
 }
 .ttt-right-col {
@@ -1478,6 +1532,12 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-sizing: border-box;
 }
 .ttt-board-card {
+  /* The ONLY place board-cell math lives. The card is flex-sized by its
+     column (definite height), so container units are the real available
+     space on every screen. 80/98 = the board's own internal chrome only
+     (card/grid paddings, gaps, drop-arrow row) — no screen-chrome guesses. */
+  container-type: size;
+  --c4-cell: clamp(22px, min(calc((100cqw - 80px) / 7), calc((100cqh - 98px) / 6)), 52px);
   background: #FFF8EC;
   border-radius: 18px;
   border: 1.5px solid var(--bd-line);
@@ -1552,7 +1612,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Board */
 .ttt-board-wrap {
-  width: min(100%, 560px);
+  width: min(100%, calc(100cqh - 24px), 560px);
   aspect-ratio: 1;
   height: auto;
   display: flex;
@@ -1650,41 +1710,58 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .ttt-tab.ttt-tab-active { background: var(--bd-ink); color: var(--bd-bg); }
 
-@media (min-width: 900px) {
+@media (min-width: 1024px) {
   .ttt-mobile-layout { display: none !important; }
-  /* Enable height-based container queries on the board card so the board
-     shrinks to fit on short-viewport tablets (e.g. landscape iPad). */
-  .ttt-board-card { container-type: size; }
-  .ttt-board-wrap { width: min(100%, 560px, calc(100cqh - 24px)); }
 }
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .ttt-desktop-layout { display: none !important; }
-  .ttt-screen {
-    height: var(--ttt-h);
-    overflow: hidden;
-  }
   .ttt-mobile-layout {
     height: 100%;
   }
-  /* overhead = screen-padding(24) + header(80) + status(50) + tabs(46) + gaps(40) + actions(48) + card-padding(24) + buffer(13) */
-  .ttt-board-wrap {
-    width: min(calc(100vw - 52px), calc(var(--ttt-h) - 325px));
-    height: auto;
+}
+
+/* Phone landscape (mobile width, wider than tall): the portrait stack cannot
+   fit ~330-390px of viewport height, so a third layout tree shows the board
+   at full height on the left with a narrow chrome column on the right (#749).
+   Boards are container-sized via .ttt-board-card / .ttt-board-wrap, so no
+   extra sizing math lives here. */
+.ttt-landscape-layout { display: none; }
+@media (max-width: 1023px) and (orientation: landscape) {
+  .ttt-mobile-layout { display: none !important; }
+  .ttt-screen {
+    padding: 8px 10px 10px;
+    /* the landscape tree fits by construction — re-lock the shell */
+    overflow: hidden;
   }
-  /* Connect Four's board is 7 cols x 6 rows, not square like TTT's 3x3 — sizing
-     cells from 100vw alone (its original formula) ignores vertical space
-     entirely, so the board's real height (6 rows tall) can run past the
-     bottom of the screen and get clipped by .ttt-board-card's overflow:hidden
-     on shorter phone viewports (confirmed live on a real iPhone, #688).
-     Overhead = .ttt-board-wrap's 325px budget above (identical header/status/
-     tabs/actions shell) + this board's own 28px drop-arrow row + the grid's
-     own 46px of internal padding(16)/row-gaps(30) that .ttt-board-wrap doesn't
-     need to account for separately (its square sizing wraps the whole card).
-     Not live-verified against a real device this session (tooling outage) —
-     erred toward a larger overhead (safety buffer ~20px) so a slightly-smaller
-     board is the failure mode, not a re-cropped one. */
-  .ttt-board-card {
-    --c4-cell: min(calc((100vw - 104px) / 7), calc((var(--ttt-h) - 420px) / 6));
+  .ttt-landscape-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+  }
+  .ttt-landscape-board {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .ttt-landscape-board > .ttt-board-card {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .ttt-landscape-side {
+    flex: 0 0 min(300px, 42vw);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+  }
+  .ttt-landscape-side > .ttt-chat-card {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 }
 
@@ -1728,19 +1805,15 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 /* Memory game surface — fixed below the nav, fills viewport, no page-flow hacks needed */
+/* Fills the in-game container (which owns the viewport height) — never
+   position:fixed (worst iOS address-bar behavior, docs/RESPONSIVE.md). */
 .memory-screen {
-  --memory-h: calc(100dvh - 64px);
-  position: fixed;
-  top: 64px;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  height: 100%;
   overflow: hidden;
   padding: 10px 20px 14px;
   background: var(--bd-bg);
   color: var(--bd-ink);
   box-sizing: border-box;
-  z-index: 1;
 }
 
 .memory-shell {
@@ -2160,12 +2233,12 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ===== MEMORY GAME — MOBILE LAYOUT ===== */
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .memory-desktop-layout { display: none !important; }
   .memory-mobile-layout  { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
   .memory-screen {
-    /* position: fixed already handles placement — just adjust padding and add flex */
+    /* the parent in-game container owns placement — just adjust padding and add flex */
     padding: 4px 0 0 0;
     display: flex;
     flex-direction: column;
@@ -2239,14 +2312,21 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-mobile-board-wrap {
-  /* Constrain by both viewport width and available height below fixed chrome */
-  width: min(calc(100vw - 24px), calc(var(--memory-h) - 220px));
-  max-height: calc(var(--memory-h) - 220px);
+  /* The wrap is flex-sized by the mobile column, so its box IS the available
+     space — the .memory-grid @container rule below sizes the grid from cqh
+     (same approach as desktop's .memory-board-panel). No magic px budgets. */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   overflow: hidden;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* spy mobile (unchanged from existing) */
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .spy-screen {
     padding: 10px;
   }
