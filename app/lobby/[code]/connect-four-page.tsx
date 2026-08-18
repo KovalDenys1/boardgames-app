@@ -873,12 +873,40 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             ? Math.floor(lobby.turnTimer)
             : 30
 
+    const { triggerBotTurn } = useBotTurn({
+        game,
+        gameEngine,
+        code,
+        isGameStarted: game?.status === 'playing',
+        isSpectator,
+        reconcileWithServerSnapshot: loadLobby,
+    })
+
     const { timeLeft } = useGameTimer({
         isMyTurn: isSpectator ? false : isMyTurn(),
         gameState: timerStateData?.pendingRequest ? null : timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
-            if (!gameEngine || !game || !isMyTurn()) return true
+            if (!gameEngine || !game || !isMyTurn()) {
+                // Fail-safe: if it's a stuck bot's turn, force-trigger the bot move.
+                // Safe with server-side locking/idempotency guards.
+                if (gameEngine && game && Array.isArray(game.players)) {
+                    const currentPlayer = gameEngine.getCurrentPlayer()
+                    const currentGamePlayer = currentPlayer
+                        ? game.players.find((p) => p.userId === currentPlayer.id)
+                        : null
+                    const isBotTurn = !!(currentGamePlayer?.user?.bot || currentGamePlayer?.bot)
+                    if (isBotTurn && currentPlayer?.id) {
+                        clientLogger.warn('⏰ Connect Four timer expired on bot turn, triggering fallback bot action', {
+                            botUserId: currentPlayer.id,
+                            gameId: game.id,
+                        })
+                        void triggerBotTurn(currentPlayer.id, game.id)
+                        return false
+                    }
+                }
+                return true
+            }
             const userId = getCurrentUserId()
             if (!userId) return false
             const autoActionContext = buildAutoActionContext(userId)
@@ -889,14 +917,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 { autoActionContext, isAutoAction: true }
             )
         },
-    })
-
-    useBotTurn({
-        game,
-        gameEngine,
-        code,
-        isGameStarted: game?.status === 'playing',
-        isSpectator,
     })
 
     const handleLeave = () => {
