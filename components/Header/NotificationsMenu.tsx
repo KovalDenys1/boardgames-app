@@ -76,6 +76,22 @@ export function NotificationsMenu() {
     }
   }, [])
 
+  const markNotificationsRead = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return
+    await fetch('/api/notifications/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+    const now = new Date().toISOString()
+    setNotifications((prev) =>
+      prev.map((item) =>
+        ids.includes(item.id) ? { ...item, readAt: item.readAt ?? now } : item
+      )
+    )
+    setUnreadCount((prev) => Math.max(0, prev - ids.length))
+  }, [])
+
   const fetchList = useCallback(async () => {
     if (listInFlightRef.current) return
     listInFlightRef.current = true
@@ -87,6 +103,12 @@ export function NotificationsMenu() {
       const data = (await response.json()) as InAppNotificationResponse
       setUnreadCount(data.unreadCount || 0)
       setNotifications(data.notifications || [])
+      // Opening the panel counts as viewing — clear unread status for what's shown,
+      // same as the badge count the user just saw.
+      const unreadIds = (data.notifications || []).filter((item) => !item.readAt).map((item) => item.id)
+      if (unreadIds.length > 0) {
+        void markNotificationsRead(unreadIds)
+      }
     } catch {
       setError(true)
       setNotifications([])
@@ -94,7 +116,7 @@ export function NotificationsMenu() {
       listInFlightRef.current = false
       setLoading(false)
     }
-  }, [])
+  }, [markNotificationsRead])
 
   const refreshUnreadCount = useCallback((force = false) => {
     const now = Date.now()
@@ -177,22 +199,6 @@ export function NotificationsMenu() {
       void supabase.removeChannel(channel)
     }
   }, [session?.user?.id, open, fetchList])
-
-  const markNotificationsRead = useCallback(async (ids: string[]) => {
-    if (ids.length === 0) return
-    await fetch('/api/notifications/read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids }),
-    })
-    const now = new Date().toISOString()
-    setNotifications((prev) =>
-      prev.map((item) =>
-        ids.includes(item.id) ? { ...item, readAt: item.readAt ?? now } : item
-      )
-    )
-    setUnreadCount((prev) => Math.max(0, prev - ids.length))
-  }, [])
 
   const handleMarkAllRead = async () => {
     await fetch('/api/notifications/read', {

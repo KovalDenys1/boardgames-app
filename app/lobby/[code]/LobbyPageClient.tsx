@@ -1155,23 +1155,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     gameState: gameEngine?.getState() || null,
     turnTimerLimit,
     onTimeout: async (): Promise<boolean> => {
-      if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) {
-        return true
-      }
-
       const mine = isMyTurn()
-      const hasYahtzeeEngine = true
-      const scoreHandler = handleScoreRef.current
-      const hasScoreHandler = !!scoreHandler
 
       if (!mine) {
-        if (hasYahtzeeEngine && game?.id && Array.isArray(game?.players)) {
+        if (gameEngine && game?.id && Array.isArray(game?.players)) {
           const currentPlayer = gameEngine.getCurrentPlayer()
           const currentGamePlayer = currentPlayer
             ? game.players.find((player) => player.userId === currentPlayer.id)
             : null
-          const isBotTurn = !!currentGamePlayer?.user?.bot
-          const rollsLeft = gameEngine.getRollsLeft()
+          const isBotTurn = !!(currentGamePlayer?.user?.bot || currentGamePlayer?.bot)
 
           // Fail-safe: if bot turn is stuck, force-trigger bot logic.
           // This is safe with server-side locking/idempotency guards.
@@ -1180,7 +1172,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               botUserId: currentPlayer.id,
               gameId: game.id,
               currentPlayerIndex: gameEngine.getState().currentPlayerIndex,
-              rollsLeft,
             })
             void triggerBotTurn(currentPlayer.id, game.id)
             return false
@@ -1190,7 +1181,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         return true
       }
 
-      if (!hasYahtzeeEngine || !hasScoreHandler) {
+      if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) {
+        return true
+      }
+
+      const scoreHandler = handleScoreRef.current
+      const hasScoreHandler = !!scoreHandler
+
+      if (!hasScoreHandler) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
           isMyTurn: mine,
           hasGameEngine: !!gameEngine,
