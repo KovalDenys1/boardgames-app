@@ -7,6 +7,7 @@ import {
 } from './notifications-log'
 import { createInAppNotification } from './in-app-notifications'
 import { parsePersistedGameState } from './persisted-game-state'
+import { sendPushNotification } from './push-send'
 
 type TurnReminderCycleOptions = {
   now?: Date
@@ -103,6 +104,10 @@ export async function runTurnReminderCycle(
   }
   const notifiedUsersInCycle = new Set<string>()
   const userRateLimitedInCycle = new Set<string>()
+  // Push has its own dedupe/rate-limit state (channel: 'push' in the notifications
+  // log) so it isn't gated by the (currently unimplemented) email path below —
+  // sendPushNotification() already checks the user's blanket push toggle itself.
+  const pushNotifiedUsersInCycle = new Set<string>()
 
   const games = await prisma.games.findMany({
     where: {
@@ -260,6 +265,43 @@ export async function runTurnReminderCycle(
           href: `/lobby/${game.lobby.code}`,
         },
       })
+
+      if (!pushNotifiedUsersInCycle.has(recipient.id)) {
+        const pushRecentlySentThisGame = await hasRecentSentNotification({
+          userId: recipient.id,
+          type: 'turn_reminder',
+          channel: 'push',
+          dedupeKey,
+          since: recentSentCutoff,
+        })
+        const pushRecentlySentAnyGame = pushRecentlySentThisGame || await hasRecentSentNotification({
+          userId: recipient.id,
+          type: 'turn_reminder',
+          channel: 'push',
+          since: recentSentCutoff,
+        })
+
+        if (pushRecentlySentAnyGame) {
+          pushNotifiedUsersInCycle.add(recipient.id)
+        } else {
+          await sendPushNotification(recipient.id, {
+            title: `It's your turn in ${getDisplayGameType(payload.gameType)}`,
+            body: game.lobby.name || 'Tap to make your move',
+            url: `/lobby/${game.lobby.code}`,
+            tag: `turn_reminder:${game.id}`,
+          })
+          pushNotifiedUsersInCycle.add(recipient.id)
+          result.sent += 1
+          await recordNotificationDelivery({
+            userId: recipient.id,
+            type: 'turn_reminder',
+            status: 'sent',
+            channel: 'push',
+            dedupeKey,
+            payload,
+          })
+        }
+      }
 
       const prefs = await getNotificationPreferences(recipient.id)
       if (prefs.unsubscribedAll || !prefs.turnReminders) {
