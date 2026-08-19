@@ -225,7 +225,10 @@ function SketchCanvas({
   }, [onStrokesChange, strokes])
 
   return (
-    <div className="relative mx-auto w-full max-w-[480px] touch-none select-none overflow-hidden rounded-xl border border-[var(--bd-line)] bg-white shadow-inner">
+    <div
+      className="relative mx-auto touch-none select-none overflow-hidden rounded-xl border border-[var(--bd-line)] bg-white shadow-inner"
+      style={{ width: 'min(100%, 480px, max(180px, calc(var(--game-h) - 220px)))', aspectRatio: '1 / 1' }}
+    >
       <canvas
         ref={canvasRef}
         style={{
