@@ -10,7 +10,7 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { sketchAndGuessActionRequestSchema } from '@/lib/validation/sketch-and-guess'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
-import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
+import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -225,9 +225,7 @@ export async function POST(
         })
       }
 
-      if (game.status !== nextState.status && nextState.status === 'finished') {
-        await checkAchievementsForFinishedGame(game.players, log)
-      }
+      await checkAchievementsOnStatusChange(game.status, nextState.status, game.players, log)
     }
 
     const turnTimerSeconds = resolveTurnTimerSeconds(game.lobby?.turnTimer)
