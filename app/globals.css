@@ -2245,6 +2245,52 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 }
 
+/* Phone landscape (#751): mirrors .ttt-landscape-layout — board pane at full
+   height on the left, narrow chrome column on the right. The board reuses
+   .memory-mobile-board-wrap's container-query sizing, so no extra sizing
+   math lives here. Moves history is dropped from this pane (same call TTT
+   made for its own history tab) — still reachable by rotating to portrait. */
+.memory-landscape-layout { display: none; }
+@media (max-width: 1023px) and (orientation: landscape) {
+  .memory-mobile-layout { display: none !important; }
+  .memory-screen {
+    padding: 8px 10px 10px;
+    /* the landscape tree fits by construction — re-lock the shell */
+    overflow: hidden;
+  }
+  .memory-landscape-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+  }
+  .memory-landscape-board {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .memory-landscape-board > .memory-mobile-board-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .memory-landscape-side {
+    flex: 0 0 min(300px, 42vw);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+  }
+  .memory-landscape-side > .memory-chat-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 .memory-mobile-header {
   display: flex;
   align-items: center;
@@ -2323,6 +2369,48 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ===== YAHTZEE GAME — PHONE LANDSCAPE (#751) ===== */
+/* Yahtzee has no dedicated CSS family otherwise (pure Tailwind, inline in
+   LobbyPageClient.tsx) — .yahtzee-screen/.yahtzee-mobile-layout exist only
+   as scoping hooks for this override, mirroring .ttt-landscape-layout.
+   Scorecard is functionally required to bank a roll (unlike TTT's history
+   or Memory's moves log), so it's the one thing kept in the side pane;
+   Players/RollHistory/Chat stay reachable by rotating back to portrait. */
+.yahtzee-landscape-layout { display: none; }
+@media (max-width: 1023px) and (orientation: landscape) {
+  .yahtzee-mobile-layout { display: none !important; }
+  /* The persistent top status bar sits above Main Game Area (outside both
+     .yahtzee-mobile-layout and .yahtzee-landscape-layout), so it needs its
+     own hide rule — .yahtzee-landscape-side shows the same content inside
+     the pane instead (compactStatusBar). Without this the bar silently ate
+     ~60-65px out of the already-tight landscape height budget. */
+  .yahtzee-top-status-bar { display: none !important; }
+  .yahtzee-landscape-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+    padding: 0 10px 10px;
+  }
+  .yahtzee-landscape-board {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .yahtzee-landscape-side {
+    flex: 0 0 min(300px, 42vw);
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden; /* Scorecard manages its own internal scroll */
+  }
 }
 
 /* spy mobile (unchanged from existing) */

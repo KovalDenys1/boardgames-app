@@ -781,6 +781,47 @@ export default function MemoryGameBoard({
     </div>
   )
 
+  // Shared between the mobile board tab and the phone-landscape board pane
+  // (#751) — desktop keeps its own inline markup since .memory-board-panel
+  // carries extra --grid-cols/--grid-rows CSS custom properties this doesn't need.
+  const renderBoardSection = (wrapClassName: string) => (
+    <>
+      <div className={wrapClassName}>
+        {cardGrid}
+      </div>
+      {isFinished && !overlayInspecting && !isSpectator && (
+        <MemoryResultModal
+          winnerId={winnerId}
+          winnerName={winnerName}
+          isDraw={isDraw}
+          isMyWin={isMyWin}
+          canStartGame={!!canStartGame}
+          onPlayAgain={onPlayAgain}
+          onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
+          onLeave={onLeave}
+          onInspect={() => setOverlayInspecting(true)}
+          isGuest={isGuest}
+          registerUrl={registerUrl}
+          t={t}
+        />
+      )}
+      {isFinished && overlayInspecting && (
+        <button
+          onClick={() => setOverlayInspecting(false)}
+          style={{
+            position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(31,27,22,0.75)', color: '#fff',
+            border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
+            padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+          }}
+        >
+          {t('games.memory.game.showResults')}
+        </button>
+      )}
+    </>
+  )
+
   const moveHistory: MemoryMoveRecord[] = Array.isArray(gameData?.moveHistory) ? (gameData.moveHistory as MemoryMoveRecord[]) : []
 
   const historyPanel = (
@@ -907,6 +948,57 @@ export default function MemoryGameBoard({
     </div>
   )
 
+  // Shared between the mobile header and the phone-landscape side pane
+  // (#751) — the desktop headerSection's 1fr/auto/1fr grid needs far more
+  // than the ~300px landscape side pane, so the compact chip row (already
+  // flex:1/minWidth:0 per chip, built for narrow mobile widths) goes there
+  // instead — using headerSection directly there overlapped/squished (see
+  // #751 verification screenshots).
+  const compactHeaderSection = (
+    <div className="memory-mobile-header">
+      <div style={{ display: 'flex', flex: 1, minWidth: 0, gap: 6, overflow: 'hidden' }}>
+        {(parsedState.players || []).map((player) => {
+          const score = scoreByPlayerId[player.id] ?? 0
+          const isActive = !isFinished && player.id === currentPlayerId
+          const name = displayNameByUserId.get(player.id) || 'Player'
+          const avatarSrc = avatarByUserId.get(player.id) ?? null
+          return (
+            <div key={player.id} style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 10,
+              background: isActive ? 'var(--bd-input-bg)' : 'var(--bd-bg2)',
+              border: '1.5px solid ' + (isActive ? 'var(--bd-ink)' : 'var(--bd-line)'),
+              boxShadow: isActive ? '0 2px 0 var(--bd-ink)' : 'none',
+              flex: '1 1 0', minWidth: 0, transition: 'all 0.2s',
+            }}>
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid var(--bd-ink)' }} />
+              ) : (
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'white' }}>
+                  {name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>{score}p</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {onLeave && (
+        <button
+          type="button"
+          onClick={onLeave}
+          aria-label={t('game.ui.leave')}
+          className="memory-leave-button"
+          style={{ minHeight: 36, padding: '6px 10px', fontSize: 12, flexShrink: 0 }}
+        >
+          <LeaveIcon />
+        </button>
+      )}
+    </div>
+  )
+
   const statusSection = (
     <MemoryStatusBanner
       isFinished={isFinished}
@@ -920,6 +1012,48 @@ export default function MemoryGameBoard({
       t={t}
     />
   )
+
+  // Shared between the mobile moves/chat tabs and the phone-landscape side
+  // pane (#751) — dedupes the identical Play Again / Leave / waiting-for-host
+  // footer that used to be copy-pasted in both tabs.
+  const finishedActionsSection = isFinished && !isSpectator ? (
+    <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
+      {canStartGame && onPlayAgain && (
+        <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
+          {t('lobby.game.playAgain')}
+        </button>
+      )}
+      {onLeave && (
+        <button onClick={onLeave} className="bd-btn bd-btn-soft flex-1 justify-center">
+          {t('game.ui.leave')}
+        </button>
+      )}
+      {!canStartGame && (
+        <p style={{ flex: 1, textAlign: 'center', fontSize: 13, color: 'var(--bd-ink-muted)', fontWeight: 600, margin: 0, alignSelf: 'center' }}>
+          {t('game.ui.waitingForHost')}
+        </p>
+      )}
+    </div>
+  ) : null
+
+  // Shared between the desktop side stack, the mobile chat tab, and the
+  // phone-landscape side pane (#751).
+  const chatSection = onSendChatMessage ? (
+    <section className="memory-chat-panel">
+      <Chat
+        messages={chatMessages}
+        onSendMessage={onSendChatMessage}
+        currentUserId={currentUserId || null}
+        isMinimized={false}
+        onToggleMinimize={() => {}}
+        unreadCount={chatUnreadCount}
+        someoneTyping={someoneTyping}
+        playerProfiles={playerProfiles}
+        onProfileClick={onProfileClick}
+        fullScreen
+      />
+    </section>
+  ) : null
 
   return (
     <div className="memory-screen">
@@ -966,73 +1100,29 @@ export default function MemoryGameBoard({
 
             <aside className="memory-side-stack">
               {historyPanel}
-
-              {onSendChatMessage && (
-                <section className="memory-chat-panel">
-                  <Chat
-                    messages={chatMessages}
-                    onSendMessage={onSendChatMessage}
-                    currentUserId={currentUserId || null}
-                    isMinimized={false}
-                    onToggleMinimize={() => {}}
-                    unreadCount={chatUnreadCount}
-                    someoneTyping={someoneTyping}
-                    playerProfiles={playerProfiles}
-                    onProfileClick={onProfileClick}
-                    fullScreen
-                  />
-                </section>
-              )}
+              {chatSection}
             </aside>
           </main>
+        </div>
+      </div>
+
+      {/* ── Phone landscape (#751) ─────────────────────── */}
+      <div className="memory-landscape-layout">
+        <div className="memory-landscape-board">
+          {renderBoardSection('memory-mobile-board-wrap')}
+        </div>
+        <div className="memory-landscape-side">
+          {compactHeaderSection}
+          {statusSection}
+          {chatSection}
+          {finishedActionsSection}
         </div>
       </div>
 
       {/* ── Mobile layout ──────────────────────────────── */}
       <div className="memory-mobile-layout">
         {/* Compact player chips header */}
-        <div className="memory-mobile-header">
-          <div style={{ display: 'flex', flex: 1, minWidth: 0, gap: 6, overflow: 'hidden' }}>
-            {(parsedState.players || []).map((player) => {
-              const score = scoreByPlayerId[player.id] ?? 0
-              const isActive = !isFinished && player.id === currentPlayerId
-              const name = displayNameByUserId.get(player.id) || 'Player'
-              const avatarSrc = avatarByUserId.get(player.id) ?? null
-              return (
-                <div key={player.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 10,
-                  background: isActive ? 'var(--bd-input-bg)' : 'var(--bd-bg2)',
-                  border: '1.5px solid ' + (isActive ? 'var(--bd-ink)' : 'var(--bd-line)'),
-                  boxShadow: isActive ? '0 2px 0 var(--bd-ink)' : 'none',
-                  flex: '1 1 0', minWidth: 0, transition: 'all 0.2s',
-                }}>
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt={name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid var(--bd-ink)' }} />
-                  ) : (
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'white' }}>
-                      {name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>{score}p</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          {onLeave && (
-            <button
-              type="button"
-              onClick={onLeave}
-              aria-label={t('game.ui.leave')}
-              className="memory-leave-button"
-              style={{ minHeight: 36, padding: '6px 10px', fontSize: 12, flexShrink: 0 }}
-            >
-              <LeaveIcon />
-            </button>
-          )}
-        </div>
+        {compactHeaderSection}
 
         {/* Status banner */}
         <div style={{ flexShrink: 0, padding: '4px 12px' }}>
@@ -1073,39 +1163,7 @@ export default function MemoryGameBoard({
             // wrap) so the result modal covers the whole tab, not just the
             // grid — on small grids the modal used to shrink with it (#752).
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px', position: 'relative' }}>
-              <div className="memory-mobile-board-wrap">
-                {cardGrid}
-              </div>
-              {isFinished && !overlayInspecting && !isSpectator && (
-                <MemoryResultModal
-                  winnerId={winnerId}
-                  winnerName={winnerName}
-                  isDraw={isDraw}
-                  isMyWin={isMyWin}
-                  canStartGame={!!canStartGame}
-                  onPlayAgain={onPlayAgain}
-                  onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
-                  onLeave={onLeave}
-                  onInspect={() => setOverlayInspecting(true)}
-                  isGuest={isGuest}
-                  registerUrl={registerUrl}
-                  t={t}
-                />
-              )}
-              {isFinished && overlayInspecting && (
-                <button
-                  onClick={() => setOverlayInspecting(false)}
-                  style={{
-                    position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-                    background: 'rgba(31,27,22,0.75)', color: '#fff',
-                    border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 20,
-                    padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    zIndex: 5, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {t('games.memory.game.showResults')}
-                </button>
-              )}
+              {renderBoardSection('memory-mobile-board-wrap')}
             </div>
           )}
 
@@ -1114,63 +1172,14 @@ export default function MemoryGameBoard({
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
                 {historyPanel}
               </div>
-              {isFinished && !isSpectator && (
-                <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
-                  {canStartGame && onPlayAgain && (
-                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
-                      {t('lobby.game.playAgain')}
-                    </button>
-                  )}
-                  {onLeave && (
-                    <button onClick={onLeave} className="bd-btn bd-btn-soft flex-1 justify-center">
-                      {t('game.ui.leave')}
-                    </button>
-                  )}
-                  {!canStartGame && (
-                    <p style={{ flex: 1, textAlign: 'center', fontSize: 13, color: 'var(--bd-ink-muted)', fontWeight: 600, margin: 0, alignSelf: 'center' }}>
-                      {t('game.ui.waitingForHost')}
-                    </p>
-                  )}
-                </div>
-              )}
+              {finishedActionsSection}
             </div>
           )}
 
           {mobileTab === 'chat' && onSendChatMessage && (
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ flex: 1, minHeight: 0 }}>
-                <Chat
-                  messages={chatMessages}
-                  onSendMessage={onSendChatMessage}
-                  currentUserId={currentUserId || null}
-                  isMinimized={false}
-                  onToggleMinimize={() => {}}
-                  unreadCount={chatUnreadCount}
-                  someoneTyping={someoneTyping}
-                  playerProfiles={playerProfiles}
-                  onProfileClick={onProfileClick}
-                  fullScreen
-                />
-              </div>
-              {isFinished && !isSpectator && (
-                <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
-                  {canStartGame && onPlayAgain && (
-                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
-                      {t('lobby.game.playAgain')}
-                    </button>
-                  )}
-                  {onLeave && (
-                    <button onClick={onLeave} className="bd-btn bd-btn-soft flex-1 justify-center">
-                      {t('game.ui.leave')}
-                    </button>
-                  )}
-                  {!canStartGame && (
-                    <p style={{ flex: 1, textAlign: 'center', fontSize: 13, color: 'var(--bd-ink-muted)', fontWeight: 600, margin: 0, alignSelf: 'center' }}>
-                      {t('game.ui.waitingForHost')}
-                    </p>
-                  )}
-                </div>
-              )}
+              {chatSection}
+              {finishedActionsSection}
             </div>
           )}
         </div>
