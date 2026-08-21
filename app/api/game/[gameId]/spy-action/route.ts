@@ -9,7 +9,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
-import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
+import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 
 const spyActionSchema = z.object({
   action: z.enum([
@@ -185,9 +185,7 @@ export async function POST(
       log.info('Spy game action processed', { userId, action, gameId })
     }
 
-    if (statusChanged && updatedState.status === 'finished') {
-      await checkAchievementsForFinishedGame(game.players, log)
-    }
+    await checkAchievementsOnStatusChange(game.status, updatedState.status, game.players, log)
 
     const broadcastState = sanitizeSpyStateForBroadcast(updatedState)
 

@@ -193,6 +193,26 @@ interface FinishedGamePlayer {
  * achievements on) and swallows failures — a missed achievement check must
  * never fail the move/action response that triggered it.
  */
+/**
+ * The one shared "did this write finish the game → run achievement checks"
+ * gate (#759). Every game-completion call site used to hand-roll the same
+ * `statusChanged && status === 'finished'` guard around
+ * checkAchievementsForFinishedGame — centralizing it here means new call
+ * sites (and any future change to when the check fires) are a one-line
+ * edit. Only the transition INTO `finished` counts: `abandoned`/`cancelled`
+ * games deliberately grant nothing, and repeat writes of an already
+ * finished state must not re-check.
+ */
+export async function checkAchievementsOnStatusChange(
+  previousStatus: string | null | undefined,
+  nextStatus: string | null | undefined,
+  players: FinishedGamePlayer[],
+  log: ReturnType<typeof apiLogger>
+): Promise<void> {
+  if (nextStatus !== 'finished' || previousStatus === nextStatus) return
+  await checkAchievementsForFinishedGame(players, log)
+}
+
 export async function checkAchievementsForFinishedGame(
   players: FinishedGamePlayer[],
   log: ReturnType<typeof apiLogger>

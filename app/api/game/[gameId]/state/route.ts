@@ -14,7 +14,7 @@ import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { maybeAutoTransitionCompletedSeries } from '@/lib/lobby-series-transition'
 import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
-import { checkAchievementsForFinishedGame } from '@/lib/achievement-engine'
+import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 
 type AutoActionContext = AutoActionContextRequest
@@ -570,9 +570,7 @@ export async function POST(
       })
     }
 
-    if (statusChanged && newState.status === 'finished') {
-      await checkAchievementsForFinishedGame(gamePlayers, log)
-    }
+    await checkAchievementsOnStatusChange(game.status, newState.status, gamePlayers, log)
 
     const authoritativeState = gameEngine.getState()
     const replaySnapshotPromise = appendGameReplaySnapshot({
