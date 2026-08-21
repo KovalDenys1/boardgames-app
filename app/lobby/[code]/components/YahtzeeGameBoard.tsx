@@ -108,15 +108,15 @@ export default function GameBoard({
         }}
       >
         {/* Timer at top of dice area */}
-        <div className="flex-shrink-0 px-3 py-1.5 border-b" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
-          <div className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-2xl transition-all ${percentage <= 17 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
+        <div className={`flex-shrink-0 px-3 border-b ${compact ? 'py-1' : 'py-1.5'}`} style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+          <div className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-2xl transition-all ${compact ? 'py-0.5' : 'py-1.5'} ${percentage <= 17 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
               percentage <= 50 ? 'bg-[var(--bd-sun)] text-bd-ink shadow-sm' :
                 'text-bd-ink shadow-sm'
             }`}
             style={percentage > 50 ? { background: 'rgba(107,193,240,0.18)', border: '1px solid rgba(107,193,240,0.24)' } : undefined}
           >
-            <span className="text-lg sm:text-2xl">⏱️</span>
-            <span className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'var(--bd-font-display)' }}>{timeLeft}s</span>
+            <span className={compact ? 'text-base' : 'text-lg sm:text-2xl'}>⏱️</span>
+            <span className={`font-bold ${compact ? 'text-base' : 'text-xl sm:text-2xl'}`} style={{ fontFamily: 'var(--bd-font-display)' }}>{timeLeft}s</span>
           </div>
         </div>
 
@@ -127,6 +127,7 @@ export default function GameBoard({
             bug) */}
         <div className={`flex-1 ${compact ? 'min-h-[110px]' : 'min-h-[190px]'}`}>
           <DiceGroup
+            compact={compact}
             dice={gameEngine.getDice()}
             held={isMyTurn ? held : gameEngine.getHeld()}
             onToggleHold={isSpectator ? () => undefined : onToggleHold}

@@ -1853,6 +1853,51 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     )
   }
 
+  // Shared between the sub-640px top status bar and the phone-landscape
+  // side pane (#751) — the persistent top bars sit above Main Game Area and
+  // silently ate into the landscape height budget, so landscape shows this
+  // same compact content inside the pane instead of a separate bar.
+  const compactStatusBar = gameEngine instanceof YahtzeeGame ? (
+    <div
+      className="flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5"
+      style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
+    >
+      <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] font-bold text-bd-ink">
+        <span className="shrink-0">🎯 {roundInfo.current}/{roundInfo.total}</span>
+        <span className="truncate">👤 {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}</span>
+        <span className="shrink-0">🏆 {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}</span>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          onClick={() => {
+            sounds.play('click', { force: true })
+            const newState = sounds.toggle()
+            setSoundEnabled(newState)
+            showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
+              duration: 2000,
+              position: 'top-center',
+            })
+          }}
+          aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          style={{ background: 'var(--bd-bg)', border: '1px solid var(--bd-line)' }}
+        >
+          {soundEnabled ? '🔊' : '🔇'}
+        </button>
+        <button
+          onClick={() => {
+            sounds.play('click', { force: true })
+            setShowLeaveConfirmModal(true)
+          }}
+          aria-label={t('game.ui.leave')}
+          className="bd-btn-coral flex h-7 w-7 items-center justify-center !rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+        >
+          <LeaveIcon />
+        </button>
+      </div>
+    </div>
+  ) : null
+
   // Shared between the desktop grid, the mobile scorecard tab, and the
   // phone-landscape side pane (#751).
   const scorecardSection = gameEngine instanceof YahtzeeGame ? (() => {
@@ -2130,50 +2175,20 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {/* Top Status Bar — compact single-row variant below sm (640px),
                   where this card's own flex-col stacking used to add a
                   second row of chrome height on top of an already-cramped
-                  mobile Game/Score view. Unchanged at sm and up. */}
-              <div className="sm:hidden flex-shrink-0 pt-2 px-2">
-                <div
-                  className="flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5"
-                  style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
-                >
-                  <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] font-bold text-bd-ink">
-                    <span className="shrink-0">🎯 {roundInfo.current}/{roundInfo.total}</span>
-                    <span className="truncate">👤 {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}</span>
-                    <span className="shrink-0">🏆 {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}</span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      onClick={() => {
-                        sounds.play('click', { force: true })
-                        const newState = sounds.toggle()
-                        setSoundEnabled(newState)
-                        showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
-                          duration: 2000,
-                          position: 'top-center',
-                        })
-                      }}
-                      aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                      style={{ background: 'var(--bd-bg)', border: '1px solid var(--bd-line)' }}
-                    >
-                      {soundEnabled ? '🔊' : '🔇'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        sounds.play('click', { force: true })
-                        setShowLeaveConfirmModal(true)
-                      }}
-                      aria-label={t('game.ui.leave')}
-                      className="bd-btn-coral flex h-7 w-7 items-center justify-center !rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                    >
-                      <LeaveIcon />
-                    </button>
-                  </div>
-                </div>
+                  mobile Game/Score view. Unchanged at sm and up.
+                  yahtzee-top-status-bar (#751): also hidden in phone
+                  landscape — .yahtzee-landscape-side renders the same
+                  content (compactStatusBar below) inside the pane instead,
+                  since this bar sits above Main Game Area and was silently
+                  eating into the landscape height budget. */}
+              <div className="sm:hidden flex-shrink-0 pt-2 px-2 yahtzee-top-status-bar">
+                {compactStatusBar}
               </div>
 
-              {/* Top Status Bar — unchanged at sm (640px) and up */}
-              <div className="hidden sm:block flex-shrink-0 pt-2 mb-3 px-2 sm:px-4">
+              {/* Top Status Bar — unchanged at sm (640px) and up.
+                  yahtzee-top-status-bar (#751): hidden in phone landscape,
+                  see the narrow-variant comment above for why. */}
+              <div className="hidden sm:block flex-shrink-0 pt-2 mb-3 px-2 sm:px-4 yahtzee-top-status-bar">
                 <div
                   className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
                   style={{
@@ -2419,7 +2434,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     />
                   </div>
                   <div className="yahtzee-landscape-side">
-                    {scorecardSection}
+                    <div className="flex-shrink-0">{compactStatusBar}</div>
+                    <div className="flex-1 min-h-0 overflow-y-auto">{scorecardSection}</div>
                   </div>
                 </div>
               </div>

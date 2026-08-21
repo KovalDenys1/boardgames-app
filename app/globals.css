@@ -2381,6 +2381,12 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yahtzee-landscape-layout { display: none; }
 @media (max-width: 1023px) and (orientation: landscape) {
   .yahtzee-mobile-layout { display: none !important; }
+  /* The persistent top status bar sits above Main Game Area (outside both
+     .yahtzee-mobile-layout and .yahtzee-landscape-layout), so it needs its
+     own hide rule — .yahtzee-landscape-side shows the same content inside
+     the pane instead (compactStatusBar). Without this the bar silently ate
+     ~60-65px out of the already-tight landscape height budget. */
+  .yahtzee-top-status-bar { display: none !important; }
   .yahtzee-landscape-layout {
     display: flex;
     align-items: stretch;
@@ -2400,6 +2406,9 @@ input[type="range"].slider-thumb::-moz-range-track {
     flex: 0 0 min(300px, 42vw);
     min-width: 0;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     overflow: hidden; /* Scorecard manages its own internal scroll */
   }
 }

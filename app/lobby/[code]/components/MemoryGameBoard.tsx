@@ -948,6 +948,57 @@ export default function MemoryGameBoard({
     </div>
   )
 
+  // Shared between the mobile header and the phone-landscape side pane
+  // (#751) — the desktop headerSection's 1fr/auto/1fr grid needs far more
+  // than the ~300px landscape side pane, so the compact chip row (already
+  // flex:1/minWidth:0 per chip, built for narrow mobile widths) goes there
+  // instead — using headerSection directly there overlapped/squished (see
+  // #751 verification screenshots).
+  const compactHeaderSection = (
+    <div className="memory-mobile-header">
+      <div style={{ display: 'flex', flex: 1, minWidth: 0, gap: 6, overflow: 'hidden' }}>
+        {(parsedState.players || []).map((player) => {
+          const score = scoreByPlayerId[player.id] ?? 0
+          const isActive = !isFinished && player.id === currentPlayerId
+          const name = displayNameByUserId.get(player.id) || 'Player'
+          const avatarSrc = avatarByUserId.get(player.id) ?? null
+          return (
+            <div key={player.id} style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 10,
+              background: isActive ? 'var(--bd-input-bg)' : 'var(--bd-bg2)',
+              border: '1.5px solid ' + (isActive ? 'var(--bd-ink)' : 'var(--bd-line)'),
+              boxShadow: isActive ? '0 2px 0 var(--bd-ink)' : 'none',
+              flex: '1 1 0', minWidth: 0, transition: 'all 0.2s',
+            }}>
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid var(--bd-ink)' }} />
+              ) : (
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'white' }}>
+                  {name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>{score}p</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {onLeave && (
+        <button
+          type="button"
+          onClick={onLeave}
+          aria-label={t('game.ui.leave')}
+          className="memory-leave-button"
+          style={{ minHeight: 36, padding: '6px 10px', fontSize: 12, flexShrink: 0 }}
+        >
+          <LeaveIcon />
+        </button>
+      )}
+    </div>
+  )
+
   const statusSection = (
     <MemoryStatusBanner
       isFinished={isFinished}
@@ -1061,7 +1112,7 @@ export default function MemoryGameBoard({
           {renderBoardSection('memory-mobile-board-wrap')}
         </div>
         <div className="memory-landscape-side">
-          {headerSection}
+          {compactHeaderSection}
           {statusSection}
           {chatSection}
           {finishedActionsSection}
@@ -1071,48 +1122,7 @@ export default function MemoryGameBoard({
       {/* ── Mobile layout ──────────────────────────────── */}
       <div className="memory-mobile-layout">
         {/* Compact player chips header */}
-        <div className="memory-mobile-header">
-          <div style={{ display: 'flex', flex: 1, minWidth: 0, gap: 6, overflow: 'hidden' }}>
-            {(parsedState.players || []).map((player) => {
-              const score = scoreByPlayerId[player.id] ?? 0
-              const isActive = !isFinished && player.id === currentPlayerId
-              const name = displayNameByUserId.get(player.id) || 'Player'
-              const avatarSrc = avatarByUserId.get(player.id) ?? null
-              return (
-                <div key={player.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 10,
-                  background: isActive ? 'var(--bd-input-bg)' : 'var(--bd-bg2)',
-                  border: '1.5px solid ' + (isActive ? 'var(--bd-ink)' : 'var(--bd-line)'),
-                  boxShadow: isActive ? '0 2px 0 var(--bd-ink)' : 'none',
-                  flex: '1 1 0', minWidth: 0, transition: 'all 0.2s',
-                }}>
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt={name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid var(--bd-ink)' }} />
-                  ) : (
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'white' }}>
-                      {name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>{score}p</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          {onLeave && (
-            <button
-              type="button"
-              onClick={onLeave}
-              aria-label={t('game.ui.leave')}
-              className="memory-leave-button"
-              style={{ minHeight: 36, padding: '6px 10px', fontSize: 12, flexShrink: 0 }}
-            >
-              <LeaveIcon />
-            </button>
-          )}
-        </div>
+        {compactHeaderSection}
 
         {/* Status banner */}
         <div style={{ flexShrink: 0, padding: '4px 12px' }}>
