@@ -1853,6 +1853,42 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     )
   }
 
+  // Shared between the desktop grid, the mobile scorecard tab, and the
+  // phone-landscape side pane (#751).
+  const scorecardSection = gameEngine instanceof YahtzeeGame ? (() => {
+    const currentUserId = getCurrentUserId()
+    const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
+    const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
+    const isViewingOtherPlayer = viewingPlayerId !== currentUserId
+
+    if (!scorecard) return null
+
+    return (
+      <Scorecard
+        scorecard={scorecard}
+        currentDice={gameEngine.getDice()}
+        rollsLeft={gameEngine.getRollsLeft()}
+        onSelectCategory={handleScore}
+        canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
+        isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+        isLoading={isScoring}
+        playerName={(() => {
+          const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
+          if (!dbPlayer) return undefined
+          return dbPlayer.user?.username || dbPlayer.name || 'Player'
+        })()}
+        onBackToMyCards={isViewingOtherPlayer ? () => {
+          setSelectedPlayerId(currentUserId || null)
+        } : undefined}
+        showBackButton={isViewingOtherPlayer}
+        onGoToCurrentTurn={() => {
+          setSelectedPlayerId(null)
+        }}
+        showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
+      />
+    )
+  })() : null
+
   return (
     <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
@@ -2090,7 +2126,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
-            <>
+            <div className="yahtzee-screen flex flex-col flex-1 min-h-0">
               {/* Top Status Bar — compact single-row variant below sm (640px),
                   where this card's own flex-col stacking used to add a
                   second row of chrome height on top of an already-cramped
@@ -2231,46 +2267,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
                   <div className="lg:col-span-6 min-w-0 h-full">
-                    {(() => {
-                      // Show selected player's scorecard or current player's scorecard
-                      const currentUserId = getCurrentUserId()
-                      const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
-                      const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
-                      const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-
-                      if (!scorecard) return null
-
-                      return (
-                        <div className="h-full flex flex-col">
-                          <div className="flex-1 min-h-0">
-                            <Scorecard
-                              scorecard={scorecard}
-                              currentDice={gameEngine.getDice()}
-                              rollsLeft={gameEngine.getRollsLeft()}
-                              onSelectCategory={handleScore}
-                              canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                              isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
-                              isLoading={isScoring}
-                              playerName={(() => {
-                                const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
-                                if (!dbPlayer) return undefined
-                                return dbPlayer.user?.username || dbPlayer.name || 'Player'
-                              })()}
-                              onBackToMyCards={isViewingOtherPlayer ? () => {
-                                // Set to current user's ID instead of null
-                                setSelectedPlayerId(currentUserId || null)
-                              } : undefined}
-                              showBackButton={isViewingOtherPlayer}
-                              onGoToCurrentTurn={() => {
-                                // Go back to viewing current player's turn
-                                setSelectedPlayerId(null)
-                              }}
-                              showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })()}
+                    <div className="h-full flex flex-col">
+                      <div className="flex-1 min-h-0">
+                        {scorecardSection}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
@@ -2301,7 +2302,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Mobile: Tabbed Layout */}
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="desk:hidden relative"
+                  className="desk:hidden relative yahtzee-mobile-layout"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2337,39 +2338,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
                     <div className="h-full p-3">
-                      {(() => {
-                        const currentUserId = getCurrentUserId()
-                        const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
-                        const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
-                        const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-
-                        if (!scorecard) return null
-
-                        return (
-                          <Scorecard
-                            scorecard={scorecard}
-                            currentDice={gameEngine.getDice()}
-                            rollsLeft={gameEngine.getRollsLeft()}
-                            onSelectCategory={handleScore}
-                            canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                            isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
-                            isLoading={isScoring}
-                            playerName={(() => {
-                              const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
-                              if (!dbPlayer) return undefined
-                              return dbPlayer.user?.username || dbPlayer.name || 'Player'
-                            })()}
-                            onBackToMyCards={isViewingOtherPlayer ? () => {
-                              setSelectedPlayerId(currentUserId || null)
-                            } : undefined}
-                            showBackButton={isViewingOtherPlayer}
-                            onGoToCurrentTurn={() => {
-                              setSelectedPlayerId(null)
-                            }}
-                            showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
-                          />
-                        )
-                      })()}
+                      {scorecardSection}
                     </div>
                   </MobileTabPanel>
 
@@ -2420,6 +2389,39 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </MobileTabPanel>
                   )}
                 </div>
+
+                {/* Phone landscape (#751): board pane left (compact dice,
+                    Roll button always above the fold), Scorecard pane right
+                    — Scorecard is functionally required to bank a roll, so
+                    unlike TTT's history it isn't droppable from this tree.
+                    Players/RollHistory/Chat stay reachable in portrait. */}
+                <div className="yahtzee-landscape-layout">
+                  <div className="yahtzee-landscape-board">
+                    <GameBoard
+                      gameEngine={gameEngine}
+                      game={game}
+                      isMyTurn={isMyTurn()}
+                      timeLeft={timeLeft}
+                      turnTimerLimit={turnTimerLimit}
+                      isMoveInProgress={isMoveInProgress}
+                      isRolling={isRolling}
+                      isScoring={isScoring}
+                      isStateReverting={isStateReverting}
+                      celebrationEvent={celebrationEvent}
+                      held={held}
+                      getCurrentUserId={getCurrentUserId}
+                      onRollDice={handleRollDice}
+                      onToggleHold={handleToggleHold}
+                      onScore={handleScore}
+                      onCelebrationComplete={handleCelebrationComplete}
+                      compact
+                      showReviewScorecardButton={false}
+                    />
+                  </div>
+                  <div className="yahtzee-landscape-side">
+                    {scorecardSection}
+                  </div>
+                </div>
               </div>
 
               {/* Desktop Chat - Minimized Button */}
@@ -2447,23 +2449,25 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               )}
 
               {/* Mobile Bottom Navigation */}
-              <MobileTabs
-                activeTab={mobileActiveTab}
-                onTabChange={(tab) => {
-                  setMobileActiveTab(tab)
-                  if (tab === 'chat') {
-                    setUnreadMessageCount(0)
-                  }
-                }}
-                tabs={[
-                  { id: 'game' as const, label: 'Game', icon: '🎲' },
-                  { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
-                  { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: '👥' },
-                  ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: '💬', badge: unreadMessageCount }] : []),
-                ]}
-                unreadChatCount={unreadMessageCount}
-              />
-            </>
+              <div className="yahtzee-mobile-layout flex-shrink-0">
+                <MobileTabs
+                  activeTab={mobileActiveTab}
+                  onTabChange={(tab) => {
+                    setMobileActiveTab(tab)
+                    if (tab === 'chat') {
+                      setUnreadMessageCount(0)
+                    }
+                  }}
+                  tabs={[
+                    { id: 'game' as const, label: 'Game', icon: '🎲' },
+                    { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
+                    { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: '👥' },
+                    ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: '💬', badge: unreadMessageCount }] : []),
+                  ]}
+                  unreadChatCount={unreadMessageCount}
+                />
+              </div>
+            </div>
           ) : gameEngine && (lobby?.gameType as string) === 'guess_the_spy' && game?.id ? (
             <SpyGameBoard
               gameId={game.id}

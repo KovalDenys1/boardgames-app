@@ -27,6 +27,11 @@ interface GameBoardProps {
   onReviewScorecard?: () => void
   showReviewScorecardButton?: boolean
   isSpectator?: boolean
+  /** Phone-landscape pane (#751): the ~326px landscape box has less room
+   * than portrait's already-tight ~424-428px real-device budget, so this
+   * trims the dice floor and drops the Next-Move blurb to fit without
+   * scrolling. */
+  compact?: boolean
 }
 
 export default function GameBoard({
@@ -49,6 +54,7 @@ export default function GameBoard({
   onReviewScorecard,
   showReviewScorecardButton = false,
   isSpectator = false,
+  compact = false,
 }: GameBoardProps) {
   const { t } = useTranslation()
   const percentage = turnTimerLimit > 0 ? (timeLeft / turnTimerLimit) * 100 : 100
@@ -119,7 +125,7 @@ export default function GameBoard({
             the resolved 100dvh of the fixed game viewport (see
             LobbyPageClient.tsx's scroll-lock comment for the same class of
             bug) */}
-        <div className="flex-1 min-h-[190px]">
+        <div className={`flex-1 ${compact ? 'min-h-[110px]' : 'min-h-[190px]'}`}>
           <DiceGroup
             dice={gameEngine.getDice()}
             held={isMyTurn ? held : gameEngine.getHeld()}
@@ -142,7 +148,7 @@ export default function GameBoard({
         {/* Controls pinned to bottom of card */}
         <div className="flex-shrink-0 p-2.5 space-y-1.5 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           <div
-            className="rounded-2xl border px-3 py-3 shadow-sm"
+            className={`rounded-2xl border px-3 shadow-sm ${compact ? 'py-2' : 'py-3'}`}
             style={{ background: nextStepBg, borderColor: nextStepBorder }}
           >
             <div className="flex items-center justify-between gap-2">
@@ -166,9 +172,13 @@ export default function GameBoard({
             <p className="mt-0.5 text-sm font-semibold text-bd-ink">
               {nextStepTitle}
             </p>
-            <p className="mt-0.5 text-xs leading-snug text-bd-ink-soft">
-              {nextStepCopy}
-            </p>
+            {/* Dropped in compact mode (#751) — the phone-landscape pane's
+                ~326px budget has no room for the descriptive blurb. */}
+            {!compact && (
+              <p className="mt-0.5 text-xs leading-snug text-bd-ink-soft">
+                {nextStepCopy}
+              </p>
+            )}
             {showReviewScorecardButton && canReviewScorecard && (
               <button
                 type="button"
