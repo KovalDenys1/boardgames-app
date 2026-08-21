@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -22,7 +22,7 @@ import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
+import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -34,8 +34,10 @@ import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
+import Chat from '@/components/Chat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
+import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 
 // ─── Design sub-components ───────────────────────────────────────────────────
 
@@ -379,8 +381,6 @@ interface TicTacToeLobbyPageProps {
     onGameReset?: () => void
 }
 
-interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
-
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 
@@ -446,11 +446,22 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     // Design states
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
     const [overlayInspecting, setOverlayInspecting] = useState(false)
-    const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
-    const [chatInput, setChatInput] = useState('')
-    const chatRef = useRef<HTMLDivElement>(null)
-    const chatCurrentUserIdRef = useRef<string | null>(null)
-    const chatStatePlayersRef = useRef<Array<{ id: string }>>([])
+
+    // Shared chat pipeline (#736) — replaces the old hand-rolled localChat,
+    // which broadcast id-less payloads straight from the client (no Redis
+    // history, no server-side authz). Unread counting only matters for the
+    // mobile chat tab — in the desktop/landscape trees the panel is always
+    // on screen and the badge is never rendered.
+    const {
+        chatMessages,
+        sendChatMessage,
+        unreadCount: chatUnreadCount,
+        resetUnread: resetChatUnread,
+        someoneTyping,
+        onChatMessage,
+        onPlayerTyping,
+        mergeHistoryMessages,
+    } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
 
     const trackLeaveRedirectEvent = useCallback(
@@ -609,29 +620,23 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     void loadLobby()
   }, [applyAuthoritativeState, loadLobby])
 
-  const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
-    if (msg.userId === chatCurrentUserIdRef.current) return
-    const d = new Date(msg.timestamp)
-    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
-    const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
-    const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'lav' : 'sky'
-    setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
-  }, [])
-
   const handleGameReset = useCallback(() => {
     if (onGameReset) onGameReset()
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
 
-  const { emitWhenConnected } = useRealtimeConnection({
+  const { isConnected, isReconnecting } = useRealtimeConnection({
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
-    onChatMessage: handleChatMessage,
+    onChatMessage,
+    onPlayerTyping,
     onGameReset: handleGameReset,
   })
+
+  useLobbyChatHistory({ code, isConnected, isReconnecting, mergeHistoryMessages })
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false
@@ -915,11 +920,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     // ─── Design effects ───────────────────────────────────────────────────────
 
-    // Scroll chat to bottom
-    useEffect(() => {
-        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
-    }, [localChat])
-
     // Hoisted above the early returns below so this hook always runs, regardless
     // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
     const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as TicTacToeGameData).moveHistory : undefined
@@ -974,8 +974,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const gameData = state.data as TicTacToeGameData
     const players = game?.players || []
     const currentUserId = getCurrentUserId()
-    chatCurrentUserIdRef.current = currentUserId ?? null
-    chatStatePlayersRef.current = state.players
     const myPlayerIndex = state.players.findIndex(p => p.id === currentUserId)
     const mySymbol: PlayerSymbol | null = myPlayerIndex === 0 ? 'X' : myPlayerIndex === 1 ? 'O' : null
     const opponentSymbol: PlayerSymbol | null = mySymbol === 'X' ? 'O' : mySymbol === 'O' ? 'X' : null
@@ -1056,17 +1054,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             data: { accept },
             timestamp: new Date(),
         })
-    }
-
-    const sendChat = () => {
-        if (isSpectator || !chatInput.trim()) return
-        const now = new Date()
-        const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
-        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
-        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
-        setChatInput('')
     }
 
     // ─── Sections ─────────────────────────────────────────────────────────────
@@ -1291,68 +1278,39 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    const chatSection = (
-        <div className="ttt-chat-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--bd-line)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('chat.open')}</h3>
-                    <span className="bd-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-                </div>
-                <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                    {t('game.ui.inMatch', { count: players.length })}
-                </span>
-            </div>
-            <div ref={chatRef} className="ttt-chat-feed">
-                {localChat.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>{t('chat.noMessages')}</div>
-                    : localChat.map(msg => (
-                        <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                            <div style={{
-                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                background: msg.color === 'coral' ? 'var(--bd-coral)' : msg.color === 'lav' ? 'var(--bd-lav)' : 'var(--bd-sky)',
-                                display: 'grid', placeItems: 'center',
-                                fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 10, color: 'white',
-                            }}>
-                                {msg.who.charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-                                    <span style={{ fontWeight: 600, fontSize: 11, color: 'var(--bd-ink)' }}>{msg.who}</span>
-                                    <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)' }}>{msg.time}</span>
-                                </div>
-                                <div style={{
-                                    background: 'var(--bd-card-warm)', padding: '5px 9px', borderRadius: 8,
-                                    fontSize: 12, lineHeight: 1.35, display: 'inline-block',
-                                    maxWidth: '100%', wordBreak: 'break-word', marginTop: 2, color: 'var(--bd-ink)',
-                                }}>{msg.text}</div>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-            {!isSpectator && (
-                <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                        <input
-                            style={{
-                                flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)',
-                                borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
-                            }}
-                            placeholder={t('game.ui.chatPlaceholder')}
-                            value={chatInput}
-                            onChange={e => setChatInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && sendChat()}
-                        />
-                        <button onClick={sendChat} aria-label={t('chat.send')} style={{
-                            padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                            border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13,
-                            boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit',
-                        }}>↗</button>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
+    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
+    // spectators get a read-only feed.
+    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
+    const showChat = hasMultipleHumans || isSpectator
+    const chatPlayerProfiles = (() => {
+        const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+        for (const p of players) {
+            if (p.userId) {
+                map.set(p.userId, {
+                    avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null,
+                    isPremium: !!p.user?.isPremium,
+                })
+            }
+        }
+        return map
+    })()
+
+    const chatSection = showChat ? (
+        <section className="game-chat-panel">
+            <Chat
+                messages={chatMessages}
+                onSendMessage={sendChatMessage}
+                currentUserId={currentUserId || null}
+                playerProfiles={chatPlayerProfiles}
+                isMinimized={false}
+                onToggleMinimize={() => {}}
+                unreadCount={chatUnreadCount}
+                someoneTyping={someoneTyping}
+                fullScreen
+                readOnly={isSpectator}
+            />
+        </section>
+    ) : null
 
     // Show score summary below player cards when match has results
     const _ = { myWins, myLosses }
@@ -1381,8 +1339,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
 
             {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
-            {/* Mounted before the mobile tree so refs attached inside shared
-                sections (chatRef) keep landing on the mobile copy. */}
             <div className="ttt-landscape-layout">
                 <div className="ttt-landscape-board">
                     {renderBoardSection('ttt-board-landscape')}
@@ -1405,14 +1361,20 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     {([
                         { id: 'board', label: t('game.ui.tabBoard') },
                         { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        { id: 'chat', label: t('game.ui.tabChat') },
-                    ] as const).map(tab => (
+                        ...(showChat ? [{ id: 'chat', label: t('game.ui.tabChat') }] as const : []),
+                    ] as ReadonlyArray<{ id: 'board' | 'history' | 'chat'; label: string }>).map(tab => (
                         <button
                             key={tab.id}
                             className={`ttt-tab${mobileTab === tab.id ? ' ttt-tab-active' : ''}`}
-                            onClick={() => setMobileTab(tab.id)}
+                            onClick={() => {
+                                setMobileTab(tab.id)
+                                if (tab.id === 'chat') resetChatUnread()
+                            }}
                         >
                             {tab.label}
+                            {tab.id === 'chat' && chatUnreadCount > 0 && mobileTab !== 'chat' && (
+                                <span className="ttt-tab-badge">{chatUnreadCount}</span>
+                            )}
                         </button>
                     ))}
                 </div>

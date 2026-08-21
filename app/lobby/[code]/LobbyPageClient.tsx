@@ -79,6 +79,7 @@ interface DBPlayer {
 }
 
 import { useRealtimeConnection } from './hooks/useRealtimeConnection'
+import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { useLobbyHeartbeat } from './hooks/useLobbyHeartbeat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
@@ -199,11 +200,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return { current, total: totalCategories }
   }, [gameEngine])
 
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
+  // Chat state — messages/unread/typing live in useLobbyChat (#736), called
+  // below once playAmbientSound is in scope
   const [chatMinimized, setChatMinimized] = useState(true) // Chat minimized by default
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
-  const [someoneTyping, setSomeoneTyping] = useState(false)
   const [waitingRoomTab, setWaitingRoomTab] = useState<'players' | 'chat'>('players')
   const [showLobbySettings, setShowLobbySettings] = useState(false)
 
@@ -383,6 +382,24 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     },
     []
   )
+
+  // Shared chat pipeline (#736) — history loading is wired up after
+  // useRealtimeConnection below, which supplies isConnected.
+  const {
+    chatMessages,
+    sendChatMessage,
+    unreadCount: unreadMessageCount,
+    resetUnread,
+    someoneTyping,
+    onChatMessage,
+    onPlayerTyping,
+    mergeHistoryMessages,
+    setChatMessages,
+  } = useLobbyChat({
+    code,
+    isChatVisible: !chatMinimized || mobileActiveTab === 'chat',
+    onIncomingMessageSound: () => playAmbientSound('message'),
+  })
 
   const lifecycleRedirectTarget = React.useMemo(
     () => getGameLobbiesRoute((lobby?.gameType as string) || DEFAULT_GAME_TYPE) ?? '/games',
@@ -693,45 +710,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound, triggerLifecycleRedirect])
 
-  const onChatMessage = useCallback((message: ChatMessagePayload) => {
-    setChatMessages(prev => {
-      // Remove matching optimistic entry added by sendChatMessage
-      const filtered = prev.filter(m => {
-        if (!m.id.startsWith('temp-')) return true
-        const age = Date.now() - parseInt(m.id.slice(5), 10)
-        return !(m.userId === message.userId && m.message === message.message && age < 5000)
-      })
-      return [...filtered, message]
-    })
-    const currentUserId = isGuest ? guestId : session?.user?.id
-    const isOwnMessage = message.userId === currentUserId
-    const isChatVisible = !chatMinimized || mobileActiveTab === 'chat'
-    if (!isChatVisible && !isOwnMessage) {
-      setUnreadMessageCount(prev => prev + 1)
-    }
-    if (!isOwnMessage) {
-      playAmbientSound('message')
-    }
-  }, [chatMinimized, mobileActiveTab, isGuest, guestId, session?.user?.id, playAmbientSound])
-
-  const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
-
-  const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
-    const currentUserId = isGuest ? guestId : session?.user?.id
-    if (data.userId !== currentUserId) {
-      setSomeoneTyping(true)
-
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-
-      typingTimeoutRef.current = setTimeout(() => {
-        setSomeoneTyping(false)
-      }, 3000)
-    }
-  }, [isGuest, guestId, session?.user?.id])
-
   const onLobbyUpdate = useCallback((data: LobbyUpdatePayload) => {
     clientLogger.log('📡 Received lobby-update:', data)
     // Use ref to avoid circular dependency
@@ -985,24 +963,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onGameReset: handleGameReset,
   })
 
-  const sendChatMessage = useCallback((message: string) => {
-    const currentUserId = getCurrentUserId()
-    const currentUsername = getCurrentUserName()
-    if (currentUserId) {
-      setChatMessages(prev => [...prev, {
-        id: `temp-${Date.now()}`,
-        userId: currentUserId,
-        username: currentUsername ?? '',
-        message,
-        timestamp: Date.now(),
-      }])
-    }
-    void fetchWithGuest(`/api/lobby/${code}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
-    })
-  }, [code, getCurrentUserId, getCurrentUserName])
+  useLobbyChatHistory({ code, isConnected, isReconnecting, mergeHistoryMessages })
 
   const [isReturningToWaiting, setIsReturningToWaiting] = React.useState(false)
 
@@ -1372,44 +1333,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [status, isGuest, guestToken, code])
 
   // Load chat history on initial connect (and re-load on reconnect)
-  const chatHistoryLoadedRef = React.useRef(false)
-  useEffect(() => {
-    if (!isConnected) return
-    if (status === 'loading') return
-    if (isGuest && !guestToken) return
-
-    // On reconnect, always reload; on first connect, only once
-    if (chatHistoryLoadedRef.current && !isReconnecting) return
-    chatHistoryLoadedRef.current = true
-
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (isGuest && guestId && guestToken) {
-      headers['X-Guest-Id'] = guestId
-      headers['X-Guest-Token'] = guestToken
-      if (username) headers['X-Guest-Name'] = username
-    }
-
-    fetch(`/api/lobby/${code}/chat`, { headers })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-          setChatMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id))
-            const fresh = (data.messages as ChatMessagePayload[]).filter((m) => !existingIds.has(m.id))
-            return fresh.length > 0 ? [...fresh, ...prev] : prev
-          })
-        }
-      })
-      .catch(() => {
-        // non-critical; ignore
-      })
-  }, [isConnected, isReconnecting, status, isGuest, guestToken, guestId, username, code])
-
   useEffect(() => {
     if (lobby?.gameType === 'memory' && game?.status === 'playing') {
-      setUnreadMessageCount(0)
+      resetUnread()
     }
-  }, [chatMessages.length, game?.status, lobby?.gameType])
+  }, [chatMessages.length, game?.status, lobby?.gameType, resetUnread])
 
   // Handle bot overlay progression
   useEffect(() => {
@@ -1450,15 +1378,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     }
   }, [gameEngine, game, playAmbientSound])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-    }
-  }, [])
 
   const handleLeaveLobby = () => {
     if (isLeavingLobbyRef.current) {
@@ -1678,9 +1597,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     initializedMobileUiGameIdRef.current = game.id
     setMobileActiveTab('game')
     setSelectedPlayerId(null)
-    setUnreadMessageCount(0)
+    resetUnread()
     setRollHistory([])
-  }, [lobby?.gameType, isGameStarted, game?.id])
+  }, [lobby?.gameType, isGameStarted, game?.id, resetUnread])
 
   useEffect(() => {
     if (
@@ -2023,7 +1942,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 onClick={() => {
                   setShowLobbySettings(false)
                   setWaitingRoomTab(tab)
-                  if (tab === 'chat') setUnreadMessageCount(0)
+                  if (tab === 'chat') resetUnread()
                 }}
                 className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
                   waitingRoomTab === tab && !showLobbySettings
@@ -2454,7 +2373,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   onToggleMinimize={() => {
                     setChatMinimized(!chatMinimized)
                     if (chatMinimized) {
-                      setUnreadMessageCount(0)
+                      resetUnread()
                     }
                   }}
                   unreadCount={unreadMessageCount}
@@ -2471,7 +2390,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   onTabChange={(tab) => {
                     setMobileActiveTab(tab)
                     if (tab === 'chat') {
-                      setUnreadMessageCount(0)
+                      resetUnread()
                     }
                   }}
                   tabs={[
@@ -2560,7 +2479,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onToggleMinimize={() => {
               setChatMinimized(!chatMinimized)
               if (chatMinimized) {
-                setUnreadMessageCount(0)
+                resetUnread()
               }
             }}
             unreadCount={unreadMessageCount}

@@ -1585,30 +1585,20 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .ttt-history-list::-webkit-scrollbar { width: 6px; }
 .ttt-history-list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
-.ttt-chat-card {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: white;
-  border-radius: 18px;
-  border: 1.5px solid var(--bd-line);
-  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
-  position: relative;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-.ttt-chat-feed {
+/* Shared in-game chat dock (#736) — wraps components/Chat.tsx (fullScreen)
+   inside a game layout panel. Used by TTT, Connect Four, and Memory. */
+.game-chat-panel {
   flex: 1;
-  overflow-y: auto;
-  padding: 12px 14px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1.5px solid var(--bd-line);
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 0;
 }
-.ttt-chat-feed::-webkit-scrollbar { width: 6px; }
-.ttt-chat-feed::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
 
 /* Board */
 .ttt-board-wrap {
@@ -1710,6 +1700,21 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .ttt-tab.ttt-tab-active { background: var(--bd-ink); color: var(--bd-bg); }
 
+.ttt-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--bd-coral);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 0 4px;
+  margin-left: 6px;
+}
+
 @media (min-width: 1024px) {
   .ttt-mobile-layout { display: none !important; }
 }
@@ -1759,7 +1764,7 @@ input[type="range"].slider-thumb::-moz-range-track {
     min-width: 0;
     min-height: 0;
   }
-  .ttt-landscape-side > .ttt-chat-card {
+  .ttt-landscape-side > .game-chat-panel {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -1781,7 +1786,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-height: 0;
   max-height: none;
 }
-.ttt-mobile-content .ttt-chat-card {
+.ttt-mobile-content .game-chat-panel {
   flex: 1;
   min-height: 0;
   height: auto;
@@ -2116,18 +2121,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 .memory-history-list::-webkit-scrollbar { width: 6px; }
 .memory-history-list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
 
-.memory-chat-panel {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-  border: 1.5px solid var(--bd-line);
-  border-radius: 18px;
-  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
-  padding: 0;
-}
 
 .memory-grid {
   width: min(100%, 780px);
@@ -2285,7 +2278,7 @@ input[type="range"].slider-thumb::-moz-range-track {
     min-width: 0;
     min-height: 0;
   }
-  .memory-landscape-side > .memory-chat-panel {
+  .memory-landscape-side > .game-chat-panel {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -2445,7 +2438,7 @@ html.dark .btn-social-unlink:hover {
 
 html.dark .ttt-card,
 html.dark .ttt-history-card,
-html.dark .ttt-chat-card {
+html.dark .game-chat-panel {
   background: var(--bd-card-warm);
 }
 
@@ -2484,10 +2477,6 @@ html.dark .spy-result-row,
 html.dark .spy-score-row,
 html.dark .spy-player-row,
 html.dark .memory-score-row {
-  background: var(--bd-card-warm);
-}
-
-html.dark .memory-chat-panel {
   background: var(--bd-card-warm);
 }
 

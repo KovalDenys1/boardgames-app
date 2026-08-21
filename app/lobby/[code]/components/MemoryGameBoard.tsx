@@ -1039,7 +1039,7 @@ export default function MemoryGameBoard({
   // Shared between the desktop side stack, the mobile chat tab, and the
   // phone-landscape side pane (#751).
   const chatSection = onSendChatMessage ? (
-    <section className="memory-chat-panel">
+    <section className="game-chat-panel">
       <Chat
         messages={chatMessages}
         onSendMessage={onSendChatMessage}
