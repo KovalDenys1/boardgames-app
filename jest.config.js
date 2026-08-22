@@ -7,6 +7,10 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
+  // #758 guard: restart workers that grow past this between test files, so a
+  // future per-suite leak degrades to a slow run instead of a heap OOM.
+  // Ignored by --runInBand (no workers there).
+  workerIdleMemoryLimit: '1GB',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {

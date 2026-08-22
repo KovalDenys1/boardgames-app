@@ -52,6 +52,14 @@ jest.mock('@/lib/in-app-notifications', () => ({
   createInAppNotification: jest.fn(() => Promise.resolve()),
 }))
 
+// The route fires `void sendPushNotification(...)` — unmocked, the real
+// module hits the partial prisma mock after the test ends, and the
+// resulting unhandled rejection sends Next's unhandled-rejection extension
+// into infinite setImmediate recursion (the #758 full-suite OOM).
+jest.mock('@/lib/push-send', () => ({
+  sendPushNotification: jest.fn(() => Promise.resolve()),
+}))
+
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockCreateInAppNotification =
