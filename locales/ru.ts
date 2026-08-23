@@ -1147,6 +1147,8 @@ const ru = {
       roundOver: 'Раунд окончен',
       theirTurn: 'Ход соперника',
       winBadge: 'ПОБЕДА',
+      victoryBadge: 'ПОБЕДА',
+      drawBadge: 'НИЧЬЯ',
       viewBoard: 'Посмотреть доску',
       kickPlayer: 'Удалить игрока',
       settings: 'Настройки',

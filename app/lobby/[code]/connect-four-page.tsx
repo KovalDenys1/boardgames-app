@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -231,97 +232,6 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                         />
                     )
                 })}
-            </div>
-        </div>
-    )
-}
-
-function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, isSpectator, t }: {
-    isFinished: boolean; winnerName: string | null; isDraw: boolean;
-    currentDisc: PlayerDisc; currentPlayerName: string; secs: number; moveCount: number; turnTimerLimit: number;
-    isSpectator?: boolean;
-    t: (k: TranslationKeys, opts?: Record<string, unknown>) => string;
-}) {
-    if (isFinished && !isDraw && winnerName) {
-        return (
-            <div style={{
-                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-coral)',
-            }}>
-                <span style={{
-                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>🏆</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.connect_four.game.playerWins', { player: winnerName })}</span>
-            </div>
-        )
-    }
-    if (isFinished && isDraw) {
-        return (
-            <div style={{
-                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-lav)',
-            }}>
-                <span style={{
-                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    background: 'var(--bd-lav)', color: 'white', border: '2px solid var(--bd-ink)',
-                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>🤝</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.connect_four.game.draw')}</span>
-            </div>
-        )
-    }
-    if (isSpectator) {
-        const discColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
-        return (
-            <div style={{
-                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-                border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-                display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-                <span style={{ fontSize: 14 }}>👁</span>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: discColor, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)' }} />
-                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
-                <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveCount + 1}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
-            </div>
-        )
-    }
-    const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
-    const danger = secs <= 5
-    const barColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
-    return (
-        <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-            border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-            display: 'flex', alignItems: 'center', gap: 12,
-        }}>
-            <div style={{
-                width: 28, height: 28, borderRadius: '50%', background: barColor, flexShrink: 0,
-                boxShadow: `0 0 0 2px var(--bd-ink)`,
-                transition: 'background 0.2s',
-            }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {currentPlayerName}
-                    <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>
-                        #{moveCount + 1}
-                    </span>
-                </div>
-                <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%', width: pct + '%',
-                        background: danger ? 'var(--bd-coral)' : barColor,
-                        transition: 'width 1s linear, background 0.2s',
-                    }} />
-                </div>
-            </div>
-            <div style={{
-                fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-                color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
-            }}>
-                :{String(secs).padStart(2, '0')}
             </div>
         </div>
     )
@@ -980,17 +890,17 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     )
 
     const statusSection = (
-        <C4StatusBanner
+        <GameStatusBanner
             isFinished={isFinished}
-            winnerName={winnerName}
             isDraw={isDraw}
-            currentDisc={gameData.currentDisc}
-            currentPlayerName={currentPlayerName}
+            finishedMessage={isDraw ? t('games.connect_four.game.draw') : t('games.connect_four.game.playerWins', { player: winnerName })}
+            activeTitle={currentPlayerName}
+            meta={`#${gameData.moveCount + 1}`}
             secs={timeLeft}
-            moveCount={gameData.moveCount}
             turnTimerLimit={turnTimerLimit}
+            barColor={gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW}
+            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)', transition: 'background 0.2s' }} />}
             isSpectator={isSpectator}
-            t={t}
         />
     )
 

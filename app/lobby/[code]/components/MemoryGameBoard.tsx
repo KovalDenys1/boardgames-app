@@ -14,6 +14,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
 
@@ -103,90 +104,6 @@ function getDifficultyLabel(
 }
 
 type MobileTab = 'board' | 'moves' | 'chat'
-
-function MemoryStatusBanner({
-  isFinished,
-  winnerName,
-  isDraw,
-  currentPlayerName,
-  secs,
-  turnTimerLimit,
-  matchedPairs,
-  totalPairs,
-  t,
-}: {
-  isFinished: boolean
-  winnerName: string | null
-  isDraw: boolean
-  currentPlayerName: string
-  secs: number
-  turnTimerLimit: number
-  matchedPairs: number
-  totalPairs: number
-  t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string
-}) {
-  if (isFinished && !isDraw && winnerName) {
-    return (
-      <div style={{
-        padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-        display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-mint-deep)',
-      }}>
-        <span style={{
-          display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-          background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-          boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-        }}>{t('games.memory.game.victoryBadge')}</span>
-        <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.memory.game.winnerLabel', { player: winnerName })}</span>
-      </div>
-    )
-  }
-  if (isFinished && isDraw) {
-    return (
-      <div style={{
-        padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-        display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-lav)',
-      }}>
-        <span style={{
-          display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-          background: 'var(--bd-lav)', color: 'white', border: '2px solid var(--bd-ink)',
-          boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-        }}>{t('games.memory.game.drawBadge')}</span>
-        <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.memory.game.tieLabel')}</span>
-      </div>
-    )
-  }
-  const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
-  const danger = secs <= 10
-  return (
-    <div style={{
-      padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-      border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-      display: 'flex', alignItems: 'center', gap: 12,
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 13 }}>
-          {t('games.memory.game.playerTurnBanner', { player: currentPlayerName })}
-          <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>
-            {matchedPairs}/{totalPairs}
-          </span>
-        </div>
-        <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{
-            height: '100%', width: pct + '%',
-            background: danger ? 'var(--bd-coral)' : 'var(--bd-mint)',
-            transition: 'width 1s linear, background 0.2s',
-          }} />
-        </div>
-      </div>
-      <div style={{
-        fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-        color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
-      }}>
-        :{String(secs).padStart(2, '0')}
-      </div>
-    </div>
-  )
-}
 
 export default function MemoryGameBoard({
   gameId,
@@ -749,16 +666,16 @@ export default function MemoryGameBoard({
   )
 
   const statusSection = (
-    <MemoryStatusBanner
+    <GameStatusBanner
       isFinished={isFinished}
-      winnerName={winnerName}
       isDraw={isDraw}
-      currentPlayerName={currentPlayerName}
+      finishedMessage={isDraw ? t('games.memory.game.tieLabel') : t('games.memory.game.winnerLabel', { player: winnerName })}
+      activeTitle={t('games.memory.game.playerTurnBanner', { player: currentPlayerName })}
+      meta={`${matchedPairs}/${totalPairs}`}
       secs={timeLeft}
       turnTimerLimit={turnTimerLimit}
-      matchedPairs={matchedPairs}
-      totalPairs={totalPairs}
-      t={t}
+      barColor="var(--bd-mint)"
+      isSpectator={isSpectator}
     />
   )
 

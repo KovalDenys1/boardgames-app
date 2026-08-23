@@ -37,6 +37,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -106,91 +107,6 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
                         </button>
                     ))
                 )}
-            </div>
-        </div>
-    )
-}
-
-function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit, isSpectator, t }: {
-    isFinished: boolean; winnerName: string | null; isDraw: boolean;
-    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number;
-    isSpectator?: boolean;
-    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
-}) {
-    if (isFinished && !isDraw && winnerName) {
-        return (
-            <div style={{
-                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-coral)',
-            }}>
-                <span style={{
-                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>{t('games.tictactoe.game.victoryBadge')}</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.tictactoe.game.playerWins', { player: winnerName })}</span>
-            </div>
-        )
-    }
-    if (isFinished && isDraw) {
-        return (
-            <div style={{
-                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-lav)',
-            }}>
-                <span style={{
-                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    background: 'var(--bd-lav)', color: 'white', border: '2px solid var(--bd-ink)',
-                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>{t('games.tictactoe.game.drawBadge')}</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.tictactoe.game.catsGameFull')}</span>
-            </div>
-        )
-    }
-    if (isSpectator) {
-        return (
-            <div style={{
-                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-                border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-                display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-                <span style={{ fontSize: 14 }}>👁</span>
-                <TttMark mark={currentSymbol} size={20} />
-                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
-                <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveNum}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
-            </div>
-        )
-    }
-    const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
-    const danger = secs <= 5
-    return (
-        <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-            border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-            display: 'flex', alignItems: 'center', gap: 12,
-        }}>
-            <TttMark mark={currentSymbol} size={22} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>
-                    {t('games.tictactoe.game.playerTurn', { player: currentPlayerName })}
-                    <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>
-                        {t('games.tictactoe.game.moveNum', { num: moveNum })}
-                    </span>
-                </div>
-                <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%', width: pct + '%',
-                        background: danger ? 'var(--bd-coral)' : currentSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
-                        transition: 'width 1s linear, background 0.2s',
-                    }} />
-                </div>
-            </div>
-            <div style={{
-                fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-                color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
-            }}>
-                :{String(secs).padStart(2, '0')}
             </div>
         </div>
     )
@@ -943,17 +859,17 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     )
 
     const statusSection = (
-        <TttStatusBanner
+        <GameStatusBanner
             isFinished={isFinished}
-            winnerName={winnerName}
             isDraw={isDraw}
-            currentSymbol={gameData.currentSymbol}
-            currentPlayerName={gameData.currentSymbol === 'X' ? xName : oName}
+            finishedMessage={isDraw ? t('games.tictactoe.game.catsGameFull') : t('games.tictactoe.game.playerWins', { player: winnerName })}
+            activeTitle={isSpectator ? (gameData.currentSymbol === 'X' ? xName : oName) : t('games.tictactoe.game.playerTurn', { player: gameData.currentSymbol === 'X' ? xName : oName })}
+            meta={isSpectator ? `#${gameData.moveCount + 1}` : t('games.tictactoe.game.moveNum', { num: gameData.moveCount + 1 })}
             secs={timeLeft}
-            moveNum={gameData.moveCount + 1}
             turnTimerLimit={turnTimerLimit}
+            barColor={gameData.currentSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'}
+            leadingIcon={<TttMark mark={gameData.currentSymbol} size={22} />}
             isSpectator={isSpectator}
-            t={t}
         />
     )
 
