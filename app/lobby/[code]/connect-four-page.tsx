@@ -36,6 +36,8 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -234,76 +236,6 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     )
 }
 
-function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, avatarSrc, isPremium, t }: {
-    name: string; disc: PlayerDisc; isActive: boolean; isWinner: boolean; wins: number; side: 'left' | 'right';
-    isLocalPlayer: boolean; avatarSrc?: string | null; isPremium?: boolean; t: (k: TranslationKeys) => string
-}) {
-    const discColor = disc === 1 ? DISC_RED : DISC_YELLOW
-    return (
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-            background: isActive ? 'var(--bd-input-bg)' : 'transparent',
-            border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
-            boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
-            flexDirection: side === 'right' ? 'row-reverse' : 'row',
-            transition: 'all 0.2s', minWidth: 0,
-        }}>
-            {/* Avatar + disc badge */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-                {avatarSrc ? (
-                    <img src={avatarSrc} alt={name} style={{
-                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-                        border: '2px solid var(--bd-input-bg)', boxShadow: '0 0 0 2px var(--bd-ink)',
-                    }} />
-                ) : (
-                <div style={{
-                    width: 42, height: 42, borderRadius: '50%', background: discColor,
-                    display: 'grid', placeItems: 'center', border: '2px solid var(--bd-input-bg)',
-                    boxShadow: '0 0 0 2px var(--bd-ink)',
-                    fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
-                }}>
-                    {name.charAt(0).toUpperCase()}
-                </div>
-                )}
-                {/* Disc icon badge */}
-                <div style={{
-                    position: 'absolute', bottom: -3, right: -3, width: 20, height: 20,
-                    borderRadius: '50%', background: discColor,
-                    border: '2px solid var(--bd-ink)', boxShadow: '1px 1px 0 var(--bd-ink)',
-                }} />
-            </div>
-            <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>
-                        {name}
-                    </span>
-                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
-                    {isWinner && (
-                        <span style={{
-                            display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
-                            background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                            boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-                        }}>{t('games.connect_four.game.winBadge')}</span>
-                    )}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>
-                    {wins}W
-                </div>
-                {isActive && (
-                    <div style={{
-                        marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
-                        display: 'flex', gap: 4, alignItems: 'center',
-                        justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
-                    }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: discColor, display: 'inline-block' }} />
-                        {isLocalPlayer ? t('games.connect_four.game.yourTurn') : t('games.connect_four.game.theirTurn')}
-                    </div>
-                )}
-            </div>
-        </div>
-    )
-}
-
 function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, isSpectator, t }: {
     isFinished: boolean; winnerName: string | null; isDraw: boolean;
     currentDisc: PlayerDisc; currentPlayerName: string; secs: number; moveCount: number; turnTimerLimit: number;
@@ -392,6 +324,16 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
                 :{String(secs).padStart(2, '0')}
             </div>
         </div>
+    )
+}
+
+function C4DiscBadge({ disc }: { disc: PlayerDisc }) {
+    return (
+        <div style={{
+            position: 'absolute', bottom: -3, right: -3, width: 20, height: 20,
+            borderRadius: '50%', background: disc === 1 ? DISC_RED : DISC_YELLOW,
+            border: '2px solid var(--bd-ink)', boxShadow: '1px 1px 0 var(--bd-ink)',
+        }} />
     )
 }
 
@@ -1017,21 +959,23 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
-                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} isPremium={p1IsPremium} t={t} />
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                        <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
-                    </div>
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
-                        {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
-                    </div>
-                    <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                        {t('games.connect_four.game.winsLabel')}
-                    </div>
-                </div>
-                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} isPremium={p2IsPremium} t={t} />
-            </div>
+            <GameScoreboardHeader
+                leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentDisc === 1} isMe={myDisc === 1} isWinner={!isDraw && winnerDisc === 1} side="left" avatarSrc={p1Avatar} isPremium={p1IsPremium} accentColor={DISC_RED} subline={`${p1Wins}W`} cornerBadge={<C4DiscBadge disc={1} />} />}
+                center={
+                    <>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                            <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
+                        </div>
+                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                            {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
+                        </div>
+                        <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
+                            {t('games.connect_four.game.winsLabel')}
+                        </div>
+                    </>
+                }
+                rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
+            />
         </div>
     )
 

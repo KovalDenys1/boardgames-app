@@ -1145,6 +1145,8 @@ const en = {
       decline: 'Decline',
       returnToLobby: 'Return to Lobby',
       roundOver: 'Round over',
+      theirTurn: 'Their turn',
+      winBadge: 'WIN',
       viewBoard: 'View Board',
       kickPlayer: 'Remove player',
       settings: 'Settings',

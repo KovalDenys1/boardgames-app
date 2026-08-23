@@ -1145,6 +1145,8 @@ const ru = {
       decline: 'Отклонить',
       returnToLobby: 'Вернуться в лобби',
       roundOver: 'Раунд окончен',
+      theirTurn: 'Ход соперника',
+      winBadge: 'ПОБЕДА',
       viewBoard: 'Посмотреть доску',
       kickPlayer: 'Удалить игрока',
       settings: 'Настройки',
