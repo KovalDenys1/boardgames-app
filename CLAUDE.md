@@ -133,6 +133,14 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
 - [ ] Run `npx prisma generate` then `npm run db:migrate`
 
 ### Pages & UI
+- [ ] **In-game chrome comes from the shared kit — never re-implement it.**
+      Compose `components/game-chrome/` (`GameResultOverlay`, `GamePlayerCard`,
+      `GameScoreboardHeader`, `GameStatusBanner`, `GameTabs`) plus
+      `components/Chat.tsx` via `useLobbyChat`/`useLobbyChatHistory` (#736).
+      Game-specific identity goes through their props (accent colors, icon
+      slots, pre-translated titles) — a hand-rolled player card, result
+      overlay, status banner, tab strip, or chat in a game page is a review
+      blocker.
 - [ ] `app/games/<game>/page.tsx` — detail page with SEO metadata + JSON-LD
 - [ ] `app/games/<game>/ConnectFourDetailContent.tsx` (or similar) — client content component
 - [ ] `app/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
