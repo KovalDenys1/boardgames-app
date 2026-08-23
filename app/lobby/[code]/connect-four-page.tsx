@@ -35,10 +35,10 @@ import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 // ─── Design sub-components ────────────────────────────────────────────────────
 
@@ -391,95 +391,6 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
             }}>
                 :{String(secs).padStart(2, '0')}
             </div>
-        </div>
-    )
-}
-
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isGuest, registerUrl, t }: {
-    winnerName: string | null; isDraw: boolean; isMyWin: boolean
-    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean
-    isGuest: boolean; registerUrl: string
-    t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
-}) {
-    return (
-        // Outer layer scrolls; the inner wrapper's margin:auto centers the
-        // content when it fits and lets it scroll from the top when it
-        // doesn't — the buttons can never be clipped on short screens (#737).
-        <div style={{
-            position: 'absolute', inset: 0, borderRadius: 16,
-            background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
-            display: 'flex', overflowY: 'auto',
-        }}>
-        <div style={{
-            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 10, padding: 16, width: '100%',
-        }}>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, color: 'white', textAlign: 'center' }}>
-                {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
-                <button
-                    onClick={onInspect}
-                    style={{
-                        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
-                        border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                >
-                    {t('games.connect_four.game.tapToInspect')}
-                </button>
-                {isHost ? (
-                    <>
-                        <button
-                            onClick={onPlayAgain}
-                            disabled={isLoading}
-                            style={{
-                                padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
-                                background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
-                                cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
-                                fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
-                            }}
-                        >
-                            {t('games.connect_four.game.playAgain')}
-                        </button>
-                        <button
-                            onClick={onReturnToLobby}
-                            disabled={isLoading}
-                            style={{
-                                padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                                background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)',
-                                cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1, fontFamily: 'inherit',
-                            }}
-                        >
-                            {t('game.ui.returnToLobby')}
-                        </button>
-                    </>
-                ) : (
-                    <div style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)',
-                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
-                    }}>
-                        {t('game.ui.waitingForHost')}
-                    </div>
-                )}
-                <button
-                    onClick={onLeave}
-                    style={{
-                        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.2)',
-                        cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                >
-                    {t('games.connect_four.game.leave')}
-                </button>
-            </div>
-            {isGuest && (
-                <div style={{ width: '100%', maxWidth: 240 }}>
-                    <GuestConversionNudge registerUrl={registerUrl} />
-                </div>
-            )}
-        </div>
         </div>
     )
 }
@@ -1215,19 +1126,19 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             {isFinished && !isSpectator && (
                 <>
                     {!overlayInspecting && (
-                        <C4ResultOverlay
-                            winnerName={winnerName}
+                        <GameResultOverlay
+                            title={isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
                             isDraw={isDraw}
-                            isMyWin={isMyWin}
+                            accentColor="var(--bd-mint-deep)"
+                            accentShadowColor="rgba(0,0,0,0.25)"
+                            onInspect={() => setOverlayInspecting(true)}
+                            isHost={!!lobby && lobby.creatorId === currentUserId}
+                            isLoading={isRematchSubmitting}
                             onPlayAgain={handlePlayAgain}
                             onReturnToLobby={handleReturnToWaiting}
                             onLeave={() => setShowLeaveConfirmModal(true)}
-                            onInspect={() => setOverlayInspecting(true)}
-                            isLoading={isRematchSubmitting}
-                            isHost={!!lobby && lobby.creatorId === currentUserId}
                             isGuest={isGuest}
                             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
-                            t={t}
                         />
                     )}
                     {overlayInspecting && (

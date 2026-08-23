@@ -2439,6 +2439,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
+              isRestarting={startingGame || isReturningToWaiting}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
               onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
               chatUnreadCount={unreadMessageCount}

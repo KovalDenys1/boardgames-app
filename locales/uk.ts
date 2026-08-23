@@ -1146,6 +1146,8 @@ const uk: Translation = {
       accept: 'Прийняти',
       decline: 'Відхилити',
       returnToLobby: 'Повернутися до лобі',
+      roundOver: 'Раунд завершено',
+      viewBoard: 'Переглянути дошку',
       kickPlayer: 'Видалити гравця',
       settings: 'Налаштування',
     },

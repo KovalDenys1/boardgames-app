@@ -31,10 +31,10 @@ import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -254,99 +254,6 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
             }}>
                 :{String(secs).padStart(2, '0')}
             </div>
-        </div>
-    )
-}
-
-function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isMatchComplete, isGuest, registerUrl, t }: {
-    winnerName: string | null; winnerSymbol: string | null; isDraw: boolean; isMyWin: boolean;
-    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean;
-    isMatchComplete: boolean;
-    isGuest: boolean; registerUrl: string;
-    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
-}) {
-    const accentColor = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
-    const ghostBtn: React.CSSProperties = {
-        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
-        border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
-    }
-    return (
-        // Outer layer scrolls; the inner wrapper's margin:auto centers the
-        // content when it fits and lets it scroll from the top when it
-        // doesn't — the buttons can never be clipped on short screens (#737).
-        <div style={{
-            position: 'absolute', inset: 0, borderRadius: 'inherit',
-            background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
-            display: 'flex', overflowY: 'auto',
-        }}>
-        <div style={{
-            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 4, padding: 24, width: '100%',
-        }}>
-            {isDraw ? (
-                <div style={{ fontSize: 40, marginBottom: 8 }}>🤝</div>
-            ) : (
-                <div style={{
-                    width: 56, height: 56, borderRadius: '50%', background: accentColor,
-                    display: 'grid', placeItems: 'center', marginBottom: 8,
-                    boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
-                }}>
-                    {winnerSymbol && <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />}
-                </div>
-            )}
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                {isMatchComplete ? t('games.tictactoe.game.seriesComplete') : t('games.tictactoe.game.roundOver')}
-            </div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center', marginBottom: 16, lineHeight: 1.1 }}>
-                {isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 260 }}>
-                <button onClick={onInspect} style={ghostBtn}>
-                    {t('games.tictactoe.game.viewBoard')}
-                </button>
-                {isMatchComplete ? (
-                    <div style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
-                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
-                    }}>
-                        {t('games.tictactoe.game.returningToLobby')}
-                    </div>
-                ) : isHost ? (
-                    <>
-                        <button onClick={onPlayAgain} disabled={isLoading} style={{
-                            padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
-                            background: 'var(--bd-coral)', color: 'white', border: 'none',
-                            boxShadow: '0 4px 0 var(--bd-coral-deep)',
-                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
-                            fontFamily: 'inherit',
-                        }}>
-                            {isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}
-                        </button>
-                        <button onClick={onReturnToLobby} disabled={isLoading} style={{ ...ghostBtn, opacity: isLoading ? 0.65 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
-                            {t('game.ui.returnToLobby')}
-                        </button>
-                    </>
-                ) : (
-                    <div style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)',
-                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
-                    }}>
-                        {t('game.ui.waitingForHost')}
-                    </div>
-                )}
-                <button onClick={onLeave} style={ghostBtn}>
-                    {t('games.tictactoe.game.leave')}
-                </button>
-            </div>
-            {isGuest && (
-                <div style={{ width: '100%', maxWidth: 260 }}>
-                    <GuestConversionNudge registerUrl={registerUrl} />
-                </div>
-            )}
-        </div>
         </div>
     )
 }
@@ -1174,21 +1081,39 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 testId={testId}
             />
             {isFinished && !isSpectator && !overlayInspecting && (
-                <TttResultModal
-                    winnerName={winnerName}
-                    winnerSymbol={winnerSymbol && !isDraw ? winnerSymbol : null}
+                <GameResultOverlay
+                    title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
+                    kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}
                     isDraw={isDraw}
-                    isMyWin={!isDraw && winnerSymbol === mySymbol}
+                    icon={!isDraw && winnerSymbol ? (
+                        <div style={{
+                            width: 56, height: 56, borderRadius: '50%',
+                            background: winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
+                            display: 'grid', placeItems: 'center',
+                            boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
+                        }}>
+                            <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />
+                        </div>
+                    ) : undefined}
+                    accentColor="var(--bd-coral)"
+                    accentShadowColor="var(--bd-coral-deep)"
+                    onInspect={() => setOverlayInspecting(true)}
+                    isHost={isLobbyCreator}
+                    isLoading={isRematchSubmitting}
                     onPlayAgain={handlePlayAgain}
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
-                    onInspect={() => setOverlayInspecting(true)}
-                    isLoading={isRematchSubmitting}
-                    isHost={isLobbyCreator}
-                    isMatchComplete={isMatchComplete}
+                    actionsReplacement={isMatchComplete ? (
+                        <div style={{
+                            padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                            background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
+                            border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
+                        }}>
+                            {t('games.tictactoe.game.returningToLobby')}
+                        </div>
+                    ) : undefined}
                     isGuest={isGuest}
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
-                    t={t}
                 />
             )}
             {isFinished && !isSpectator && overlayInspecting && (
