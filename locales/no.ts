@@ -1145,6 +1145,8 @@ const no = {
       decline: 'Avslå',
       returnToLobby: 'Tilbake til venterom',
       roundOver: 'Runden er over',
+      theirTurn: 'Motstanderens tur',
+      winBadge: 'SEIER',
       viewBoard: 'Se brettet',
       kickPlayer: 'Fjern spiller',
       settings: 'Innstillinger',

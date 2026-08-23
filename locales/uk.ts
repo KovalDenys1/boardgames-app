@@ -1147,6 +1147,8 @@ const uk: Translation = {
       decline: 'Відхилити',
       returnToLobby: 'Повернутися до лобі',
       roundOver: 'Раунд завершено',
+      theirTurn: 'Хід суперника',
+      winBadge: 'ПЕРЕМОГА',
       viewBoard: 'Переглянути дошку',
       kickPlayer: 'Видалити гравця',
       settings: 'Налаштування',

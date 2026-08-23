@@ -35,6 +35,8 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -103,70 +105,6 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
                             {cell && <TttMark mark={cell} responsive pop />}
                         </button>
                     ))
-                )}
-            </div>
-        </div>
-    )
-}
-
-function TttPlayerCard({ name, symbol, isActive, isMe, isWinner, side, avatarSrc, isPremium, t }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isMe: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; isPremium?: boolean; t: (key: TranslationKeys) => string
-}) {
-    const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
-    return (
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-            background: isActive ? 'var(--bd-input-bg)' : 'transparent',
-            border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
-            boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
-            flexDirection: side === 'right' ? 'row-reverse' : 'row',
-            transition: 'all 0.2s', minWidth: 0,
-        }}>
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-                {avatarSrc ? (
-                    <img src={avatarSrc} alt={name} style={{
-                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-                        border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
-                    }} />
-                ) : (
-                <div style={{
-                    width: 42, height: 42, borderRadius: '50%', background: bg,
-                    display: 'grid', placeItems: 'center', border: '2px solid white',
-                    boxShadow: '0 0 0 2px var(--bd-ink)',
-                    fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
-                }}>
-                    {name.charAt(0).toUpperCase()}
-                </div>
-                )}
-                <div style={{
-                    position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
-                    background: 'var(--bd-bg)', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
-                }}>
-                    <TttMark mark={symbol} size={14} />
-                </div>
-            </div>
-            <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>{name}</span>
-                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
-                    {isWinner && (
-                        <span style={{
-                            display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
-                            background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                            boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-                        }}>{t('games.tictactoe.game.winBadge')}</span>
-                    )}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>{symbol}</div>
-                {isActive && (
-                    <div style={{
-                        marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
-                        display: 'flex', gap: 4, alignItems: 'center',
-                        justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
-                    }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-                        {isMe ? t('games.tictactoe.game.yourTurnBadge') : t('games.tictactoe.game.theirTurn')}
-                    </div>
                 )}
             </div>
         </div>
@@ -254,6 +192,17 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
             }}>
                 :{String(secs).padStart(2, '0')}
             </div>
+        </div>
+    )
+}
+
+function TttCornerMark({ mark }: { mark: 'X' | 'O' }) {
+    return (
+        <div style={{
+            position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
+            background: 'var(--bd-bg)', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
+        }}>
+            <TttMark mark={mark} size={14} />
         </div>
     )
 }
@@ -973,21 +922,23 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div style={{ position: 'absolute', right: -30, top: -30, opacity: 0.4, transform: 'rotate(8deg)', pointerEvents: 'none' }}>
                 <TttBgGrid />
             </div>
-            <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} t={t} />
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        Round {roundNum}
-                    </div>
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
-                        {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{oWins}
-                    </div>
-                    <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                        {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
-                    </div>
-                </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} t={t} />
-            </div>
+            <GameScoreboardHeader
+                leftCard={<GamePlayerCard name={xName} isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline="X" cornerBadge={<TttCornerMark mark="X" />} />}
+                center={
+                    <>
+                        <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
+                            Round {roundNum}
+                        </div>
+                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                            {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{oWins}
+                        </div>
+                        <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
+                            {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
+                        </div>
+                    </>
+                }
+                rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
+            />
         </div>
     )
 

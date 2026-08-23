@@ -12,6 +12,8 @@ import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
 
@@ -101,81 +103,6 @@ function getDifficultyLabel(
 }
 
 type MobileTab = 'board' | 'moves' | 'chat'
-
-function MemoryPlayerCard({
-  displayName,
-  score,
-  isActive,
-  isWinner,
-  side,
-  avatarSrc,
-  isPremium,
-  t,
-}: {
-  displayName: string
-  score: number
-  isActive: boolean
-  isWinner: boolean
-  side: 'left' | 'right'
-  avatarSrc?: string | null
-  isPremium?: boolean
-  t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string
-}) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-      background: isActive ? 'var(--bd-input-bg)' : 'transparent',
-      border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
-      boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
-      flexDirection: side === 'right' ? 'row-reverse' : 'row',
-      transition: 'all 0.2s', minWidth: 0,
-    }}>
-      {avatarSrc ? (
-        <img src={avatarSrc} alt={displayName} style={{
-          width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-          border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)', flexShrink: 0,
-        }} />
-      ) : (
-        <div style={{
-          width: 42, height: 42, borderRadius: '50%', background: 'var(--bd-mint)',
-          display: 'grid', placeItems: 'center', border: '2px solid white',
-          boxShadow: '0 0 0 2px var(--bd-ink)',
-          fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white', flexShrink: 0,
-        }}>
-          {displayName.charAt(0).toUpperCase()}
-        </div>
-      )}
-      <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
-          <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>
-            {displayName}
-          </span>
-          {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
-          {isWinner && (
-            <span style={{
-              display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
-              background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-              boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-            }}>{t('games.memory.game.victoryBadge')}</span>
-          )}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>
-          {t('games.memory.game.pairsLabel', { count: score })}
-        </div>
-        {isActive && (
-          <div style={{
-            marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
-            display: 'flex', gap: 4, alignItems: 'center',
-            justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-            {t('game.ui.yourTurn')}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function MemoryStatusBanner({
   isFinished,
@@ -676,47 +603,55 @@ export default function MemoryGameBoard({
       background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(79,201,166,0.08) 100%)',
     }}>
       {isTwoPlayer && player0 && player1 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-          <MemoryPlayerCard
-            displayName={displayNameByUserId.get(player0.id) || 'Player 1'}
-            score={scoreByPlayerId[player0.id] ?? 0}
-            isActive={!isFinished && currentPlayerId === player0.id}
-            isWinner={isFinished && !!winnerId && winnerId === player0.id}
-            side="left"
-            avatarSrc={avatarByUserId.get(player0.id) ?? null}
-            isPremium={premiumByUserId.get(player0.id)}
-            t={t}
-          />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-              {difficultyLabel}
-            </div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
-              {matchedPairs}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>/</span>{totalPairs}
-            </div>
-            <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-              {t('games.memory.game.scoreboardTitle')}
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-            <MemoryPlayerCard
-              displayName={displayNameByUserId.get(player1.id) || 'Player 2'}
-              score={scoreByPlayerId[player1.id] ?? 0}
+        <GameScoreboardHeader
+          leftCard={
+            <GamePlayerCard
+              name={displayNameByUserId.get(player0.id) || 'Player 1'}
+              isActive={!isFinished && currentPlayerId === player0.id}
+              isMe={player0.id === currentUserId}
+              isWinner={isFinished && !!winnerId && winnerId === player0.id}
+              side="left"
+              avatarSrc={avatarByUserId.get(player0.id) ?? null}
+              isPremium={premiumByUserId.get(player0.id)}
+              accentColor="var(--bd-mint)"
+              turnDotColor="var(--bd-mint-deep)"
+              subline={t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player0.id] ?? 0 })}
+            />
+          }
+          center={
+            <>
+              <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
+                {difficultyLabel}
+              </div>
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                {matchedPairs}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 5px' }}>/</span>{totalPairs}
+              </div>
+              <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
+                {t('games.memory.game.scoreboardTitle')}
+              </div>
+            </>
+          }
+          rightCard={
+            <GamePlayerCard
+              name={displayNameByUserId.get(player1.id) || 'Player 2'}
               isActive={!isFinished && currentPlayerId === player1.id}
+              isMe={player1.id === currentUserId}
               isWinner={isFinished && !!winnerId && winnerId === player1.id}
               side="right"
               avatarSrc={avatarByUserId.get(player1.id) ?? null}
               isPremium={premiumByUserId.get(player1.id)}
-              t={t}
+              accentColor="var(--bd-mint)"
+              turnDotColor="var(--bd-mint-deep)"
+              subline={t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player1.id] ?? 0 })}
             />
-            {onLeave && (
-              <button type="button" onClick={onLeave} aria-label={t('game.ui.leave')} className="memory-leave-button">
-                <LeaveIcon />
-                <span>{t('game.ui.leave')}</span>
-              </button>
-            )}
-          </div>
-        </div>
+          }
+          trailing={onLeave ? (
+            <button type="button" onClick={onLeave} aria-label={t('game.ui.leave')} className="memory-leave-button">
+              <LeaveIcon />
+              <span>{t('game.ui.leave')}</span>
+            </button>
+          ) : undefined}
+        />
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {(parsedState.players || []).map((player) => {
