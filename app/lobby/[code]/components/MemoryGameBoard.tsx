@@ -11,9 +11,9 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 interface LobbyPlayer {
   id: string
@@ -72,6 +72,8 @@ interface MemoryGameBoardProps {
   isGuest?: boolean
   registerUrl?: string
   isSpectator?: boolean
+  /** Play Again / Return to Lobby in-flight — disables the overlay actions (#736 phase 2, fixes the double-submit gap). */
+  isRestarting?: boolean
   /**
    * Fetches a fresh authoritative snapshot from the server (bypassing
    * realtime broadcast). Used as a watchdog fallback: Supabase Broadcast is
@@ -99,195 +101,6 @@ function getDifficultyLabel(
 }
 
 type MobileTab = 'board' | 'moves' | 'chat'
-
-interface MemoryResultModalProps {
-  winnerId: string | null | undefined
-  winnerName: string
-  isDraw: boolean
-  isMyWin: boolean
-  canStartGame: boolean
-  onPlayAgain?: () => void
-  onReturnToWaiting?: () => void
-  onLeave?: () => void
-  onInspect: () => void
-  isGuest?: boolean
-  registerUrl?: string
-  t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string
-}
-
-function MemoryResultModal({
-  winnerId,
-  winnerName,
-  isDraw,
-  isMyWin,
-  canStartGame,
-  onPlayAgain,
-  onReturnToWaiting,
-  onLeave,
-  onInspect,
-  isGuest,
-  registerUrl,
-  t,
-}: MemoryResultModalProps) {
-  const ghostBtn: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 44,
-    borderRadius: 14,
-    border: '1.5px solid rgba(255,255,255,0.18)',
-    background: 'rgba(255,255,255,0.12)',
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: 'pointer',
-    padding: '0 20px',
-    transition: 'background 0.12s',
-    width: '100%',
-  }
-
-  const displayTitle = isDraw
-    ? t('games.memory.game.tieLabel')
-    : isMyWin
-      ? t('games.memory.game.youWin')
-      : t('games.memory.game.winnerLabel', { player: winnerName })
-
-  return (
-    // Outer layer scrolls; the inner wrapper's margin:auto centers the content
-    // when it fits and lets it scroll from the top when it doesn't — the
-    // buttons can never be clipped on short screens (#737 pattern, #752).
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        borderRadius: 'inherit',
-        background: 'rgba(31,27,22,0.82)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        overflowY: 'auto',
-        zIndex: 10,
-      }}
-    >
-    <div
-      style={{
-        margin: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 14,
-        padding: '20px 16px',
-        width: '100%',
-      }}
-    >
-      <p
-        style={{
-          fontFamily: 'monospace',
-          fontSize: 11,
-          letterSpacing: '0.1em',
-          color: 'rgba(255,255,255,0.45)',
-          margin: 0,
-          textTransform: 'uppercase',
-        }}
-      >
-        {t('games.memory.game.roundOver')}
-      </p>
-
-      {isDraw ? (
-        <span style={{ fontSize: 48, lineHeight: 1 }}>🤝</span>
-      ) : (
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: '50%',
-            background: 'var(--bd-mint)',
-            border: '2px solid rgba(31,27,22,0.6)',
-            boxShadow: '0 5px 0 rgba(31,27,22,0.25)',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 26,
-          }}
-        >
-          🏆
-        </div>
-      )}
-
-      <h2
-        style={{
-          fontFamily: 'var(--bd-font-display)',
-          fontSize: 'clamp(22px, 4vw, 32px)',
-          fontWeight: 800,
-          color: '#fff',
-          margin: 0,
-          lineHeight: 1.1,
-          textAlign: 'center',
-        }}
-      >
-        {displayTitle}
-      </h2>
-
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          width: '100%',
-          maxWidth: 260,
-        }}
-      >
-        <button style={ghostBtn} onClick={onInspect}>
-          {t('games.memory.game.viewBoard')}
-        </button>
-
-        {canStartGame && onPlayAgain && (
-          <button
-            style={{
-              ...ghostBtn,
-              background: 'var(--bd-mint)',
-              color: '#fff',
-              border: '1.5px solid var(--bd-mint)',
-              boxShadow: '0 4px 0 var(--bd-mint-deep)',
-            }}
-            onClick={onPlayAgain}
-          >
-            {t('lobby.game.playAgain')}
-          </button>
-        )}
-
-        {canStartGame && onReturnToWaiting && (
-          <button style={ghostBtn} onClick={onReturnToWaiting}>
-            {t('game.ui.returnToLobby')}
-          </button>
-        )}
-
-        {!canStartGame && (
-          <p
-            style={{
-              color: 'rgba(255,255,255,0.45)',
-              fontSize: 13,
-              textAlign: 'center',
-              margin: 0,
-            }}
-          >
-            {t('game.ui.waitingForHost')}
-          </p>
-        )}
-
-        {onLeave && (
-          <button style={ghostBtn} onClick={onLeave}>
-            {t('game.ui.leave')}
-          </button>
-        )}
-      </div>
-      {isGuest && registerUrl && (
-        <div style={{ width: '100%', maxWidth: 260 }}>
-          <GuestConversionNudge registerUrl={registerUrl} />
-        </div>
-      )}
-    </div>
-    </div>
-  )
-}
 
 function MemoryPlayerCard({
   displayName,
@@ -468,6 +281,7 @@ export default function MemoryGameBoard({
   isGuest,
   registerUrl,
   isSpectator = false,
+  isRestarting = false,
   reconcileWithServerSnapshot,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
@@ -790,19 +604,19 @@ export default function MemoryGameBoard({
         {cardGrid}
       </div>
       {isFinished && !overlayInspecting && !isSpectator && (
-        <MemoryResultModal
-          winnerId={winnerId}
-          winnerName={winnerName}
+        <GameResultOverlay
+          title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
           isDraw={isDraw}
-          isMyWin={isMyWin}
-          canStartGame={!!canStartGame}
-          onPlayAgain={onPlayAgain}
-          onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
-          onLeave={onLeave}
+          accentColor="var(--bd-mint)"
+          accentShadowColor="var(--bd-mint-deep)"
           onInspect={() => setOverlayInspecting(true)}
+          isHost={!!canStartGame}
+          isLoading={isRestarting}
+          onPlayAgain={onPlayAgain}
+          onReturnToLobby={canStartGame ? onReturnToWaiting : undefined}
+          onLeave={onLeave}
           isGuest={isGuest}
           registerUrl={registerUrl}
-          t={t}
         />
       )}
       {isFinished && overlayInspecting && (
@@ -1067,19 +881,19 @@ export default function MemoryGameBoard({
             <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               {cardGrid}
               {isFinished && !overlayInspecting && !isSpectator && (
-                <MemoryResultModal
-                  winnerId={winnerId}
-                  winnerName={winnerName}
+                <GameResultOverlay
+                  title={isDraw ? t('games.memory.game.tieLabel') : isMyWin ? t('games.memory.game.youWin') : t('games.memory.game.winnerLabel', { player: winnerName })}
                   isDraw={isDraw}
-                  isMyWin={isMyWin}
-                  canStartGame={!!canStartGame}
-                  onPlayAgain={onPlayAgain}
-                  onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
-                  onLeave={onLeave}
+                  accentColor="var(--bd-mint)"
+                  accentShadowColor="var(--bd-mint-deep)"
                   onInspect={() => setOverlayInspecting(true)}
+                  isHost={!!canStartGame}
+                  isLoading={isRestarting}
+                  onPlayAgain={onPlayAgain}
+                  onReturnToLobby={canStartGame ? onReturnToWaiting : undefined}
+                  onLeave={onLeave}
                   isGuest={isGuest}
                   registerUrl={registerUrl}
-                  t={t}
                 />
               )}
               {isFinished && overlayInspecting && (

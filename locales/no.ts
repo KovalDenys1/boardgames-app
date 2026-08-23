@@ -1144,6 +1144,8 @@ const no = {
       accept: 'Godta',
       decline: 'Avslå',
       returnToLobby: 'Tilbake til venterom',
+      roundOver: 'Runden er over',
+      viewBoard: 'Se brettet',
       kickPlayer: 'Fjern spiller',
       settings: 'Innstillinger',
     }

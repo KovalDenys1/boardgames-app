@@ -1144,6 +1144,8 @@ const ru = {
       accept: 'Принять',
       decline: 'Отклонить',
       returnToLobby: 'Вернуться в лобби',
+      roundOver: 'Раунд окончен',
+      viewBoard: 'Посмотреть доску',
       kickPlayer: 'Удалить игрока',
       settings: 'Настройки',
     }
