@@ -1149,6 +1149,8 @@ const uk: Translation = {
       roundOver: 'Раунд завершено',
       theirTurn: 'Хід суперника',
       winBadge: 'ПЕРЕМОГА',
+      victoryBadge: 'ПЕРЕМОГА',
+      drawBadge: 'НІЧИЯ',
       viewBoard: 'Переглянути дошку',
       kickPlayer: 'Видалити гравця',
       settings: 'Налаштування',

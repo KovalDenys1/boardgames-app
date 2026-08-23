@@ -1147,6 +1147,8 @@ const en = {
       roundOver: 'Round over',
       theirTurn: 'Their turn',
       winBadge: 'WIN',
+      victoryBadge: 'VICTORY',
+      drawBadge: 'DRAW',
       viewBoard: 'View Board',
       kickPlayer: 'Remove player',
       settings: 'Settings',
