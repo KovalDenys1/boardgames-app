@@ -1677,15 +1677,19 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Mobile tabs */
 .ttt-mobile-layout { display: flex; flex-direction: column; gap: 10px; }
-.ttt-tabs {
+/* Shared mobile in-game tab strip (#736 phase 5) — used by TTT, C4, Memory
+   via components/game-chrome/GameTabs. Distinct from MobileTabs (the bottom
+   nav bar Yahtzee/Spy use). */
+.game-tabs {
   display: flex;
   gap: 4px;
   background: #FFF8EC;
   border: 1px solid var(--bd-line);
   border-radius: 14px;
   padding: 4px;
+  flex-shrink: 0;
 }
-.ttt-tab {
+.game-tab {
   flex: 1;
   padding: 10px 8px;
   border-radius: 10px;
@@ -1697,10 +1701,13 @@ input[type="range"].slider-thumb::-moz-range-track {
   border: none;
   cursor: pointer;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-.ttt-tab.ttt-tab-active { background: var(--bd-ink); color: var(--bd-bg); }
-
-.ttt-tab-badge {
+.game-tab.game-tab-active { background: var(--bd-ink); color: var(--bd-bg); }
+.game-tab-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1712,7 +1719,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-size: 10px;
   font-weight: 800;
   padding: 0 4px;
-  margin-left: 6px;
 }
 
 @media (min-width: 1024px) {
@@ -2295,51 +2301,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 
-.memory-tabs {
-  display: flex;
-  gap: 4px;
-  background: #FFF8EC;
-  border: 1px solid var(--bd-line);
-  border-radius: 14px;
-  padding: 4px;
+/* Memory docks the shared tab strip with its own margins */
+.memory-mobile-layout .game-tabs {
   margin: 8px 12px;
-  flex-shrink: 0;
-}
-
-.memory-tab-btn {
-  flex: 1;
-  padding: 10px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--bd-ink-soft);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: background 0.12s, color 0.12s;
-}
-
-.memory-tab-btn-active {
-  background: var(--bd-ink);
-  color: var(--bd-bg);
-}
-
-.memory-tab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  background: var(--bd-coral);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 0 4px;
 }
 
 .memory-mobile-content {
@@ -2450,8 +2414,7 @@ html.dark .ttt-cell:not(:disabled):hover {
   background: var(--bd-bg2);
 }
 
-html.dark .ttt-tabs,
-html.dark .memory-tabs {
+html.dark .game-tabs {
   background: var(--bd-bg2);
 }
 

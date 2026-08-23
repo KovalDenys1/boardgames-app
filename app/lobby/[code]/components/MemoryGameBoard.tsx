@@ -15,6 +15,7 @@ import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
 
@@ -796,31 +797,15 @@ export default function MemoryGameBoard({
         </div>
 
         {/* Tabs */}
-        <div className="memory-tabs">
-          <button
-            className={`memory-tab-btn ${mobileTab === 'board' ? 'memory-tab-btn-active' : ''}`}
-            onClick={() => setMobileTab('board')}
-          >
-            {t('games.memory.game.tabBoard')}
-          </button>
-          <button
-            className={`memory-tab-btn ${mobileTab === 'moves' ? 'memory-tab-btn-active' : ''}`}
-            onClick={() => setMobileTab('moves')}
-          >
-            {t('games.memory.game.tabMoves')} ({moveHistory.length})
-          </button>
-          {onSendChatMessage && (
-            <button
-              className={`memory-tab-btn ${mobileTab === 'chat' ? 'memory-tab-btn-active' : ''}`}
-              onClick={() => setMobileTab('chat')}
-            >
-              {t('games.memory.game.tabChat')}
-              {chatUnreadCount > 0 && mobileTab !== 'chat' && (
-                <span className="memory-tab-badge">{chatUnreadCount}</span>
-              )}
-            </button>
-          )}
-        </div>
+        <GameTabs
+          tabs={[
+            { id: 'board' as const, label: t('games.memory.game.tabBoard') },
+            { id: 'moves' as const, label: `${t('games.memory.game.tabMoves')} (${moveHistory.length})` },
+            ...(onSendChatMessage ? [{ id: 'chat' as const, label: t('games.memory.game.tabChat'), badge: chatUnreadCount }] : []),
+          ]}
+          activeTab={mobileTab}
+          onTabChange={setMobileTab}
+        />
 
         {/* Tab content */}
         <div className="memory-mobile-content">

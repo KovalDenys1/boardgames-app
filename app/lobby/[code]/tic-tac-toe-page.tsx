@@ -38,6 +38,7 @@ import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -1149,27 +1150,18 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 {headerSection}
                 {statusSection}
                 {requestSection}
-                <div className="ttt-tabs">
-                    {([
-                        { id: 'board', label: t('game.ui.tabBoard') },
-                        { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        ...(showChat ? [{ id: 'chat', label: t('game.ui.tabChat') }] as const : []),
-                    ] as ReadonlyArray<{ id: 'board' | 'history' | 'chat'; label: string }>).map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`ttt-tab${mobileTab === tab.id ? ' ttt-tab-active' : ''}`}
-                            onClick={() => {
-                                setMobileTab(tab.id)
-                                if (tab.id === 'chat') resetChatUnread()
-                            }}
-                        >
-                            {tab.label}
-                            {tab.id === 'chat' && chatUnreadCount > 0 && mobileTab !== 'chat' && (
-                                <span className="ttt-tab-badge">{chatUnreadCount}</span>
-                            )}
-                        </button>
-                    ))}
-                </div>
+                <GameTabs
+                    tabs={[
+                        { id: 'board' as const, label: t('game.ui.tabBoard') },
+                        { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                    ]}
+                    activeTab={mobileTab}
+                    onTabChange={(id) => {
+                        setMobileTab(id)
+                        if (id === 'chat') resetChatUnread()
+                    }}
+                />
                 <div className="ttt-mobile-content">
                     {mobileTab === 'board' && (
                         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
