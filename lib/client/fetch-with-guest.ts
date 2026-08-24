@@ -1,3 +1,4 @@
+import { readLocal } from '@/lib/safe-storage'
 /**
  * Fetch utility that automatically adds guest headers when user is in guest mode
  * Use this instead of native fetch for all API calls
@@ -12,7 +13,7 @@ export function getGuestHeaders(): HeadersInit {
         return {}
     }
 
-    const guestToken = localStorage.getItem('boardly_guest_token')
+    const guestToken = readLocal('boardly_guest_token')
 
     if (guestToken) {
         return {
@@ -52,9 +53,9 @@ export function isGuestMode(): boolean {
         return false
     }
 
-    const guestToken = localStorage.getItem('boardly_guest_token')
-    const guestId = localStorage.getItem('boardly_guest_id')
-    const guestName = localStorage.getItem('boardly_guest_name')
+    const guestToken = readLocal('boardly_guest_token')
+    const guestId = readLocal('boardly_guest_id')
+    const guestName = readLocal('boardly_guest_name')
 
     return Boolean(guestToken && guestId && guestName)
 }
@@ -67,9 +68,9 @@ export function getGuestData(): { guestId: string; guestName: string; guestToken
         return null
     }
 
-    const guestToken = localStorage.getItem('boardly_guest_token')
-    const guestId = localStorage.getItem('boardly_guest_id')
-    const guestName = localStorage.getItem('boardly_guest_name')
+    const guestToken = readLocal('boardly_guest_token')
+    const guestId = readLocal('boardly_guest_id')
+    const guestName = readLocal('boardly_guest_name')
 
     if (guestToken && guestId && guestName) {
         return { guestId, guestName, guestToken }

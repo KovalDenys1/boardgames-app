@@ -91,10 +91,15 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     testId?: string;
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
+    // Partially-restored or mismatched game state can arrive without a board;
+    // rendering an empty grid beats crashing the whole page (#771).
+    const safeBoard: CellValue[][] = Array.isArray(board)
+        ? board
+        : [[null, null, null], [null, null, null], [null, null, null]]
     return (
         <div className="ttt-board-wrap">
             <div className="ttt-board" data-testid={testId}>
-                {board.map((row, ri) =>
+                {safeBoard.map((row, ri) =>
                     row.map((cell, ci) => (
                         <button
                             key={`${ri}-${ci}`}

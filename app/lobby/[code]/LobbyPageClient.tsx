@@ -22,6 +22,7 @@ import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -215,14 +216,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Roll history and celebrations - with localStorage persistence
   const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>(() => {
     // Load from localStorage on mount
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`rollHistory_${code}`)
-      if (saved) {
-        try {
-          return JSON.parse(saved)
-        } catch (e) {
-          clientLogger.error('Failed to parse saved roll history:', e)
-        }
+    const saved = readLocal(`rollHistory_${code}`)
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        clientLogger.error('Failed to parse saved roll history:', e)
       }
     }
     return []
@@ -257,15 +256,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && rollHistory.length > 0) {
-      localStorage.setItem(`rollHistory_${code}`, JSON.stringify(rollHistory))
+    if (rollHistory.length > 0) {
+      writeLocal(`rollHistory_${code}`, JSON.stringify(rollHistory))
     }
   }, [rollHistory, code])
 
   // Clear roll history from localStorage when game finishes
   useEffect(() => {
-    if (gameEngine?.isGameFinished() && typeof window !== 'undefined') {
-      localStorage.removeItem(`rollHistory_${code}`)
+    if (gameEngine?.isGameFinished()) {
+      removeLocal(`rollHistory_${code}`)
     }
   }, [gameEngine, code])
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { type ThemeMode, getStoredThemeMode, applyThemeMode, THEME_STORAGE_KEY, DARK_MEDIA_QUERY } from '@/lib/theme'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { getSafeLocalStorage, writeLocal } from '@/lib/safe-storage'
 
 const ORDER: ThemeMode[] = ['system', 'light', 'dark']
 
@@ -43,7 +44,7 @@ function useThemeMode() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMode(getStoredThemeMode(localStorage))
+    setMode(getStoredThemeMode(getSafeLocalStorage() ?? undefined))
     setMounted(true)
   }, [])
 
@@ -51,7 +52,7 @@ function useThemeMode() {
     if (!mounted) return
     const mq = window.matchMedia(DARK_MEDIA_QUERY)
     const handler = () => {
-      const stored = getStoredThemeMode(localStorage)
+      const stored = getStoredThemeMode(getSafeLocalStorage() ?? undefined)
       if (stored === 'system') applyThemeMode('system')
     }
     mq.addEventListener('change', handler)
@@ -59,7 +60,7 @@ function useThemeMode() {
   }, [mounted])
 
   const setTheme = (next: ThemeMode) => {
-    localStorage.setItem(THEME_STORAGE_KEY, next)
+    writeLocal(THEME_STORAGE_KEY, next)
     applyThemeMode(next)
     setMode(next)
   }

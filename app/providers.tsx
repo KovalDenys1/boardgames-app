@@ -10,6 +10,7 @@ import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
 import { getStoredAppearanceLocale } from '@/lib/appearance-preferences'
+import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 const OnboardingModal = dynamic(
   () => import('@/components/Onboarding/OnboardingModal').then((mod) => mod.OnboardingModal),
@@ -26,7 +27,7 @@ const GlobalToaster = dynamic(
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    const nextLanguage = getStoredAppearanceLocale(localStorage) as Locale
+    const nextLanguage = getStoredAppearanceLocale(getSafeLocalStorage() ?? undefined) as Locale
 
     if (i18n.language !== nextLanguage) {
       void changeLanguageLazy(nextLanguage)
