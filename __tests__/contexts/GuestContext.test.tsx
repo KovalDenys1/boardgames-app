@@ -161,3 +161,62 @@ describe('GuestContext', () => {
     console.error = originalError
   })
 })
+
+// #769 — in embedded WebViews window.localStorage is null, and in Safari
+// private mode touching it throws SecurityError. Either used to crash the
+// provider on mount, and since GuestProvider wraps the whole app that took
+// down every route.
+describe('GuestContext with unusable localStorage (#769)', () => {
+  const realLocalStorage = window.localStorage
+  const mockFetch = jest.fn()
+
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <GuestProvider>{children}</GuestProvider>
+  )
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(global as any).fetch = mockFetch
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({}) })
+    ;(useSession as jest.MockedFunction<typeof useSession>).mockReturnValue({
+      data: null,
+      status: 'unauthenticated',
+      update: jest.fn(),
+    } as any)
+  })
+
+  afterEach(() => {
+    Object.defineProperty(window, 'localStorage', {
+      value: realLocalStorage,
+      writable: true,
+      configurable: true,
+    })
+  })
+
+  it('mounts without throwing when localStorage is null', () => {
+    Object.defineProperty(window, 'localStorage', {
+      value: null,
+      writable: true,
+      configurable: true,
+    })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    expect(result.current.isGuest).toBe(false)
+    expect(result.current.guestId).toBeNull()
+  })
+
+  it('mounts without throwing when localStorage access throws SecurityError', () => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('The operation is insecure.', 'SecurityError')
+      },
+    })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    expect(result.current.isGuest).toBe(false)
+    expect(result.current.guestName).toBeNull()
+  })
+})

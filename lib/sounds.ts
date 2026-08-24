@@ -1,3 +1,4 @@
+import { readLocal, writeLocal } from '@/lib/safe-storage'
 class SoundManager {
   private sounds: Map<string, HTMLAudioElement> = new Map()
   private enabled: boolean = true
@@ -11,9 +12,9 @@ class SoundManager {
   constructor() {
     if (typeof window !== 'undefined') {
       this.loadSounds()
-      const savedEnabled = localStorage.getItem('soundEnabled')
+      const savedEnabled = readLocal('soundEnabled')
       this.enabled = savedEnabled !== 'false'
-      const savedVolume = parseFloat(localStorage.getItem('soundVolume') ?? '')
+      const savedVolume = parseFloat(readLocal('soundVolume') ?? '')
       if (!isNaN(savedVolume)) {
         this.volume = Math.max(0, Math.min(1, savedVolume))
       }
@@ -179,7 +180,7 @@ class SoundManager {
 
   toggle() {
     this.enabled = !this.enabled
-    localStorage.setItem('soundEnabled', String(this.enabled))
+    writeLocal('soundEnabled', String(this.enabled))
 
     // Stop all sounds when disabling
     if (!this.enabled) {
@@ -191,7 +192,7 @@ class SoundManager {
 
   setVolume(value: number) {
     this.volume = Math.max(0, Math.min(1, value))
-    localStorage.setItem('soundVolume', String(this.volume))
+    writeLocal('soundVolume', String(this.volume))
   }
 
   getVolume() {

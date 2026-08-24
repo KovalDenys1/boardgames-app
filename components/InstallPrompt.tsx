@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 
 const DISMISS_KEY = 'boardly:pwa-install-dismissed:v1'
 
@@ -29,7 +30,7 @@ export default function InstallPrompt() {
   const [isPrompting, setIsPrompting] = useState(false)
 
   useEffect(() => {
-    setDismissed(localStorage.getItem(DISMISS_KEY) === '1')
+    setDismissed(readLocal(DISMISS_KEY) === '1')
     setIsInstalled(isStandaloneDisplayMode())
 
     const onBeforeInstallPrompt = (event: Event) => {
@@ -40,7 +41,7 @@ export default function InstallPrompt() {
     const onAppInstalled = () => {
       setIsInstalled(true)
       setDeferredPrompt(null)
-      localStorage.removeItem(DISMISS_KEY)
+      removeLocal(DISMISS_KEY)
       setDismissed(false)
     }
 
@@ -78,7 +79,7 @@ export default function InstallPrompt() {
   }
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, '1')
+    writeLocal(DISMISS_KEY, '1')
     setDismissed(true)
   }
 

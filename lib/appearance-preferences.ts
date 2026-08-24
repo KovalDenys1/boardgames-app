@@ -33,25 +33,36 @@ export function getStoredAppearanceLocale(storage?: Pick<Storage, 'getItem'>): s
   return defaultLocale
 }
 
+// `storage` is nullable: in embedded WebViews it is unavailable entirely
+// (#769). The preference still applies for this session — only persistence
+// is skipped.
 export function setStoredAppearanceLocale(
-  storage: Pick<Storage, 'setItem'>,
+  storage: Pick<Storage, 'setItem'> | null | undefined,
   language: string
 ): string {
   const normalizedLanguage = normalizeAppearanceLocale(language)
 
   for (const key of LANGUAGE_STORAGE_KEYS) {
-    storage.setItem(key, normalizedLanguage)
+    try {
+      storage?.setItem(key, normalizedLanguage)
+    } catch {
+      // storage is best-effort
+    }
   }
 
   return normalizedLanguage
 }
 
 export function setStoredThemePreference(
-  storage: Pick<Storage, 'setItem'>,
+  storage: Pick<Storage, 'setItem'> | null | undefined,
   theme: string
 ): ThemeMode {
   const normalizedTheme = normalizeThemeMode(theme)
-  storage.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  try {
+    storage?.setItem(THEME_STORAGE_KEY, normalizedTheme)
+  } catch {
+    // storage is best-effort
+  }
   return normalizedTheme
 }
 

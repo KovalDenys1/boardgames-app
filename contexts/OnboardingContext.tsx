@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { useGuest } from '@/contexts/GuestContext'
+import { readLocal, writeLocal } from '@/lib/safe-storage'
 
 const GUEST_ONBOARDING_KEY = 'boardly_onboarding'
 
@@ -38,7 +39,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
 
     if (isGuest) {
-      const stored = localStorage.getItem(GUEST_ONBOARDING_KEY)
+      const stored = readLocal(GUEST_ONBOARDING_KEY)
       if (!stored) setShowModal(true)
     }
   }, [status, isGuest, pathname])
@@ -64,7 +65,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ action: 'complete' }),
       })
     } else {
-      localStorage.setItem(GUEST_ONBOARDING_KEY, 'completed')
+      writeLocal(GUEST_ONBOARDING_KEY, 'completed')
     }
   }, [status])
 
@@ -77,7 +78,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ action: 'skip' }),
       })
     } else {
-      localStorage.setItem(GUEST_ONBOARDING_KEY, 'skipped')
+      writeLocal(GUEST_ONBOARDING_KEY, 'skipped')
     }
   }, [status])
 

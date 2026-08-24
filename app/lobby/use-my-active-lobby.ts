@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { readSession, writeSession } from '@/lib/safe-storage'
 
 export interface ActiveLobbyInfo {
   code: string
@@ -24,7 +25,7 @@ export function useMyActiveLobby(enabled: boolean) {
       .then(json => {
         if (cancelled) return
         const lobby: ActiveLobbyInfo | null = json?.lobby ?? null
-        if (lobby && sessionStorage.getItem(`dismissed-rejoin-${lobby.code}`) === '1') {
+        if (lobby && readSession(`dismissed-rejoin-${lobby.code}`) === '1') {
           setData(null)
         } else {
           setData(lobby)
@@ -37,7 +38,7 @@ export function useMyActiveLobby(enabled: boolean) {
 
   const dismiss = useCallback(() => {
     setData(prev => {
-      if (prev?.code) sessionStorage.setItem(`dismissed-rejoin-${prev.code}`, '1')
+      if (prev?.code) writeSession(`dismissed-rejoin-${prev.code}`, '1')
       return null
     })
     setDismissed(true)

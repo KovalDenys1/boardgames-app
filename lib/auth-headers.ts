@@ -1,3 +1,4 @@
+import { readLocal } from '@/lib/safe-storage'
 /**
  * Build authentication headers for API requests.
  * Handles both guest (X-Guest-Token) and authenticated user modes.
@@ -17,8 +18,7 @@ export function getAuthHeaders(
     : {}
 
   if (isGuest) {
-    const tokenFromStorage =
-      typeof window !== 'undefined' ? localStorage.getItem('boardly_guest_token') : null
+    const tokenFromStorage = readLocal('boardly_guest_token')
     const effectiveToken = guestToken || tokenFromStorage
 
     if (effectiveToken) {
