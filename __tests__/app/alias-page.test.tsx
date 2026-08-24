@@ -85,6 +85,9 @@ jest.mock('@/components/LoadingSpinner', () => ({
 jest.mock('@/components/ReactionOverlay', () => ({
   __esModule: true,
   default: () => null,
+  // alias-page imports the named export, and only renders it once the game is
+  // active — the waiting-room tests never hit it, the #770 test does.
+  ReactionOverlay: () => null,
 }))
 
 jest.mock('@/lib/supabase-client', () => ({
@@ -194,5 +197,58 @@ describe('AliasLobbyPage', () => {
       expect(toast.info).toHaveBeenCalledWith('toast.playerLeft', undefined, { player: 'Dave' })
       expect(mockReplace).toHaveBeenCalledWith('/games')
     })
+  })
+})
+
+// #770 — the turn timer effect used to call clearInterval(id) from a
+// synchronous first tick(), before `const id = setInterval(...)` on the next
+// line was initialized. Opening a lobby whose turn had already expired hit
+// that branch immediately and threw "ReferenceError: Cannot access 'i' before
+// initialization" (73 Sentry events), killing the page via the error boundary.
+describe('AliasLobbyPage turn timer with an already-expired turn (#770)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  function buildExpiredTurnResponse() {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    base.activeGame.state.status = 'playing'
+    base.activeGame.state.data.phase = 'turn_active'
+    // Turn started well beyond the 60s turnTimer → first tick computes r === 0
+    base.activeGame.state.data.turnStartedAt = Date.now() - 10 * 60 * 1000
+    base.activeGame.state.data.currentCard = { word: 'apple', taboo: [] }
+    base.activeGame.state.data.teams[0].playerIds = ['user-1', 'user-2']
+    base.activeGame.state.data.teams[1].playerIds = ['user-3', 'user-4']
+    base.activeGame.state.players = [
+      { id: 'user-1', name: 'Alice' },
+      { id: 'user-2', name: 'Bob' },
+      { id: 'user-3', name: 'Carol' },
+      { id: 'user-4', name: 'Dave' },
+    ]
+    return base
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    mockFetchWithGuest.mockResolvedValue({
+      ok: true,
+      json: async () => buildExpiredTurnResponse(),
+    } as Response)
+  })
+
+  it('mounts without throwing a ReferenceError', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() => render(<AliasLobbyPage code="ABCD" />)).not.toThrow()
+
+    // Let the lobby fetch resolve and the timer effect run its first tick.
+    await waitFor(() => expect(mockFetchWithGuest).toHaveBeenCalled())
+
+    const sawTdzError = errorSpy.mock.calls.some((call) =>
+      call.some((arg) => String(arg).includes('before initialization'))
+    )
+    expect(sawTdzError).toBe(false)
+
+    errorSpy.mockRestore()
   })
 })

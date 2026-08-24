@@ -636,18 +636,26 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       setRemaining(0)
       return
     }
+    // `id` is declared before `tick` and assigned after: the first tick() call
+    // below runs synchronously, and when the turn has already expired it takes
+    // the r === 0 branch immediately. Reading a `const id` declared further
+    // down would hit the temporal dead zone and throw ReferenceError, killing
+    // the page via the error boundary (#770).
+    let id: ReturnType<typeof setInterval> | undefined
     const tick = () => {
       const elapsed = Math.floor((Date.now() - turnStartedAt) / 1000)
       const r = Math.max(0, turnTimerSeconds - elapsed)
       setRemaining(r)
       if (r === 0) {
-        clearInterval(id)
+        if (id) clearInterval(id)
         void loadLobby()
       }
     }
     tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
+    id = setInterval(tick, 1000)
+    return () => {
+      if (id) clearInterval(id)
+    }
   }, [gamePhase, turnStartedAt, turnTimerSeconds, loadLobby])
 
   // ─── Guess chat ────────────────────────────────────────────────────────────
