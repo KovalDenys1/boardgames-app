@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -22,7 +22,7 @@ import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
+import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -31,11 +31,17 @@ import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
+import Chat from '@/components/Chat'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
+import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 
 // ─── Design sub-components ───────────────────────────────────────────────────
 
@@ -85,10 +91,15 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     testId?: string;
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
+    // Partially-restored or mismatched game state can arrive without a board;
+    // rendering an empty grid beats crashing the whole page (#771).
+    const safeBoard: CellValue[][] = Array.isArray(board)
+        ? board
+        : [[null, null, null], [null, null, null], [null, null, null]]
     return (
         <div className="ttt-board-wrap">
             <div className="ttt-board" data-testid={testId}>
-                {board.map((row, ri) =>
+                {safeBoard.map((row, ri) =>
                     row.map((cell, ci) => (
                         <button
                             key={`${ri}-${ci}`}
@@ -107,244 +118,13 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     )
 }
 
-function TttPlayerCard({ name, symbol, isActive, isMe, isWinner, side, avatarSrc, isPremium, t }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isMe: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; isPremium?: boolean; t: (key: TranslationKeys) => string
-}) {
-    const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
+function TttCornerMark({ mark }: { mark: 'X' | 'O' }) {
     return (
         <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-            background: isActive ? 'var(--bd-input-bg)' : 'transparent',
-            border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
-            boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
-            flexDirection: side === 'right' ? 'row-reverse' : 'row',
-            transition: 'all 0.2s', minWidth: 0,
+            position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
+            background: 'var(--bd-bg)', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
         }}>
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-                {avatarSrc ? (
-                    <img src={avatarSrc} alt={name} style={{
-                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-                        border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
-                    }} />
-                ) : (
-                <div style={{
-                    width: 42, height: 42, borderRadius: '50%', background: bg,
-                    display: 'grid', placeItems: 'center', border: '2px solid white',
-                    boxShadow: '0 0 0 2px var(--bd-ink)',
-                    fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
-                }}>
-                    {name.charAt(0).toUpperCase()}
-                </div>
-                )}
-                <div style={{
-                    position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
-                    background: 'var(--bd-bg)', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
-                }}>
-                    <TttMark mark={symbol} size={14} />
-                </div>
-            </div>
-            <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>{name}</span>
-                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
-                    {isWinner && (
-                        <span style={{
-                            display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
-                            background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                            boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-                        }}>{t('games.tictactoe.game.winBadge')}</span>
-                    )}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>{symbol}</div>
-                {isActive && (
-                    <div style={{
-                        marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
-                        display: 'flex', gap: 4, alignItems: 'center',
-                        justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
-                    }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-                        {isMe ? t('games.tictactoe.game.yourTurnBadge') : t('games.tictactoe.game.theirTurn')}
-                    </div>
-                )}
-            </div>
-        </div>
-    )
-}
-
-function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit, isSpectator, t }: {
-    isFinished: boolean; winnerName: string | null; isDraw: boolean;
-    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number;
-    isSpectator?: boolean;
-    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
-}) {
-    if (isFinished && !isDraw && winnerName) {
-        return (
-            <div style={{
-                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-coral)',
-            }}>
-                <span style={{
-                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>{t('games.tictactoe.game.victoryBadge')}</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.tictactoe.game.playerWins', { player: winnerName })}</span>
-            </div>
-        )
-    }
-    if (isFinished && isDraw) {
-        return (
-            <div style={{
-                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-lav)',
-            }}>
-                <span style={{
-                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    background: 'var(--bd-lav)', color: 'white', border: '2px solid var(--bd-ink)',
-                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>{t('games.tictactoe.game.drawBadge')}</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.tictactoe.game.catsGameFull')}</span>
-            </div>
-        )
-    }
-    if (isSpectator) {
-        return (
-            <div style={{
-                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-                border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-                display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-                <span style={{ fontSize: 14 }}>👁</span>
-                <TttMark mark={currentSymbol} size={20} />
-                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
-                <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveNum}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
-            </div>
-        )
-    }
-    const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
-    const danger = secs <= 5
-    return (
-        <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
-            border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-            display: 'flex', alignItems: 'center', gap: 12,
-        }}>
-            <TttMark mark={currentSymbol} size={22} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>
-                    {t('games.tictactoe.game.playerTurn', { player: currentPlayerName })}
-                    <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>
-                        {t('games.tictactoe.game.moveNum', { num: moveNum })}
-                    </span>
-                </div>
-                <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%', width: pct + '%',
-                        background: danger ? 'var(--bd-coral)' : currentSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
-                        transition: 'width 1s linear, background 0.2s',
-                    }} />
-                </div>
-            </div>
-            <div style={{
-                fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-                color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
-            }}>
-                :{String(secs).padStart(2, '0')}
-            </div>
-        </div>
-    )
-}
-
-function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isMatchComplete, isGuest, registerUrl, t }: {
-    winnerName: string | null; winnerSymbol: string | null; isDraw: boolean; isMyWin: boolean;
-    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean;
-    isMatchComplete: boolean;
-    isGuest: boolean; registerUrl: string;
-    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
-}) {
-    const accentColor = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
-    const ghostBtn: React.CSSProperties = {
-        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
-        border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
-    }
-    return (
-        // Outer layer scrolls; the inner wrapper's margin:auto centers the
-        // content when it fits and lets it scroll from the top when it
-        // doesn't — the buttons can never be clipped on short screens (#737).
-        <div style={{
-            position: 'absolute', inset: 0, borderRadius: 'inherit',
-            background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
-            display: 'flex', overflowY: 'auto',
-        }}>
-        <div style={{
-            margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 4, padding: 24, width: '100%',
-        }}>
-            {isDraw ? (
-                <div style={{ fontSize: 40, marginBottom: 8 }}>🤝</div>
-            ) : (
-                <div style={{
-                    width: 56, height: 56, borderRadius: '50%', background: accentColor,
-                    display: 'grid', placeItems: 'center', marginBottom: 8,
-                    boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
-                }}>
-                    {winnerSymbol && <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />}
-                </div>
-            )}
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                {isMatchComplete ? t('games.tictactoe.game.seriesComplete') : t('games.tictactoe.game.roundOver')}
-            </div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center', marginBottom: 16, lineHeight: 1.1 }}>
-                {isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 260 }}>
-                <button onClick={onInspect} style={ghostBtn}>
-                    {t('games.tictactoe.game.viewBoard')}
-                </button>
-                {isMatchComplete ? (
-                    <div style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
-                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
-                    }}>
-                        {t('games.tictactoe.game.returningToLobby')}
-                    </div>
-                ) : isHost ? (
-                    <>
-                        <button onClick={onPlayAgain} disabled={isLoading} style={{
-                            padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
-                            background: 'var(--bd-coral)', color: 'white', border: 'none',
-                            boxShadow: '0 4px 0 var(--bd-coral-deep)',
-                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
-                            fontFamily: 'inherit',
-                        }}>
-                            {isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}
-                        </button>
-                        <button onClick={onReturnToLobby} disabled={isLoading} style={{ ...ghostBtn, opacity: isLoading ? 0.65 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
-                            {t('game.ui.returnToLobby')}
-                        </button>
-                    </>
-                ) : (
-                    <div style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)',
-                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
-                    }}>
-                        {t('game.ui.waitingForHost')}
-                    </div>
-                )}
-                <button onClick={onLeave} style={ghostBtn}>
-                    {t('games.tictactoe.game.leave')}
-                </button>
-            </div>
-            {isGuest && (
-                <div style={{ width: '100%', maxWidth: 260 }}>
-                    <GuestConversionNudge registerUrl={registerUrl} />
-                </div>
-            )}
-        </div>
+            <TttMark mark={mark} size={14} />
         </div>
     )
 }
@@ -378,8 +158,6 @@ interface TicTacToeLobbyPageProps {
     isSpectator?: boolean
     onGameReset?: () => void
 }
-
-interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
 
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
@@ -446,11 +224,22 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     // Design states
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
     const [overlayInspecting, setOverlayInspecting] = useState(false)
-    const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
-    const [chatInput, setChatInput] = useState('')
-    const chatRef = useRef<HTMLDivElement>(null)
-    const chatCurrentUserIdRef = useRef<string | null>(null)
-    const chatStatePlayersRef = useRef<Array<{ id: string }>>([])
+
+    // Shared chat pipeline (#736) — replaces the old hand-rolled localChat,
+    // which broadcast id-less payloads straight from the client (no Redis
+    // history, no server-side authz). Unread counting only matters for the
+    // mobile chat tab — in the desktop/landscape trees the panel is always
+    // on screen and the badge is never rendered.
+    const {
+        chatMessages,
+        sendChatMessage,
+        unreadCount: chatUnreadCount,
+        resetUnread: resetChatUnread,
+        someoneTyping,
+        onChatMessage,
+        onPlayerTyping,
+        mergeHistoryMessages,
+    } = useLobbyChat({ code, isChatVisible: mobileTab === 'chat' })
 
 
     const trackLeaveRedirectEvent = useCallback(
@@ -609,29 +398,23 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     void loadLobby()
   }, [applyAuthoritativeState, loadLobby])
 
-  const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
-    if (msg.userId === chatCurrentUserIdRef.current) return
-    const d = new Date(msg.timestamp)
-    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
-    const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
-    const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'lav' : 'sky'
-    setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
-  }, [])
-
   const handleGameReset = useCallback(() => {
     if (onGameReset) onGameReset()
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
 
-  const { emitWhenConnected } = useRealtimeConnection({
+  const { isConnected, isReconnecting } = useRealtimeConnection({
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken) || isSpectator),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
-    onChatMessage: handleChatMessage,
+    onChatMessage,
+    onPlayerTyping,
     onGameReset: handleGameReset,
   })
+
+  useLobbyChatHistory({ code, isConnected, isReconnecting, mergeHistoryMessages })
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false
@@ -915,11 +698,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     // ─── Design effects ───────────────────────────────────────────────────────
 
-    // Scroll chat to bottom
-    useEffect(() => {
-        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
-    }, [localChat])
-
     // Hoisted above the early returns below so this hook always runs, regardless
     // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
     const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as TicTacToeGameData).moveHistory : undefined
@@ -974,8 +752,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const gameData = state.data as TicTacToeGameData
     const players = game?.players || []
     const currentUserId = getCurrentUserId()
-    chatCurrentUserIdRef.current = currentUserId ?? null
-    chatStatePlayersRef.current = state.players
     const myPlayerIndex = state.players.findIndex(p => p.id === currentUserId)
     const mySymbol: PlayerSymbol | null = myPlayerIndex === 0 ? 'X' : myPlayerIndex === 1 ? 'O' : null
     const opponentSymbol: PlayerSymbol | null = mySymbol === 'X' ? 'O' : mySymbol === 'O' ? 'X' : null
@@ -1058,17 +834,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         })
     }
 
-    const sendChat = () => {
-        if (isSpectator || !chatInput.trim()) return
-        const now = new Date()
-        const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
-        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
-        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
-        setChatInput('')
-    }
-
     // ─── Sections ─────────────────────────────────────────────────────────────
 
     const headerSection = (
@@ -1079,36 +844,38 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             <div style={{ position: 'absolute', right: -30, top: -30, opacity: 0.4, transform: 'rotate(8deg)', pointerEvents: 'none' }}>
                 <TttBgGrid />
             </div>
-            <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} t={t} />
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        Round {roundNum}
-                    </div>
-                    <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
-                        {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{oWins}
-                    </div>
-                    <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                        {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
-                    </div>
-                </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} t={t} />
-            </div>
+            <GameScoreboardHeader
+                leftCard={<GamePlayerCard name={xName} isActive={!isFinished && gameData.currentSymbol === 'X'} isMe={mySymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline="X" cornerBadge={<TttCornerMark mark="X" />} />}
+                center={
+                    <>
+                        <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
+                            Round {roundNum}
+                        </div>
+                        <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
+                            {xWins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{oWins}
+                        </div>
+                        <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
+                            {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
+                        </div>
+                    </>
+                }
+                rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
+            />
         </div>
     )
 
     const statusSection = (
-        <TttStatusBanner
+        <GameStatusBanner
             isFinished={isFinished}
-            winnerName={winnerName}
             isDraw={isDraw}
-            currentSymbol={gameData.currentSymbol}
-            currentPlayerName={gameData.currentSymbol === 'X' ? xName : oName}
+            finishedMessage={isDraw ? t('games.tictactoe.game.catsGameFull') : t('games.tictactoe.game.playerWins', { player: winnerName })}
+            activeTitle={isSpectator ? (gameData.currentSymbol === 'X' ? xName : oName) : t('games.tictactoe.game.playerTurn', { player: gameData.currentSymbol === 'X' ? xName : oName })}
+            meta={isSpectator ? `#${gameData.moveCount + 1}` : t('games.tictactoe.game.moveNum', { num: gameData.moveCount + 1 })}
             secs={timeLeft}
-            moveNum={gameData.moveCount + 1}
             turnTimerLimit={turnTimerLimit}
+            barColor={gameData.currentSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'}
+            leadingIcon={<TttMark mark={gameData.currentSymbol} size={22} />}
             isSpectator={isSpectator}
-            t={t}
         />
     )
 
@@ -1187,21 +954,39 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 testId={testId}
             />
             {isFinished && !isSpectator && !overlayInspecting && (
-                <TttResultModal
-                    winnerName={winnerName}
-                    winnerSymbol={winnerSymbol && !isDraw ? winnerSymbol : null}
+                <GameResultOverlay
+                    title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
+                    kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}
                     isDraw={isDraw}
-                    isMyWin={!isDraw && winnerSymbol === mySymbol}
+                    icon={!isDraw && winnerSymbol ? (
+                        <div style={{
+                            width: 56, height: 56, borderRadius: '50%',
+                            background: winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
+                            display: 'grid', placeItems: 'center',
+                            boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
+                        }}>
+                            <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />
+                        </div>
+                    ) : undefined}
+                    accentColor="var(--bd-coral)"
+                    accentShadowColor="var(--bd-coral-deep)"
+                    onInspect={() => setOverlayInspecting(true)}
+                    isHost={isLobbyCreator}
+                    isLoading={isRematchSubmitting}
                     onPlayAgain={handlePlayAgain}
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
-                    onInspect={() => setOverlayInspecting(true)}
-                    isLoading={isRematchSubmitting}
-                    isHost={isLobbyCreator}
-                    isMatchComplete={isMatchComplete}
+                    actionsReplacement={isMatchComplete ? (
+                        <div style={{
+                            padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                            background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
+                            border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
+                        }}>
+                            {t('games.tictactoe.game.returningToLobby')}
+                        </div>
+                    ) : undefined}
                     isGuest={isGuest}
                     registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
-                    t={t}
                 />
             )}
             {isFinished && !isSpectator && overlayInspecting && (
@@ -1291,68 +1076,39 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    const chatSection = (
-        <div className="ttt-chat-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--bd-line)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('chat.open')}</h3>
-                    <span className="bd-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-                </div>
-                <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                    {t('game.ui.inMatch', { count: players.length })}
-                </span>
-            </div>
-            <div ref={chatRef} className="ttt-chat-feed">
-                {localChat.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>{t('chat.noMessages')}</div>
-                    : localChat.map(msg => (
-                        <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                            <div style={{
-                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                background: msg.color === 'coral' ? 'var(--bd-coral)' : msg.color === 'lav' ? 'var(--bd-lav)' : 'var(--bd-sky)',
-                                display: 'grid', placeItems: 'center',
-                                fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 10, color: 'white',
-                            }}>
-                                {msg.who.charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-                                    <span style={{ fontWeight: 600, fontSize: 11, color: 'var(--bd-ink)' }}>{msg.who}</span>
-                                    <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)' }}>{msg.time}</span>
-                                </div>
-                                <div style={{
-                                    background: 'var(--bd-card-warm)', padding: '5px 9px', borderRadius: 8,
-                                    fontSize: 12, lineHeight: 1.35, display: 'inline-block',
-                                    maxWidth: '100%', wordBreak: 'break-word', marginTop: 2, color: 'var(--bd-ink)',
-                                }}>{msg.text}</div>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-            {!isSpectator && (
-                <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                        <input
-                            style={{
-                                flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)',
-                                borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
-                            }}
-                            placeholder={t('game.ui.chatPlaceholder')}
-                            value={chatInput}
-                            onChange={e => setChatInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && sendChat()}
-                        />
-                        <button onClick={sendChat} aria-label={t('chat.send')} style={{
-                            padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                            border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13,
-                            boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit',
-                        }}>↗</button>
-                    </div>
-                </div>
-            )}
-        </div>
-    )
+    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
+    // spectators get a read-only feed.
+    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
+    const showChat = hasMultipleHumans || isSpectator
+    const chatPlayerProfiles = (() => {
+        const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+        for (const p of players) {
+            if (p.userId) {
+                map.set(p.userId, {
+                    avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null,
+                    isPremium: !!p.user?.isPremium,
+                })
+            }
+        }
+        return map
+    })()
+
+    const chatSection = showChat ? (
+        <section className="game-chat-panel">
+            <Chat
+                messages={chatMessages}
+                onSendMessage={sendChatMessage}
+                currentUserId={currentUserId || null}
+                playerProfiles={chatPlayerProfiles}
+                isMinimized={false}
+                onToggleMinimize={() => {}}
+                unreadCount={chatUnreadCount}
+                someoneTyping={someoneTyping}
+                fullScreen
+                readOnly={isSpectator}
+            />
+        </section>
+    ) : null
 
     // Show score summary below player cards when match has results
     const _ = { myWins, myLosses }
@@ -1381,8 +1137,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
 
             {/* ── PHONE LANDSCAPE ─────────────────────────────────────────── */}
-            {/* Mounted before the mobile tree so refs attached inside shared
-                sections (chatRef) keep landing on the mobile copy. */}
             <div className="ttt-landscape-layout">
                 <div className="ttt-landscape-board">
                     {renderBoardSection('ttt-board-landscape')}
@@ -1401,21 +1155,18 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 {headerSection}
                 {statusSection}
                 {requestSection}
-                <div className="ttt-tabs">
-                    {([
-                        { id: 'board', label: t('game.ui.tabBoard') },
-                        { id: 'history', label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        { id: 'chat', label: t('game.ui.tabChat') },
-                    ] as const).map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`ttt-tab${mobileTab === tab.id ? ' ttt-tab-active' : ''}`}
-                            onClick={() => setMobileTab(tab.id)}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+                <GameTabs
+                    tabs={[
+                        { id: 'board' as const, label: t('game.ui.tabBoard') },
+                        { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                    ]}
+                    activeTab={mobileTab}
+                    onTabChange={(id) => {
+                        setMobileTab(id)
+                        if (id === 'chat') resetChatUnread()
+                    }}
+                />
                 <div className="ttt-mobile-content">
                     {mobileTab === 'board' && (
                         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>

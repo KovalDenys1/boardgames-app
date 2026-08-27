@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { getSafeSessionStorage, readSession, removeSession, writeSession } from '@/lib/safe-storage'
 
 type RouterLike = {
   push: (href: string) => void
@@ -21,8 +22,11 @@ const PROFILE_PATH = '/profile'
 const PROFILE_RETURN_STATE_KEY = 'boardly:profile:return-state'
 const PROFILE_SCROLL_RESTORE_KEY = 'boardly:profile:scroll-restore'
 
+// #769: `typeof window.sessionStorage !== 'undefined'` used to pass when the
+// property is null (typeof null === 'object'), then threw at .getItem in
+// embedded WebViews. getSafeSessionStorage() probes for real usability.
 function canUseBrowserApi() {
-  return typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined'
+  return typeof window !== 'undefined' && getSafeSessionStorage() !== null
 }
 
 function isProfileHref(href: string) {
@@ -57,7 +61,7 @@ function readState(key: string): ProfileReturnState | null {
     return null
   }
 
-  const raw = window.sessionStorage.getItem(key)
+  const raw = readSession(key)
   if (!raw) {
     return null
   }
@@ -75,14 +79,14 @@ function writeState(key: string, state: ProfileReturnState) {
     return
   }
 
-  window.sessionStorage.setItem(key, JSON.stringify(state))
+  writeSession(key, JSON.stringify(state))
 }
 
 function clearState(key: string) {
   if (!canUseBrowserApi()) {
     return
   }
-  window.sessionStorage.removeItem(key)
+  removeSession(key)
 }
 
 function snapshotCurrentRoute(): ProfileReturnState | null {

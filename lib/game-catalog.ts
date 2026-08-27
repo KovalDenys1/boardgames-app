@@ -80,6 +80,20 @@ export interface GameMetadata {
   engineHandlesLeave: boolean
   /** Bot turn is triggered by checking currentPlayerIndex (turn-based games) */
   usesTurnIndex: boolean
+  /**
+   * Abandon the game when the player holding this state.data role leaves —
+   * some games cannot meaningfully continue without a specific role (#759).
+   * `stateDataKey` names the state.data field holding that player's id;
+   * `reason` goes into terminalMetadata and the game-abandoned broadcast.
+   */
+  abandonWhenRoleLeaves?: { stateDataKey: string; reason: string }
+  /**
+   * state.data fields to reset when advanceTurnOnLeave skips past the
+   * departed player, so the next player starts a clean turn (#759 — was
+   * duck-typed per-game inside lobby-leave.ts). A value of undefined
+   * deletes the key; other values are assigned when the key exists.
+   */
+  turnResetOnLeave?: Record<string, unknown>
 }
 
 const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
@@ -96,6 +110,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     advanceTurnOnLeave: true,
     engineHandlesLeave: false,
     usesTurnIndex: true,
+    turnResetOnLeave: { rollsLeft: 3, held: [false, false, false, false, false], lastRoll: undefined },
   },
   guess_the_spy: {
     type: 'guess_the_spy',
@@ -110,6 +125,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     advanceTurnOnLeave: false,
     engineHandlesLeave: false,
     usesTurnIndex: false,
+    // The game is unwinnable without its spy; a non-spy leave continues
+    // (phase-based — no currentPlayerIndex to advance).
+    abandonWhenRoleLeaves: { stateDataKey: 'spyPlayerId', reason: 'spy_left' },
   },
   tic_tac_toe: {
     type: 'tic_tac_toe',
@@ -152,6 +170,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     advanceTurnOnLeave: true,
     engineHandlesLeave: false,
     usesTurnIndex: true,
+    turnResetOnLeave: { flippedCardIds: [], pendingMismatchCardIds: [], advanceTurnAfterMove: false },
   },
   connect_four: {
     type: 'connect_four',

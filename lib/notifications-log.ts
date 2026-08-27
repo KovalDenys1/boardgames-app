@@ -8,6 +8,8 @@ export type NotificationEmailType =
 
 export type NotificationDeliveryStatus = 'queued' | 'sent' | 'skipped' | 'failed'
 
+export type NotificationDeliveryChannel = 'email' | 'push'
+
 type NotificationsModelLike = {
   create: (args: Record<string, unknown>) => Promise<unknown>
   findFirst?: (args: Record<string, unknown>) => Promise<unknown>
@@ -17,6 +19,7 @@ type RecordNotificationDeliveryInput = {
   userId: string
   type: NotificationEmailType
   status: NotificationDeliveryStatus
+  channel?: NotificationDeliveryChannel
   dedupeKey?: string
   reason?: string
   payload?: Record<string, unknown>
@@ -48,7 +51,7 @@ export async function recordNotificationDelivery(
       data: {
         userId: input.userId,
         type: input.type,
-        channel: 'email',
+        channel: input.channel ?? 'email',
         status: input.status,
         dedupeKey: input.dedupeKey ?? null,
         reason: input.reason ?? null,
@@ -65,6 +68,7 @@ export async function recordNotificationDelivery(
 type HasRecentSentNotificationInput = {
   userId: string
   type: NotificationEmailType
+  channel?: NotificationDeliveryChannel
   dedupeKey?: string
   since: Date
 }
@@ -85,7 +89,7 @@ export async function hasRecentSentNotification(
       where: {
         userId: input.userId,
         type: input.type,
-        channel: 'email',
+        channel: input.channel ?? 'email',
         status: 'sent',
         ...(input.dedupeKey ? { dedupeKey: input.dedupeKey } : {}),
         sentAt: {

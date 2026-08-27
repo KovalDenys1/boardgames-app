@@ -1,5 +1,6 @@
 import { trackLobbyCreateReady, type AnalyticsGameType } from '@/lib/analytics'
 import { clientLogger } from '@/lib/client-logger'
+import { readSession, removeSession, writeSession } from '@/lib/safe-storage'
 
 interface PendingLobbyCreateMetric {
   lobbyCode: string
@@ -34,7 +35,7 @@ function readPendingMetric(): PendingLobbyCreateMetric | null {
     return null
   }
 
-  const raw = window.sessionStorage.getItem(PENDING_LOBBY_CREATE_KEY)
+  const raw = readSession(PENDING_LOBBY_CREATE_KEY)
   if (!raw) {
     return null
   }
@@ -46,7 +47,7 @@ function readPendingMetric(): PendingLobbyCreateMetric | null {
       typeof parsed.startedAt !== 'number' ||
       typeof parsed.isGuest !== 'boolean'
     ) {
-      window.sessionStorage.removeItem(PENDING_LOBBY_CREATE_KEY)
+      removeSession(PENDING_LOBBY_CREATE_KEY)
       return null
     }
 
@@ -57,7 +58,7 @@ function readPendingMetric(): PendingLobbyCreateMetric | null {
       isGuest: parsed.isGuest,
     }
   } catch {
-    window.sessionStorage.removeItem(PENDING_LOBBY_CREATE_KEY)
+    removeSession(PENDING_LOBBY_CREATE_KEY)
     return null
   }
 }
@@ -67,7 +68,7 @@ export function markPendingLobbyCreateMetric(metric: PendingLobbyCreateMetric): 
     return
   }
 
-  window.sessionStorage.setItem(
+  writeSession(
     PENDING_LOBBY_CREATE_KEY,
     JSON.stringify({
       lobbyCode: metric.lobbyCode,
@@ -94,7 +95,7 @@ export function finalizePendingLobbyCreateMetric(params: {
   const now = Date.now()
   const isStale = now - pending.startedAt > PENDING_LOBBY_CREATE_TTL_MS
   if (isStale) {
-    window.sessionStorage.removeItem(PENDING_LOBBY_CREATE_KEY)
+    removeSession(PENDING_LOBBY_CREATE_KEY)
     return false
   }
 
@@ -111,7 +112,7 @@ export function finalizePendingLobbyCreateMetric(params: {
     isGuest: pending.isGuest,
   })
 
-  window.sessionStorage.removeItem(PENDING_LOBBY_CREATE_KEY)
+  removeSession(PENDING_LOBBY_CREATE_KEY)
 
   clientLogger.log('📊 Analytics: Lobby create ready tracked', {
     lobbyCode: params.lobbyCode,

@@ -66,5 +66,11 @@ export async function generateMetadata({
 }
 
 export default function LobbyLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  // translate="no" (#772): page translators (Google Translate et al.) replace
+  // React's text nodes with <font> wrappers, so React's later removeChild of
+  // the original node throws NotFoundError and the game page dies — this was
+  // the single largest error bucket in Sentry. In-game UI is highly dynamic
+  // and the app already ships its own 4-locale i18n, so auto-translating it
+  // buys nothing. Marketing pages and guides stay translatable.
+  return <div translate="no" className="contents">{children}</div>
 }

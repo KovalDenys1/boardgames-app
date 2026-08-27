@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { readLocal, writeLocal } from '@/lib/safe-storage'
 
 const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v1'
 
@@ -15,7 +16,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(DISMISS_KEY)) {
+      if (!readLocal(DISMISS_KEY)) {
         setVisible(true)
       }
     } catch {
@@ -25,7 +26,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
 
   const dismiss = () => {
     try {
-      localStorage.setItem(DISMISS_KEY, '1')
+      writeLocal(DISMISS_KEY, '1')
     } catch {
       // ignore
     }

@@ -950,9 +950,13 @@ function CreateLobbyPage() {
 }
 
 export default function CreateLobbyPageWrapper() {
+  // translate="no" (#772): 36% of the Google-Translate-induced removeChild
+  // crashes in Sentry came from this route. See app/lobby/[code]/layout.tsx.
   return (
-    <Suspense fallback={<div className="bd-page bd-screen flex-1 flex items-center justify-center"><div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>Loading...</div></div>}>
-      <CreateLobbyPage />
-    </Suspense>
+    <div translate="no" className="contents">
+      <Suspense fallback={<div className="bd-page bd-screen flex-1 flex items-center justify-center"><div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>Loading...</div></div>}>
+        <CreateLobbyPage />
+      </Suspense>
+    </div>
   )
 }

@@ -48,7 +48,7 @@ const profile = {
 }
 
 describe('PublicProfileView', () => {
-  it('uses viewport height minus header in page mode', () => {
+  it('uses the shared game-h viewport token in page mode', () => {
     const { container } = render(
       <PublicProfileView
         profile={profile}
@@ -58,9 +58,9 @@ describe('PublicProfileView', () => {
 
     const root = container.firstElementChild as HTMLElement
 
-    expect(root.className).toContain('min-h-[calc(100vh-64px)]')
+    expect(root.className).toContain('min-h-[var(--game-h)]')
     expect(root.className).not.toContain('mobile-vh-100')
-    expect(root.getAttribute('style')).toContain('min-height: calc(100dvh - 64px);')
+    expect(root.getAttribute('style')).toContain('min-height: var(--game-h);')
   })
 
   it('shows a friends-only gate with a request action', () => {

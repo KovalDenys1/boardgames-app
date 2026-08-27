@@ -10,6 +10,7 @@ import {
   hasRecentSentNotification,
   recordNotificationDelivery,
 } from '@/lib/notifications-log'
+import { sendPushNotification } from '@/lib/push-send'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -33,6 +34,10 @@ jest.mock('@/lib/in-app-notifications', () => ({
   createInAppNotification: jest.fn().mockResolvedValue({ created: true, id: 'in-app-1' }),
 }))
 
+jest.mock('@/lib/push-send', () => ({
+  sendPushNotification: jest.fn(),
+}))
+
 jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -50,6 +55,8 @@ const mockHasRecentSentNotification =
   hasRecentSentNotification as jest.MockedFunction<typeof hasRecentSentNotification>
 const mockRecordNotificationDelivery =
   recordNotificationDelivery as jest.MockedFunction<typeof recordNotificationDelivery>
+const mockSendPushNotification =
+  sendPushNotification as jest.MockedFunction<typeof sendPushNotification>
 
 function buildGame(overrides: Record<string, unknown> = {}) {
   return {
@@ -109,6 +116,7 @@ describe('runTurnReminderCycle', () => {
     })
     mockHasRecentSentNotification.mockResolvedValue(false)
     mockRecordNotificationDelivery.mockResolvedValue(undefined)
+    mockSendPushNotification.mockResolvedValue(undefined)
   })
 
   it('sends a turn reminder for eligible current player', async () => {
@@ -126,7 +134,7 @@ describe('runTurnReminderCycle', () => {
     expect(result.success).toBe(true)
     expect(result.scannedGames).toBe(1)
     expect(result.attempted).toBe(1)
-    expect(result.sent).toBe(0)
+    expect(result.sent).toBe(1)
     expect(result.skipped).toBe(1)
     expect(result.failed).toBe(0)
 
@@ -134,6 +142,24 @@ describe('runTurnReminderCycle', () => {
       expect.objectContaining({
         userId: 'user-2',
         type: 'turn_reminder',
+        dedupeKey: 'turn_reminder:game:game-1:recipient:user-2',
+      })
+    )
+
+    expect(mockSendPushNotification).toHaveBeenCalledWith(
+      'user-2',
+      expect.objectContaining({
+        url: '/lobby/ABCD',
+        tag: 'turn_reminder:game-1',
+      })
+    )
+
+    expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-2',
+        type: 'turn_reminder',
+        status: 'sent',
+        channel: 'push',
         dedupeKey: 'turn_reminder:game:game-1:recipient:user-2',
       })
     )
@@ -164,6 +190,7 @@ describe('runTurnReminderCycle', () => {
     expect(result.attempted).toBe(0)
     expect(result.sent).toBe(0)
     expect(result.skipped).toBe(1)
+    expect(mockSendPushNotification).not.toHaveBeenCalled()
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',
@@ -174,7 +201,7 @@ describe('runTurnReminderCycle', () => {
     )
   })
 
-  it('skips sending when turn reminders are disabled in preferences', async () => {
+  it('skips the email path (but still sends push) when turn reminders are disabled in preferences', async () => {
     mockPrisma.games.findMany.mockResolvedValue([buildGame()])
     mockGetNotificationPreferences.mockResolvedValue({
       inAppNotifications: true,
@@ -193,9 +220,13 @@ describe('runTurnReminderCycle', () => {
       recentActiveSkipMinutes: 10,
     })
 
+    // `turnReminders` is the "Email categories" preference (email path only —
+    // still unimplemented). Push isn't gated by it: sendPushNotification()
+    // itself checks the user's blanket push toggle.
     expect(result.attempted).toBe(0)
-    expect(result.sent).toBe(0)
+    expect(result.sent).toBe(1)
     expect(result.skipped).toBe(1)
+    expect(mockSendPushNotification).toHaveBeenCalledWith('user-2', expect.any(Object))
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',
@@ -241,9 +272,17 @@ describe('runTurnReminderCycle', () => {
 
     expect(result.scannedGames).toBe(2)
     expect(result.attempted).toBe(2)
-    expect(result.sent).toBe(0)
+    expect(result.sent).toBe(1)
     expect(result.skipped).toBe(2)
     expect(result.failed).toBe(0)
+
+    // Push per-cycle cap: user-2 is the recipient in both games, but only the
+    // first (game-1, processed first per lastMoveAt asc ordering) sends push.
+    expect(mockSendPushNotification).toHaveBeenCalledTimes(1)
+    expect(mockSendPushNotification).toHaveBeenCalledWith(
+      'user-2',
+      expect.objectContaining({ tag: 'turn_reminder:game-1' })
+    )
 
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({

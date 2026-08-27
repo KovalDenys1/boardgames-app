@@ -29,6 +29,8 @@ interface ChatProps {
   someoneTyping?: boolean
   fullScreen?: boolean
   onProfileClick?: (userId: string) => void
+  /** Hides the composer — for viewers who can read but not write (spectators). */
+  readOnly?: boolean
 }
 
 export default function Chat({
@@ -43,6 +45,7 @@ export default function Chat({
   someoneTyping = false,
   fullScreen = false,
   onProfileClick,
+  readOnly = false,
 }: ChatProps) {
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
@@ -351,6 +354,7 @@ export default function Chat({
         </div>
       )}
 
+      {!readOnly && (
       <form
         onSubmit={handleSubmit}
         className={`border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-[24px]'}`}
@@ -386,6 +390,7 @@ export default function Chat({
           {t('chat.sendHelp')}
         </div>
       </form>
+      )}
     </div>
   )
 }

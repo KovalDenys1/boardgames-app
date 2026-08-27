@@ -22,6 +22,7 @@ import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -79,6 +80,7 @@ interface DBPlayer {
 }
 
 import { useRealtimeConnection } from './hooks/useRealtimeConnection'
+import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { useLobbyHeartbeat } from './hooks/useLobbyHeartbeat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
@@ -199,11 +201,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return { current, total: totalCategories }
   }, [gameEngine])
 
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
+  // Chat state — messages/unread/typing live in useLobbyChat (#736), called
+  // below once playAmbientSound is in scope
   const [chatMinimized, setChatMinimized] = useState(true) // Chat minimized by default
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
-  const [someoneTyping, setSomeoneTyping] = useState(false)
   const [waitingRoomTab, setWaitingRoomTab] = useState<'players' | 'chat'>('players')
   const [showLobbySettings, setShowLobbySettings] = useState(false)
 
@@ -216,14 +216,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Roll history and celebrations - with localStorage persistence
   const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>(() => {
     // Load from localStorage on mount
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`rollHistory_${code}`)
-      if (saved) {
-        try {
-          return JSON.parse(saved)
-        } catch (e) {
-          clientLogger.error('Failed to parse saved roll history:', e)
-        }
+    const saved = readLocal(`rollHistory_${code}`)
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        clientLogger.error('Failed to parse saved roll history:', e)
       }
     }
     return []
@@ -258,15 +256,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && rollHistory.length > 0) {
-      localStorage.setItem(`rollHistory_${code}`, JSON.stringify(rollHistory))
+    if (rollHistory.length > 0) {
+      writeLocal(`rollHistory_${code}`, JSON.stringify(rollHistory))
     }
   }, [rollHistory, code])
 
   // Clear roll history from localStorage when game finishes
   useEffect(() => {
-    if (gameEngine?.isGameFinished() && typeof window !== 'undefined') {
-      localStorage.removeItem(`rollHistory_${code}`)
+    if (gameEngine?.isGameFinished()) {
+      removeLocal(`rollHistory_${code}`)
     }
   }, [gameEngine, code])
 
@@ -383,6 +381,24 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     },
     []
   )
+
+  // Shared chat pipeline (#736) — history loading is wired up after
+  // useRealtimeConnection below, which supplies isConnected.
+  const {
+    chatMessages,
+    sendChatMessage,
+    unreadCount: unreadMessageCount,
+    resetUnread,
+    someoneTyping,
+    onChatMessage,
+    onPlayerTyping,
+    mergeHistoryMessages,
+    setChatMessages,
+  } = useLobbyChat({
+    code,
+    isChatVisible: !chatMinimized || mobileActiveTab === 'chat',
+    onIncomingMessageSound: () => playAmbientSound('message'),
+  })
 
   const lifecycleRedirectTarget = React.useMemo(
     () => getGameLobbiesRoute((lobby?.gameType as string) || DEFAULT_GAME_TYPE) ?? '/games',
@@ -693,45 +709,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound, triggerLifecycleRedirect])
 
-  const onChatMessage = useCallback((message: ChatMessagePayload) => {
-    setChatMessages(prev => {
-      // Remove matching optimistic entry added by sendChatMessage
-      const filtered = prev.filter(m => {
-        if (!m.id.startsWith('temp-')) return true
-        const age = Date.now() - parseInt(m.id.slice(5), 10)
-        return !(m.userId === message.userId && m.message === message.message && age < 5000)
-      })
-      return [...filtered, message]
-    })
-    const currentUserId = isGuest ? guestId : session?.user?.id
-    const isOwnMessage = message.userId === currentUserId
-    const isChatVisible = !chatMinimized || mobileActiveTab === 'chat'
-    if (!isChatVisible && !isOwnMessage) {
-      setUnreadMessageCount(prev => prev + 1)
-    }
-    if (!isOwnMessage) {
-      playAmbientSound('message')
-    }
-  }, [chatMinimized, mobileActiveTab, isGuest, guestId, session?.user?.id, playAmbientSound])
-
-  const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
-
-  const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
-    const currentUserId = isGuest ? guestId : session?.user?.id
-    if (data.userId !== currentUserId) {
-      setSomeoneTyping(true)
-
-      // Clear previous timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-
-      typingTimeoutRef.current = setTimeout(() => {
-        setSomeoneTyping(false)
-      }, 3000)
-    }
-  }, [isGuest, guestId, session?.user?.id])
-
   const onLobbyUpdate = useCallback((data: LobbyUpdatePayload) => {
     clientLogger.log('📡 Received lobby-update:', data)
     // Use ref to avoid circular dependency
@@ -985,24 +962,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onGameReset: handleGameReset,
   })
 
-  const sendChatMessage = useCallback((message: string) => {
-    const currentUserId = getCurrentUserId()
-    const currentUsername = getCurrentUserName()
-    if (currentUserId) {
-      setChatMessages(prev => [...prev, {
-        id: `temp-${Date.now()}`,
-        userId: currentUserId,
-        username: currentUsername ?? '',
-        message,
-        timestamp: Date.now(),
-      }])
-    }
-    void fetchWithGuest(`/api/lobby/${code}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
-    })
-  }, [code, getCurrentUserId, getCurrentUserName])
+  useLobbyChatHistory({ code, isConnected, isReconnecting, mergeHistoryMessages })
 
   const [isReturningToWaiting, setIsReturningToWaiting] = React.useState(false)
 
@@ -1372,44 +1332,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [status, isGuest, guestToken, code])
 
   // Load chat history on initial connect (and re-load on reconnect)
-  const chatHistoryLoadedRef = React.useRef(false)
-  useEffect(() => {
-    if (!isConnected) return
-    if (status === 'loading') return
-    if (isGuest && !guestToken) return
-
-    // On reconnect, always reload; on first connect, only once
-    if (chatHistoryLoadedRef.current && !isReconnecting) return
-    chatHistoryLoadedRef.current = true
-
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (isGuest && guestId && guestToken) {
-      headers['X-Guest-Id'] = guestId
-      headers['X-Guest-Token'] = guestToken
-      if (username) headers['X-Guest-Name'] = username
-    }
-
-    fetch(`/api/lobby/${code}/chat`, { headers })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-          setChatMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id))
-            const fresh = (data.messages as ChatMessagePayload[]).filter((m) => !existingIds.has(m.id))
-            return fresh.length > 0 ? [...fresh, ...prev] : prev
-          })
-        }
-      })
-      .catch(() => {
-        // non-critical; ignore
-      })
-  }, [isConnected, isReconnecting, status, isGuest, guestToken, guestId, username, code])
-
   useEffect(() => {
     if (lobby?.gameType === 'memory' && game?.status === 'playing') {
-      setUnreadMessageCount(0)
+      resetUnread()
     }
-  }, [chatMessages.length, game?.status, lobby?.gameType])
+  }, [chatMessages.length, game?.status, lobby?.gameType, resetUnread])
 
   // Handle bot overlay progression
   useEffect(() => {
@@ -1450,15 +1377,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     }
   }, [gameEngine, game, playAmbientSound])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-    }
-  }, [])
 
   const handleLeaveLobby = () => {
     if (isLeavingLobbyRef.current) {
@@ -1678,9 +1596,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     initializedMobileUiGameIdRef.current = game.id
     setMobileActiveTab('game')
     setSelectedPlayerId(null)
-    setUnreadMessageCount(0)
+    resetUnread()
     setRollHistory([])
-  }, [lobby?.gameType, isGameStarted, game?.id])
+  }, [lobby?.gameType, isGameStarted, game?.id, resetUnread])
 
   useEffect(() => {
     if (
@@ -1853,6 +1771,87 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     )
   }
 
+  // Shared between the sub-640px top status bar and the phone-landscape
+  // side pane (#751) — the persistent top bars sit above Main Game Area and
+  // silently ate into the landscape height budget, so landscape shows this
+  // same compact content inside the pane instead of a separate bar.
+  const compactStatusBar = gameEngine instanceof YahtzeeGame ? (
+    <div
+      className="flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5"
+      style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
+    >
+      <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] font-bold text-bd-ink">
+        <span className="shrink-0">🎯 {roundInfo.current}/{roundInfo.total}</span>
+        <span className="truncate">👤 {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}</span>
+        <span className="shrink-0">🏆 {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}</span>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          onClick={() => {
+            sounds.play('click', { force: true })
+            const newState = sounds.toggle()
+            setSoundEnabled(newState)
+            showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
+              duration: 2000,
+              position: 'top-center',
+            })
+          }}
+          aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          style={{ background: 'var(--bd-bg)', border: '1px solid var(--bd-line)' }}
+        >
+          {soundEnabled ? '🔊' : '🔇'}
+        </button>
+        <button
+          onClick={() => {
+            sounds.play('click', { force: true })
+            setShowLeaveConfirmModal(true)
+          }}
+          aria-label={t('game.ui.leave')}
+          className="bd-btn-coral flex h-7 w-7 items-center justify-center !rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+        >
+          <LeaveIcon />
+        </button>
+      </div>
+    </div>
+  ) : null
+
+  // Shared between the desktop grid, the mobile scorecard tab, and the
+  // phone-landscape side pane (#751).
+  const scorecardSection = gameEngine instanceof YahtzeeGame ? (() => {
+    const currentUserId = getCurrentUserId()
+    const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
+    const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
+    const isViewingOtherPlayer = viewingPlayerId !== currentUserId
+
+    if (!scorecard) return null
+
+    return (
+      <Scorecard
+        scorecard={scorecard}
+        currentDice={gameEngine.getDice()}
+        rollsLeft={gameEngine.getRollsLeft()}
+        onSelectCategory={handleScore}
+        canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
+        isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+        isLoading={isScoring}
+        playerName={(() => {
+          const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
+          if (!dbPlayer) return undefined
+          return dbPlayer.user?.username || dbPlayer.name || 'Player'
+        })()}
+        onBackToMyCards={isViewingOtherPlayer ? () => {
+          setSelectedPlayerId(currentUserId || null)
+        } : undefined}
+        showBackButton={isViewingOtherPlayer}
+        onGoToCurrentTurn={() => {
+          setSelectedPlayerId(null)
+        }}
+        showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
+      />
+    )
+  })() : null
+
   return (
     <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[var(--game-h)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
       {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
@@ -1942,7 +1941,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 onClick={() => {
                   setShowLobbySettings(false)
                   setWaitingRoomTab(tab)
-                  if (tab === 'chat') setUnreadMessageCount(0)
+                  if (tab === 'chat') resetUnread()
                 }}
                 className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
                   waitingRoomTab === tab && !showLobbySettings
@@ -2090,54 +2089,24 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
-            <>
+            <div className="yahtzee-screen flex flex-col flex-1 min-h-0">
               {/* Top Status Bar — compact single-row variant below sm (640px),
                   where this card's own flex-col stacking used to add a
                   second row of chrome height on top of an already-cramped
-                  mobile Game/Score view. Unchanged at sm and up. */}
-              <div className="sm:hidden flex-shrink-0 pt-2 px-2">
-                <div
-                  className="flex items-center justify-between gap-2 rounded-xl border px-3 py-1.5"
-                  style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
-                >
-                  <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] font-bold text-bd-ink">
-                    <span className="shrink-0">🎯 {roundInfo.current}/{roundInfo.total}</span>
-                    <span className="truncate">👤 {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}</span>
-                    <span className="shrink-0">🏆 {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}</span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      onClick={() => {
-                        sounds.play('click', { force: true })
-                        const newState = sounds.toggle()
-                        setSoundEnabled(newState)
-                        showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
-                          duration: 2000,
-                          position: 'top-center',
-                        })
-                      }}
-                      aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                      style={{ background: 'var(--bd-bg)', border: '1px solid var(--bd-line)' }}
-                    >
-                      {soundEnabled ? '🔊' : '🔇'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        sounds.play('click', { force: true })
-                        setShowLeaveConfirmModal(true)
-                      }}
-                      aria-label={t('game.ui.leave')}
-                      className="bd-btn-coral flex h-7 w-7 items-center justify-center !rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                    >
-                      <LeaveIcon />
-                    </button>
-                  </div>
-                </div>
+                  mobile Game/Score view. Unchanged at sm and up.
+                  yahtzee-top-status-bar (#751): also hidden in phone
+                  landscape — .yahtzee-landscape-side renders the same
+                  content (compactStatusBar below) inside the pane instead,
+                  since this bar sits above Main Game Area and was silently
+                  eating into the landscape height budget. */}
+              <div className="sm:hidden flex-shrink-0 pt-2 px-2 yahtzee-top-status-bar">
+                {compactStatusBar}
               </div>
 
-              {/* Top Status Bar — unchanged at sm (640px) and up */}
-              <div className="hidden sm:block flex-shrink-0 pt-2 mb-3 px-2 sm:px-4">
+              {/* Top Status Bar — unchanged at sm (640px) and up.
+                  yahtzee-top-status-bar (#751): hidden in phone landscape,
+                  see the narrow-variant comment above for why. */}
+              <div className="hidden sm:block flex-shrink-0 pt-2 mb-3 px-2 sm:px-4 yahtzee-top-status-bar">
                 <div
                   className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
                   style={{
@@ -2231,46 +2200,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
                   <div className="lg:col-span-6 min-w-0 h-full">
-                    {(() => {
-                      // Show selected player's scorecard or current player's scorecard
-                      const currentUserId = getCurrentUserId()
-                      const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
-                      const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
-                      const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-
-                      if (!scorecard) return null
-
-                      return (
-                        <div className="h-full flex flex-col">
-                          <div className="flex-1 min-h-0">
-                            <Scorecard
-                              scorecard={scorecard}
-                              currentDice={gameEngine.getDice()}
-                              rollsLeft={gameEngine.getRollsLeft()}
-                              onSelectCategory={handleScore}
-                              canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                              isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
-                              isLoading={isScoring}
-                              playerName={(() => {
-                                const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
-                                if (!dbPlayer) return undefined
-                                return dbPlayer.user?.username || dbPlayer.name || 'Player'
-                              })()}
-                              onBackToMyCards={isViewingOtherPlayer ? () => {
-                                // Set to current user's ID instead of null
-                                setSelectedPlayerId(currentUserId || null)
-                              } : undefined}
-                              showBackButton={isViewingOtherPlayer}
-                              onGoToCurrentTurn={() => {
-                                // Go back to viewing current player's turn
-                                setSelectedPlayerId(null)
-                              }}
-                              showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })()}
+                    <div className="h-full flex flex-col">
+                      <div className="flex-1 min-h-0">
+                        {scorecardSection}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
@@ -2301,7 +2235,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Mobile: Tabbed Layout */}
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="desk:hidden relative"
+                  className="desk:hidden relative yahtzee-mobile-layout"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2337,39 +2271,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
                     <div className="h-full p-3">
-                      {(() => {
-                        const currentUserId = getCurrentUserId()
-                        const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
-                        const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
-                        const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-
-                        if (!scorecard) return null
-
-                        return (
-                          <Scorecard
-                            scorecard={scorecard}
-                            currentDice={gameEngine.getDice()}
-                            rollsLeft={gameEngine.getRollsLeft()}
-                            onSelectCategory={handleScore}
-                            canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                            isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
-                            isLoading={isScoring}
-                            playerName={(() => {
-                              const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
-                              if (!dbPlayer) return undefined
-                              return dbPlayer.user?.username || dbPlayer.name || 'Player'
-                            })()}
-                            onBackToMyCards={isViewingOtherPlayer ? () => {
-                              setSelectedPlayerId(currentUserId || null)
-                            } : undefined}
-                            showBackButton={isViewingOtherPlayer}
-                            onGoToCurrentTurn={() => {
-                              setSelectedPlayerId(null)
-                            }}
-                            showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
-                          />
-                        )
-                      })()}
+                      {scorecardSection}
                     </div>
                   </MobileTabPanel>
 
@@ -2420,6 +2322,40 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </MobileTabPanel>
                   )}
                 </div>
+
+                {/* Phone landscape (#751): board pane left (compact dice,
+                    Roll button always above the fold), Scorecard pane right
+                    — Scorecard is functionally required to bank a roll, so
+                    unlike TTT's history it isn't droppable from this tree.
+                    Players/RollHistory/Chat stay reachable in portrait. */}
+                <div className="yahtzee-landscape-layout">
+                  <div className="yahtzee-landscape-board">
+                    <GameBoard
+                      gameEngine={gameEngine}
+                      game={game}
+                      isMyTurn={isMyTurn()}
+                      timeLeft={timeLeft}
+                      turnTimerLimit={turnTimerLimit}
+                      isMoveInProgress={isMoveInProgress}
+                      isRolling={isRolling}
+                      isScoring={isScoring}
+                      isStateReverting={isStateReverting}
+                      celebrationEvent={celebrationEvent}
+                      held={held}
+                      getCurrentUserId={getCurrentUserId}
+                      onRollDice={handleRollDice}
+                      onToggleHold={handleToggleHold}
+                      onScore={handleScore}
+                      onCelebrationComplete={handleCelebrationComplete}
+                      compact
+                      showReviewScorecardButton={false}
+                    />
+                  </div>
+                  <div className="yahtzee-landscape-side">
+                    <div className="flex-shrink-0">{compactStatusBar}</div>
+                    <div className="flex-1 min-h-0 overflow-y-auto">{scorecardSection}</div>
+                  </div>
+                </div>
               </div>
 
               {/* Desktop Chat - Minimized Button */}
@@ -2436,7 +2372,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   onToggleMinimize={() => {
                     setChatMinimized(!chatMinimized)
                     if (chatMinimized) {
-                      setUnreadMessageCount(0)
+                      resetUnread()
                     }
                   }}
                   unreadCount={unreadMessageCount}
@@ -2447,23 +2383,25 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               )}
 
               {/* Mobile Bottom Navigation */}
-              <MobileTabs
-                activeTab={mobileActiveTab}
-                onTabChange={(tab) => {
-                  setMobileActiveTab(tab)
-                  if (tab === 'chat') {
-                    setUnreadMessageCount(0)
-                  }
-                }}
-                tabs={[
-                  { id: 'game' as const, label: 'Game', icon: '🎲' },
-                  { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
-                  { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: '👥' },
-                  ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: '💬', badge: unreadMessageCount }] : []),
-                ]}
-                unreadChatCount={unreadMessageCount}
-              />
-            </>
+              <div className="yahtzee-mobile-layout flex-shrink-0">
+                <MobileTabs
+                  activeTab={mobileActiveTab}
+                  onTabChange={(tab) => {
+                    setMobileActiveTab(tab)
+                    if (tab === 'chat') {
+                      resetUnread()
+                    }
+                  }}
+                  tabs={[
+                    { id: 'game' as const, label: 'Game', icon: '🎲' },
+                    { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
+                    { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: '👥' },
+                    ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: '💬', badge: unreadMessageCount }] : []),
+                  ]}
+                  unreadChatCount={unreadMessageCount}
+                />
+              </div>
+            </div>
           ) : gameEngine && (lobby?.gameType as string) === 'guess_the_spy' && game?.id ? (
             <SpyGameBoard
               gameId={game.id}
@@ -2500,6 +2438,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
+              isRestarting={startingGame || isReturningToWaiting}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
               onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
               chatUnreadCount={unreadMessageCount}
@@ -2540,7 +2479,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onToggleMinimize={() => {
               setChatMinimized(!chatMinimized)
               if (chatMinimized) {
-                setUnreadMessageCount(0)
+                resetUnread()
               }
             }}
             unreadCount={unreadMessageCount}

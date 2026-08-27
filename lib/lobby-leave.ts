@@ -385,12 +385,17 @@ export async function performPlayerLeave(
     }
   }
 
-  // Spy: if the spy left the game cannot meaningfully continue even with enough players
-  if (activeGame.gameType === 'guess_the_spy') {
+  const gameMeta = getGameMetadata(activeGame.gameType)
+
+  // Some games cannot meaningfully continue when a specific role leaves
+  // (Spy without its spy) — which role, and the abandon reason, come from
+  // catalog metadata rather than per-game branching here (#759).
+  const roleRule = gameMeta?.abandonWhenRoleLeaves
+  if (roleRule) {
     try {
-      const spyState = parseAndValidateGameState(activeGame.state)
-      const spyPlayerId = (spyState.data as Record<string, unknown> | null)?.spyPlayerId
-      if (spyPlayerId === userId) {
+      const roleState = parseAndValidateGameState(activeGame.state)
+      const rolePlayerId = (roleState.data as Record<string, unknown> | null)?.[roleRule.stateDataKey]
+      if (rolePlayerId === userId) {
         const abandonNow = new Date()
         const abandonDuration = activeGame.startedAt instanceof Date
           ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
@@ -402,11 +407,11 @@ export async function performPlayerLeave(
             abandonedAt: abandonNow,
             endedAt: abandonNow,
             ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
-            terminalMetadata: { outcome: 'abandoned', reason: 'spy_left' },
+            terminalMetadata: { outcome: 'abandoned', reason: roleRule.reason },
           },
         })
         await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
-        await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'spy_left' })
+        await emitLobbyEvent(log, code, 'game-abandoned', { reason: roleRule.reason })
         await cleanupTurnReminderNotifications(log, activeGame.id)
         notifyLobbyListUpdate()
         return {
@@ -415,15 +420,14 @@ export async function performPlayerLeave(
         }
       }
     } catch (e) {
-      log.warn('Failed to check spy role on player leave', { error: e })
+      log.warn('Failed to check critical role on player leave', { error: e, gameType: activeGame.gameType })
     }
-    // Non-spy left: game continues but Spy is phase-based — no currentPlayerIndex to advance
+    // Non-critical player left: fall through to the generic handling below
   }
 
   // For turn-based games: advance to the next player if the departed player was current.
   // Alias uses currentTeamIndex+describerIndex; Liar's Party uses claimantOrder — skip
   // to avoid state corruption. Timer will handle stuck turns for those games.
-  const gameMeta = getGameMetadata(activeGame.gameType)
   let turnAdvanced = false
   if (gameMeta?.advanceTurnOnLeave) {
     try {
@@ -431,16 +435,15 @@ export async function performPlayerLeave(
       const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
       if (currentPlayerId === userId) {
         parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % parsedState.players.length
+        // Reset the departed player's turn scratch data so the next player
+        // starts clean — which fields, and their reset values, come from
+        // catalog metadata rather than duck-typing every game here (#759).
         const data = parsedState.data as Record<string, unknown> | null | undefined
-        if (data && typeof data === 'object') {
-          // Yahtzee
-          if ('rollsLeft' in data) data.rollsLeft = 3
-          if ('held' in data) data.held = [false, false, false, false, false]
-          if ('lastRoll' in data) delete data.lastRoll
-          // Memory
-          if ('flippedCardIds' in data) data.flippedCardIds = []
-          if ('pendingMismatchCardIds' in data) data.pendingMismatchCardIds = []
-          if ('advanceTurnAfterMove' in data) data.advanceTurnAfterMove = false
+        if (data && typeof data === 'object' && gameMeta.turnResetOnLeave) {
+          for (const [key, value] of Object.entries(gameMeta.turnResetOnLeave)) {
+            if (value === undefined) delete data[key]
+            else if (key in data) data[key] = value
+          }
         }
         await prisma.games.update({
           where: { id: activeGame.id },

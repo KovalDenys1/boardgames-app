@@ -179,3 +179,40 @@ describe('checkAndGrantAchievements', () => {
     )
   })
 })
+
+describe('checkAchievementsOnStatusChange (#759)', () => {
+  const makeLog = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })
+  const players = [
+    { userId: 'human-1' },
+    { userId: 'bot-1', user: { bot: { id: 'b1' } } },
+  ]
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPrisma.userAchievements.findMany.mockResolvedValue([])
+    mockPrisma.userAchievements.createMany.mockResolvedValue({ count: 0 })
+    mockPrisma.$queryRaw.mockResolvedValue([{ count: 0n }])
+    mockGetUserStatsDashboard.mockResolvedValue(JSON.parse(JSON.stringify(baseDashboard)))
+  })
+
+  it('runs checks for humans (not bots) on the transition into finished', async () => {
+    const { checkAchievementsOnStatusChange } = require('@/lib/achievement-engine')
+    await checkAchievementsOnStatusChange('playing', 'finished', players, makeLog())
+    // one stats-dashboard read per human player, none for the bot
+    expect(mockGetUserStatsDashboard).toHaveBeenCalledTimes(1)
+    expect(mockGetUserStatsDashboard).toHaveBeenCalledWith(expect.anything(), 'human-1')
+  })
+
+  it('does nothing when status did not change (repeat write of finished)', async () => {
+    const { checkAchievementsOnStatusChange } = require('@/lib/achievement-engine')
+    await checkAchievementsOnStatusChange('finished', 'finished', players, makeLog())
+    expect(mockGetUserStatsDashboard).not.toHaveBeenCalled()
+  })
+
+  it('does nothing for transitions into abandoned or non-terminal statuses', async () => {
+    const { checkAchievementsOnStatusChange } = require('@/lib/achievement-engine')
+    await checkAchievementsOnStatusChange('playing', 'abandoned', players, makeLog())
+    await checkAchievementsOnStatusChange('waiting', 'playing', players, makeLog())
+    expect(mockGetUserStatsDashboard).not.toHaveBeenCalled()
+  })
+})

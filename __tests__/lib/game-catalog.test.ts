@@ -78,3 +78,35 @@ describe('game catalog availability', () => {
     expect(getAvailableGameTypes({ enabledExperimental: ['guess-my-drawing'] })).toContain('sketch_and_guess')
   })
 })
+
+describe('leave-behavior metadata (#759)', () => {
+  const { getGameMetadata } = require('@/lib/game-catalog')
+
+  it('spy abandons when its critical role leaves', () => {
+    expect(getGameMetadata('guess_the_spy')?.abandonWhenRoleLeaves).toEqual({
+      stateDataKey: 'spyPlayerId',
+      reason: 'spy_left',
+    })
+  })
+
+  it('turn-advancing games declare their turn-reset fields', () => {
+    expect(getGameMetadata('yahtzee')?.turnResetOnLeave).toMatchObject({
+      rollsLeft: 3,
+      held: [false, false, false, false, false],
+    })
+    expect(getGameMetadata('memory')?.turnResetOnLeave).toMatchObject({
+      flippedCardIds: [],
+      pendingMismatchCardIds: [],
+      advanceTurnAfterMove: false,
+    })
+  })
+
+  it('every advanceTurnOnLeave game has turnResetOnLeave defined', () => {
+    for (const type of ['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors', 'memory', 'connect_four', 'alias', 'liars_party'] as const) {
+      const meta = getGameMetadata(type)
+      if (meta?.advanceTurnOnLeave) {
+        expect(meta.turnResetOnLeave).toBeDefined()
+      }
+    }
+  })
+})

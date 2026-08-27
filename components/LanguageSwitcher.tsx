@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { availableLocales, type Locale } from '@/locales/meta'
 import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 import { changeLanguageLazy } from '@/i18n'
+import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 interface LanguageSwitcherProps {
   variant?: 'header' | 'panel'
@@ -75,7 +76,7 @@ export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitche
       return
     }
 
-    void changeLanguageLazy(setStoredAppearanceLocale(localStorage, nextLanguage) as Locale)
+    void changeLanguageLazy(setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale)
   }
 
   return (

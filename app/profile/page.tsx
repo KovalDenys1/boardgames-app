@@ -26,6 +26,7 @@ import {
 } from '@/lib/appearance-preferences'
 import { changeLanguageLazy, type Locale } from '@/i18n'
 import { ACHIEVEMENTS } from '@/lib/achievements'
+import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 interface LinkedAccount {
   provider: string
@@ -515,7 +516,7 @@ export default function ProfilePage() {
       fetchLinkedAccounts()
 
       // Load local appearance settings
-      setSettings(getStoredAppearancePreferences(localStorage))
+      setSettings(getStoredAppearancePreferences(getSafeLocalStorage() ?? undefined))
 
       fetch('/api/user/notification-preferences', { cache: 'no-store' })
         .then(async (res) => {
@@ -1072,7 +1073,7 @@ export default function ProfilePage() {
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     if (key === 'language') {
-      const normalizedLanguage = setStoredAppearanceLocale(localStorage, String(value))
+      const normalizedLanguage = setStoredAppearanceLocale(getSafeLocalStorage(), String(value))
       setSettings((prev) => ({ ...prev, language: normalizedLanguage }))
 
       if (normalizeAppearanceLocale(i18n.language) !== normalizedLanguage) {

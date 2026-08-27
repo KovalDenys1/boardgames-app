@@ -12,6 +12,7 @@ import { LOBBY_THEME_IDS } from '@/lib/lobby-themes'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sweepStalePlayers } from '@/lib/lobby-presence'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
+import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { type RestorableGameState } from '@/lib/game-engine'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
@@ -74,6 +75,9 @@ async function commitTimeoutFallback(params: {
 }): Promise<void> {
   const { activeGame, nextState, actionType, actionPayload, lobbyCode, gameType, gameSocketEvent, gameSocketData } = params
   const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+  // Captured before activeGame.status is mutated below — the achievement
+  // gate needs the pre-write status to detect the transition into 'finished'.
+  const previousStatus = activeGame.status
 
   // #729: a timeout fallback can be the write that transitions one of the
   // party games into 'finished' — it must set the terminal player fields too.
@@ -144,6 +148,18 @@ async function commitTimeoutFallback(params: {
     }
     if (scoreUpdates.length > 0) await Promise.all(scoreUpdates)
   }
+
+  // #759: the timeout fallback can be the write that finishes a game — it
+  // previously ran terminal player fields (#729) but never achievement
+  // checks, silently skipping unlocks for games ended by idle timeout.
+  await checkAchievementsOnStatusChange(
+    previousStatus,
+    nextState.status,
+    (Array.isArray(activeGame.players) ? activeGame.players as Array<Record<string, unknown>> : [])
+      .filter((entry): entry is Record<string, unknown> & { userId: string } => typeof entry?.userId === 'string')
+      .map((entry) => ({ userId: entry.userId, user: entry.user })),
+    apiLogger('GET /api/lobby/[code]')
+  )
 
   activeGame.state = JSON.stringify(nextState)
   activeGame.status = nextState.status

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -49,11 +50,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         setGuestName(session.guestName)
         setGuestToken(session.guestToken)
 
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(GUEST_ID_KEY, session.guestId)
-            localStorage.setItem(GUEST_NAME_KEY, session.guestName)
-            localStorage.setItem(GUEST_TOKEN_KEY, session.guestToken)
-        }
+        writeLocal(GUEST_ID_KEY, session.guestId)
+        writeLocal(GUEST_NAME_KEY, session.guestName)
+        writeLocal(GUEST_TOKEN_KEY, session.guestToken)
     }, [])
 
     const requestGuestSession = useCallback(async (name: string, token?: string): Promise<GuestSessionResponse> => {
@@ -88,20 +87,16 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         setGuestName(null)
         setGuestToken(null)
 
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem(GUEST_ID_KEY)
-            localStorage.removeItem(GUEST_NAME_KEY)
-            localStorage.removeItem(GUEST_TOKEN_KEY)
-        }
+        removeLocal(GUEST_ID_KEY)
+        removeLocal(GUEST_NAME_KEY)
+        removeLocal(GUEST_TOKEN_KEY)
     }, [])
 
     // Load guest data from localStorage on mount
     useEffect(() => {
-        if (typeof window === 'undefined') return
-
-        const storedId = localStorage.getItem(GUEST_ID_KEY)
-        const storedName = localStorage.getItem(GUEST_NAME_KEY)
-        const storedToken = localStorage.getItem(GUEST_TOKEN_KEY)
+        const storedId = readLocal(GUEST_ID_KEY)
+        const storedName = readLocal(GUEST_NAME_KEY)
+        const storedToken = readLocal(GUEST_TOKEN_KEY)
 
         if (!storedName) return
 
@@ -115,9 +110,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             requestGuestSession(storedName, storedToken)
                 .then((session) => applyGuestSession(session, generation))
                 .catch(() => {
-                    localStorage.removeItem(GUEST_ID_KEY)
-                    localStorage.removeItem(GUEST_NAME_KEY)
-                    localStorage.removeItem(GUEST_TOKEN_KEY)
+                    removeLocal(GUEST_ID_KEY)
+                    removeLocal(GUEST_NAME_KEY)
+                    removeLocal(GUEST_TOKEN_KEY)
                     setGuestId(null)
                     setGuestName(null)
                     setGuestToken(null)
@@ -130,9 +125,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         requestGuestSession(storedName)
             .then((session) => applyGuestSession(session, generation))
             .catch(() => {
-                localStorage.removeItem(GUEST_ID_KEY)
-                localStorage.removeItem(GUEST_NAME_KEY)
-                localStorage.removeItem(GUEST_TOKEN_KEY)
+                removeLocal(GUEST_ID_KEY)
+                removeLocal(GUEST_NAME_KEY)
+                removeLocal(GUEST_TOKEN_KEY)
             })
     }, [applyGuestSession, requestGuestSession])
 
@@ -143,11 +138,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             return
         }
 
-        if (typeof window === 'undefined') return
-
-        const storedGuestId = localStorage.getItem(GUEST_ID_KEY)
-        const storedGuestName = localStorage.getItem(GUEST_NAME_KEY)
-        const storedGuestToken = localStorage.getItem(GUEST_TOKEN_KEY)
+        const storedGuestId = readLocal(GUEST_ID_KEY)
+        const storedGuestName = readLocal(GUEST_NAME_KEY)
+        const storedGuestToken = readLocal(GUEST_TOKEN_KEY)
         const activeGuestToken = guestToken || storedGuestToken
         const hasStoredGuest =
             Boolean(storedGuestId) ||
@@ -214,7 +207,7 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         const activeToken =
             options?.guestToken ||
             guestToken ||
-            (typeof window !== 'undefined' ? localStorage.getItem(GUEST_TOKEN_KEY) || undefined : undefined)
+            (readLocal(GUEST_TOKEN_KEY) || undefined)
 
         const session = await requestGuestSession(normalizedName, activeToken)
         applyGuestSession(session, generation)
