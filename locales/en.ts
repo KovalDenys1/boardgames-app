@@ -482,6 +482,7 @@ const en = {
         benefit2: 'Bots are available when friends are offline.',
         benefit3: 'Works on phone, tablet, and desktop.',
         benefit4: 'Free to play as a guest.',
+        originNote: 'Yahtzee was the first game on Boardly. It started as a school assignment from my teacher Tarald, and became the push to finally build the site I had been planning for a long time.',
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

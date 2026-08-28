@@ -37,6 +37,7 @@ type GameDetailPageProps = {
   steps: DetailStep[]
   benefitsTitle: string
   benefits: string[]
+  originNote?: string
   guideHref?: string
   playVsBotGameType?: string
 }
@@ -92,6 +93,7 @@ export default function GameDetailPage({
   steps,
   benefitsTitle,
   benefits,
+  originNote,
   guideHref,
   playVsBotGameType,
 }: GameDetailPageProps) {
@@ -204,6 +206,11 @@ export default function GameDetailPage({
               ))}
             </ul>
           </div>
+          {originNote && (
+            <p className="mt-6 border-t border-bd-line pt-5 text-sm italic leading-relaxed text-bd-ink-muted">
+              {originNote}
+            </p>
+          )}
         </section>
 
         {guideHref && (

@@ -482,6 +482,7 @@ const no = {
         benefit2: 'Roboter tilgjengelig når venner er offline.',
         benefit3: 'Fungerer på mobil, nettbrett og datamaskin.',
         benefit4: 'Gratis å spille som gjest.',
+        originNote: 'Yahtzee var det første spillet på Boardly. Det startet som en skoleoppgave fra læreren min Tarald, og ble startskuddet for endelig å bygge siden jeg lenge hadde planlagt.',
       },
       lobbies: {
         title: 'Yatzy-lobbyer',
