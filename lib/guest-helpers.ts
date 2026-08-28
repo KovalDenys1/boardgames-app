@@ -13,7 +13,7 @@ const GUEST_ACTIVITY_THROTTLE_MS = 5 * 60 * 1000
  * Get or create a guest user based on guest ID
  * Guest users are temporary and marked with isGuest = true
  */
-export async function getOrCreateGuestUser(guestId: string, guestName: string) {
+export async function getOrCreateGuestUser(guestId: string, guestName: string, signupSource: string | null = null) {
     try {
         // Try to find existing guest user by ID
         const existingGuest = await prisma.users.findFirst({
@@ -105,6 +105,7 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
                     username: uniqueUsername,
                     email: `guest-${guestId}@boardly.guest`, // Temporary email for guests
                     isGuest: true,
+                    signupSource,
                     lastActiveAt: new Date(),
                 },
             })
@@ -128,6 +129,7 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
                         username: fallbackUsername,
                         email: `guest-${guestId}@boardly.guest`,
                         isGuest: true,
+                        signupSource,
                         lastActiveAt: new Date(),
                     },
                 })

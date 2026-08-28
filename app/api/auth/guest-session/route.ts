@@ -9,6 +9,7 @@ import {
   verifyGuestToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { handleApiError } from '@/lib/error-handler'
 import { Prisma } from '@/prisma/client'
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     const existingGuest = providedToken ? verifyGuestToken(providedToken) : null
 
     const guestId = existingGuest?.guestId || createGuestId()
-    const guestUser = await getOrCreateGuestUser(guestId, parsed.data.guestName)
+    const guestUser = await getOrCreateGuestUser(guestId, parsed.data.guestName, getSignupSourceFromRequest(request))
     const guestName = guestUser.username || parsed.data.guestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 

@@ -586,6 +586,15 @@ export function trackUserRetention(data: {
 }
 
 /**
+ * Guest → account nudge shown on result screens (GuestConversionNudge).
+ * Together with `signupSource` on Users this is the guest→registered funnel.
+ */
+export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): void {
+  track('signup_prompt', { action })
+  clientLogger.log('[analytics] Signup prompt', action)
+}
+
+/**
  * Conversion funnel tracking
  */
 export function trackFunnelStep(step: 'landing' | 'signup' | 'register' | 'guest-join' | 'create_lobby' | 'join_lobby' | 'game_start' | 'game_complete'): void {

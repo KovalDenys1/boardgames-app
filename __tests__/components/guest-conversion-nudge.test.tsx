@@ -1,13 +1,15 @@
 import { act, render, screen } from '@testing-library/react'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
 
+jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
+
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
 }))
 
-const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v1'
+const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v2'
 
 describe('GuestConversionNudge', () => {
   afterEach(() => {
@@ -28,7 +30,7 @@ describe('GuestConversionNudge', () => {
     })
 
     expect(screen.queryByText('auth.guestConversion.headline')).toBeNull()
-    expect(localStorage.getItem(DISMISS_KEY)).toBe('1')
+    expect(Number(localStorage.getItem(DISMISS_KEY))).toBeGreaterThan(0)
 
     unmount()
     render(<GuestConversionNudge registerUrl="/auth/register" />)
@@ -37,7 +39,7 @@ describe('GuestConversionNudge', () => {
   })
 
   it('does not render if already dismissed in a prior session', () => {
-    localStorage.setItem(DISMISS_KEY, '1')
+    localStorage.setItem(DISMISS_KEY, String(Date.now()))
 
     render(<GuestConversionNudge registerUrl="/auth/register" />)
 
@@ -49,5 +51,12 @@ describe('GuestConversionNudge', () => {
 
     const cta = screen.getByText('auth.guestConversion.cta').closest('a')
     expect(cta?.getAttribute('href')).toBe('/auth/register?returnUrl=%2Flobby%2FABCD')
+  })
+
+  it('renders again once the 24h dismissal window has expired', () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() - 25 * 60 * 60 * 1000))
+    render(<GuestConversionNudge registerUrl="/auth/register" />)
+
+    expect(screen.queryByText('auth.guestConversion.headline')).not.toBeNull()
   })
 })
