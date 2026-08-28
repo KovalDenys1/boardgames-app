@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import Footer from '@/components/Footer'
+import GuidesSection from '@/components/GuidesSection'
 import type { GameCatalogEntry } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -171,6 +172,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
           </div>
         )}
       </div>
+      <GuidesSection />
       <Footer />
     </div>
   )

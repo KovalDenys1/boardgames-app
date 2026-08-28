@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
+import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, STRATEGY_GUIDES } from '@/lib/guides-catalog'
+
+const howToPlayGuides = HOW_TO_PLAY_GUIDES
+const strategyGuides = STRATEGY_GUIDES
+const bestOfGuides = BEST_OF_GUIDES
 
 export const metadata: Metadata = {
   title: 'Board Game Guides & Tips - How to Play Online',
@@ -31,127 +36,6 @@ const breadcrumbJsonLd = {
     { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
   ],
 }
-
-const howToPlayGuides = [
-  {
-    slug: 'how-to-play-yahtzee-online',
-    title: 'How to Play Yahtzee Online',
-    description: 'Scoring categories, strategy tips, and how to set up a multiplayer game.',
-    emoji: '🎲',
-    readTime: '5 min',
-    accent: 'var(--bd-sky)',
-  },
-  {
-    slug: 'how-to-play-spy-game-online',
-    title: 'How to Play Guess the Spy',
-    description: 'Tips for finding the spy, bluffing, and running a great game night.',
-    emoji: '🕵️',
-    readTime: '4 min',
-    accent: 'var(--bd-lav)',
-  },
-  {
-    slug: 'how-to-play-memory-card-game-online',
-    title: 'How to Play Memory Card Game',
-    description: 'Rules, difficulty levels, and strategy for the classic matching game.',
-    emoji: '🧠',
-    readTime: '4 min',
-    accent: 'var(--bd-mint)',
-  },
-  {
-    slug: 'how-to-play-tic-tac-toe-online',
-    title: 'How to Play Tic Tac Toe Online',
-    description: 'All 8 winning lines and the strategy to never lose.',
-    emoji: '⭕',
-    readTime: '4 min',
-    accent: 'var(--bd-coral)',
-  },
-  {
-    slug: 'how-to-play-connect-four-online',
-    title: 'How to Play Connect Four Online',
-    description: 'Drop discs, get four in a row, beat your opponent. Rules and winning tips.',
-    emoji: '🔴',
-    readTime: '3 min',
-    accent: 'var(--bd-sun)',
-  },
-  {
-    slug: 'how-to-play-alias-online',
-    title: 'How to Play Alias Online',
-    description: 'Describe words, help your team guess, and score more than the other team.',
-    emoji: '🗣️',
-    readTime: '4 min',
-    accent: 'var(--bd-coral)',
-  },
-]
-
-const strategyGuides = [
-  {
-    slug: 'yahtzee-strategy-guide',
-    title: 'Yahtzee Strategy Guide — How to Win More Often',
-    description: 'When to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-    emoji: '🏆',
-    readTime: '6 min',
-    accent: 'var(--bd-sky)',
-  },
-  {
-    slug: 'connect-four-strategy-guide',
-    title: 'Connect Four Strategy Guide — How to Win Every Time',
-    description: 'Center control, double threats, and the key traps that catch most players off guard.',
-    emoji: '🔴',
-    readTime: '5 min',
-    accent: 'var(--bd-sun)',
-  },
-]
-
-const bestOfGuides = [
-  {
-    slug: 'best-free-multiplayer-browser-games',
-    title: 'Best Free Multiplayer Browser Games in 2026',
-    description: 'No download, no payment — the best games to play with friends right now.',
-    emoji: '🎮',
-    readTime: '4 min',
-    accent: 'var(--bd-sun)',
-  },
-  {
-    slug: 'best-2-player-games-online',
-    title: 'Best 2 Player Games Online — Free, No Download',
-    description: 'Tic Tac Toe, Memory, Yahtzee and more for playing with one friend.',
-    emoji: '👥',
-    readTime: '4 min',
-    accent: 'var(--bd-sun)',
-  },
-  {
-    slug: 'best-3-player-games-online',
-    title: 'Best 3 Player Games Online — Free, No Download',
-    description: 'Yahtzee, Memory, Guess the Spy — the best games for groups of three.',
-    emoji: '🎮',
-    readTime: '3 min',
-    accent: 'var(--bd-mint)',
-  },
-  {
-    slug: 'best-online-games-for-game-night',
-    title: 'Best Online Games for Game Night',
-    description: 'Five games that work for any group size — with tips for hosting online.',
-    emoji: '🎉',
-    readTime: '5 min',
-    accent: 'var(--bd-lav)',
-  },
-  {
-    slug: 'best-games-to-play-on-zoom',
-    title: 'Best Games to Play on Zoom — Free, No Download',
-    description: 'Browser games that work perfectly alongside any video call. No screen sharing needed.',
-    emoji: '💻',
-    readTime: '4 min',
-    accent: 'var(--bd-sky)',
-  },
-  {
-    slug: 'best-party-games-online',
-    title: 'Best Party Games Online — Free to Play',
-    description: 'The best online party games for groups of 4 or more — no download, no account.',
-    emoji: '🎊',
-    readTime: '4 min',
-    accent: 'var(--bd-coral)',
-  },
-]
 
 const collectionJsonLd = {
   '@context': 'https://schema.org',

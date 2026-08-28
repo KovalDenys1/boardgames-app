@@ -347,6 +347,9 @@ const ru = {
   home: {
     welcomeBack: 'С возвращением, {{name}}!',
     browseGames: 'Обзор игр',
+    guidesTitle: 'Гайды и советы',
+    guidesSubtitle: 'Как играть, как выигрывать и какие игры подходят вашей компании.',
+    allGuides: 'Все гайды',
     browseGamesArrow: 'Смотреть игры →',
     viewLobbies: 'Открыть лобби',
     playAsGuest: 'Играть как гость',

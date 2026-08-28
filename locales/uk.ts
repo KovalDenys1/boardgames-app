@@ -349,6 +349,9 @@ const uk: Translation = {
   home: {
     welcomeBack: 'З поверненням, {{name}}!',
     browseGames: 'Огляд ігор',
+    guidesTitle: 'Гайди та поради',
+    guidesSubtitle: 'Як грати, як перемагати і які ігри підходять вашій компанії.',
+    allGuides: 'Усі гайди',
     browseGamesArrow: 'Дивитись ігри →',
     viewLobbies: 'Переглянути лобі',
     playAsGuest: 'Грати як гість',

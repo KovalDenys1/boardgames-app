@@ -5,6 +5,7 @@ import MarqueeStrip from '@/components/HomePage/MarqueeStrip'
 import GameRibbon from '@/components/HomePage/GameRibbon'
 import HowItWorksRedesign from '@/components/HomePage/HowItWorksRedesign'
 import CtaBanner from '@/components/HomePage/CtaBanner'
+import GuidesSection from '@/components/GuidesSection'
 import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
 
 // Keep home page fully static for fast global TTFB.
@@ -56,6 +57,9 @@ export default function HomePage() {
 
       {/* CTA banner */}
       <CtaBanner />
+
+      {/* Guides — internal links to /guides/* for crawl + SEO */}
+      <GuidesSection />
 
       {/* FAQ — kept for SEO value */}
       <div className="home-faq-wrap">

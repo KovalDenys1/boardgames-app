@@ -347,6 +347,9 @@ const en = {
   home: {
     welcomeBack: 'Welcome back, {{name}}!',
     browseGames: 'Browse Games',
+    guidesTitle: 'Guides & tips',
+    guidesSubtitle: 'How to play, how to win, and which games fit your group.',
+    allGuides: 'All guides',
     browseGamesArrow: 'Browse games →',
     viewLobbies: 'View Lobbies',
     playAsGuest: 'Play as guest',

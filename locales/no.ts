@@ -347,6 +347,9 @@ const no = {
   home: {
     welcomeBack: 'Velkommen tilbake, {{name}}!',
     browseGames: 'Bla gjennom spill',
+    guidesTitle: 'Guider og tips',
+    guidesSubtitle: 'Hvordan spille, hvordan vinne og hvilke spill som passer gjengen din.',
+    allGuides: 'Alle guider',
     browseGamesArrow: 'Se spill →',
     viewLobbies: 'Se lobbyer',
     playAsGuest: 'Spill som gjest',
