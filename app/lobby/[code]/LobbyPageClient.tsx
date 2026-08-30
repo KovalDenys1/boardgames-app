@@ -15,7 +15,7 @@ import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep, Lobby } from '@/types/game'
 import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
-import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES } from '@/lib/yahtzee'
+import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES, getActiveCategories } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
@@ -187,13 +187,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const { t } = useTranslation()
 
   const roundInfo = React.useMemo(() => {
-    const totalCategories = ALL_CATEGORIES.length
-    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: totalCategories }
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: getActiveCategories().length }
+    const activeCategories = getActiveCategories(gameEngine.getMode())
+    const totalCategories = activeCategories.length
     const players = gameEngine.getPlayers()
     const filledCounts = players.map(p => {
       const scorecard = gameEngine.getScorecard(p.id)
       return scorecard
-        ? ALL_CATEGORIES.filter((category) => scorecard[category] !== undefined).length
+        ? activeCategories.filter((category) => scorecard[category] !== undefined).length
         : 0
     })
     const maxFilled = filledCounts.length ? Math.max(...filledCounts) : 0
@@ -1217,7 +1218,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
 
       // Use smart category selection
-      const bestCategory = selectBestAvailableCategory(finalDice, scorecard)
+      const bestCategory = selectBestAvailableCategory(finalDice, scorecard, workingEngine.getMode())
       const score = calculateScore(finalDice, bestCategory)
 
       clientLogger.log('⏰ Auto-scoring:', {
@@ -1829,6 +1830,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return (
       <Scorecard
         scorecard={scorecard}
+        mode={gameEngine.getMode()}
         currentDice={gameEngine.getDice()}
         rollsLeft={gameEngine.getRollsLeft()}
         onSelectCategory={handleScore}
@@ -1903,6 +1905,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       ) : shouldShowHeldYahtzeeResults ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <YahtzeeResults
+            mode={finishedYahtzeeEngine!.getMode()}
             results={analyzeResults(
               finishedYahtzeeEngine!.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
               (id) => finishedYahtzeeEngine!.getScorecard(id)
@@ -2073,6 +2076,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           )}
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
             <YahtzeeResults
+              mode={gameEngine.getMode()}
               results={analyzeResults(
                 gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
                 (id) => gameEngine.getScorecard(id)

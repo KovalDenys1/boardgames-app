@@ -31,6 +31,9 @@ const quickPlaySchema = z.object({
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const MAX_CODE_ATTEMPTS = 10
+// Quick-play lobbies get a faster turn timer than the 60s schema default (#779)
+const QUICK_PLAY_TURN_TIMER_SECONDS = 45
+
 const MAX_JOIN_RETRIES = 2
 
 async function fillWithBots(
@@ -216,7 +219,11 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Step 2: create new lobby + fill with bots ---
-  const engine = createGameEngine(gameType, 'quick_play_init')
+  // Quick-play defaults tuned for fast sessions (#779): 45s turns, and
+  // yahtzee starts in short mode (lower section, 9 rounds).
+  const quickPlayEngineConfig =
+    (gameType as string) === 'yahtzee' ? { rules: { mode: 'short' } } : undefined
+  const engine = createGameEngine(gameType, 'quick_play_init', quickPlayEngineConfig)
   const initialState = engine.getState()
   const persistedGameType = toPersistedGameType(gameType)
   const minPlayers = engine.getConfig().minPlayers
@@ -235,6 +242,7 @@ export async function POST(req: NextRequest) {
           code,
           name: lobbyName,
           maxPlayers,
+          turnTimer: QUICK_PLAY_TURN_TIMER_SECONDS,
           gameType: gameType as GameType,
           creatorId: user.id,
           games: {

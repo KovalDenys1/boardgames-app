@@ -1,5 +1,5 @@
 import { generateLobbyCode } from '@/lib/lobby'
-import {
+import { getActiveCategories,
   calculateScore,
   calculateTotalScore,
   isGameFinished,
@@ -306,4 +306,42 @@ describe('Yahtzee Score Calculation', () => {
       expect(calculateScore([1, 2], 'ones')).toBe(1)
     })
   })
+
+  describe('short mode (#779)', () => {
+    const FULL_LOWER = {
+      onePair: 6,
+      twoPairs: 8,
+      threeOfKind: 15,
+      fourOfKind: 20,
+      fullHouse: 25,
+      smallStraight: 30,
+      largeStraight: 40,
+      yahtzee: 50,
+      chance: 15,
+    }
+
+    it('isGameFinished ignores the upper section in short mode', () => {
+      expect(isGameFinished(FULL_LOWER, 'short')).toBe(true)
+      expect(isGameFinished(FULL_LOWER, 'classic')).toBe(false)
+    })
+
+    it('selectBestAvailableCategory never picks an upper category in short mode', () => {
+      // Dice full of sixes; in classic mode 'yahtzee' wins anyway, so fill it
+      const scorecard = { ...FULL_LOWER }
+      delete (scorecard as Record<string, number>).chance
+      const category = selectBestAvailableCategory([6, 6, 6, 6, 6], scorecard, 'short')
+      expect(category).toBe('chance')
+    })
+
+    it('selectBestAvailableCategory falls back to chance in short mode', () => {
+      expect(selectBestAvailableCategory([1, 2, 3, 4, 6], FULL_LOWER, 'short')).toBe('chance')
+    })
+
+    it('getActiveCategories returns 9 lower categories for short and 15 for classic', () => {
+      expect(getActiveCategories('short')).toHaveLength(9)
+      expect(getActiveCategories('short')).not.toContain('ones')
+      expect(getActiveCategories('classic')).toHaveLength(15)
+    })
+  })
+
 })

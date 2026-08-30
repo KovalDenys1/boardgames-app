@@ -58,6 +58,34 @@ function extractTicTacToeTargetRounds(rawState: unknown): number | null | undefi
   return undefined
 }
 
+function extractYahtzeeMode(rawState: unknown): 'classic' | 'short' | undefined {
+  let parsedState = rawState
+
+  if (typeof rawState === 'string') {
+    try {
+      parsedState = JSON.parse(rawState)
+    } catch {
+      return undefined
+    }
+  }
+
+  if (!parsedState || typeof parsedState !== 'object') {
+    return undefined
+  }
+
+  const stateData = (parsedState as { data?: unknown }).data
+  if (!stateData || typeof stateData !== 'object') {
+    return undefined
+  }
+
+  const mode = (stateData as { mode?: unknown }).mode
+  if (mode === 'short' || mode === 'classic') {
+    return mode
+  }
+
+  return undefined
+}
+
 function extractMemoryDifficulty(rawState: unknown): 'easy' | 'medium' | 'hard' | undefined {
   let parsedState = rawState
 
@@ -167,6 +195,8 @@ export async function POST(request: NextRequest) {
           gameType === 'tic_tac_toe' ? extractTicTacToeTargetRounds(finishedGame.state) : undefined
         const finishedGameMemoryDifficulty =
           gameType === 'memory' ? extractMemoryDifficulty(finishedGame.state) : undefined
+        const finishedGameYahtzeeMode =
+          gameType === 'yahtzee' ? extractYahtzeeMode(finishedGame.state) : undefined
         const initialWaitingState = createGameEngine(
           gameType,
           `waiting_${Date.now()}`,
@@ -182,7 +212,13 @@ export async function POST(request: NextRequest) {
                     difficulty: finishedGameMemoryDifficulty,
                   },
                 }
-              : undefined
+              : gameType === 'yahtzee' && finishedGameYahtzeeMode !== undefined
+                ? {
+                    rules: {
+                      mode: finishedGameYahtzeeMode,
+                    },
+                  }
+                : undefined
         ).getState()
 
         // Create new waiting game with same players
@@ -317,6 +353,19 @@ export async function POST(request: NextRequest) {
         startConfig.rules = {
           ...existingRules,
           difficulty: waitingDifficulty,
+        }
+      }
+    }
+    if (gameType === 'yahtzee') {
+      const waitingYahtzeeMode = extractYahtzeeMode(waitingGame.state)
+      if (waitingYahtzeeMode !== undefined) {
+        const existingRules =
+          startConfig.rules && typeof startConfig.rules === 'object' && !Array.isArray(startConfig.rules)
+            ? (startConfig.rules as Record<string, unknown>)
+            : {}
+        startConfig.rules = {
+          ...existingRules,
+          mode: waitingYahtzeeMode,
         }
       }
     }
