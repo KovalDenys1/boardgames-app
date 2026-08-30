@@ -1,0 +1,73 @@
+'use client'
+
+import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n-helpers'
+import { getFeaturedGuides } from '@/lib/guides-catalog'
+
+/**
+ * Compact "Guides & tips" strip rendered on `/` and `/games`.
+ * Purpose is internal linking: those two pages are the only ones Google
+ * indexes today, and the guides were unreachable from them (GSC 2026-08-29).
+ */
+export default function GuidesSection() {
+  const { t } = useTranslation()
+  const guides = getFeaturedGuides()
+
+  return (
+    <section
+      aria-labelledby="home-guides-heading"
+      className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16"
+    >
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2
+            id="home-guides-heading"
+            className="text-2xl font-bold sm:text-3xl"
+            style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+          >
+            {t('home.guidesTitle')}
+          </h2>
+          <p className="mt-1 text-sm" style={{ color: 'var(--bd-ink-muted)' }}>
+            {t('home.guidesSubtitle')}
+          </p>
+        </div>
+        <Link href="/guides" className="bd-btn bd-btn-soft text-sm">
+          {t('home.allGuides')} →
+        </Link>
+      </div>
+
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {guides.map((guide) => (
+          <li key={guide.slug}>
+            <Link
+              href={`/guides/${guide.slug}`}
+              className="bd-card group flex h-full items-start gap-3 p-4 transition-transform hover:-translate-y-0.5"
+            >
+              <span
+                aria-hidden="true"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 text-xl shadow-[2px_2px_0_var(--bd-ink)]"
+                style={{
+                  borderColor: 'var(--bd-ink)',
+                  background: `color-mix(in srgb, ${guide.accent} 18%, var(--bd-bg2))`,
+                }}
+              >
+                {guide.emoji}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className="block text-sm font-bold leading-snug group-hover:text-bd-coral"
+                  style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+                >
+                  {guide.title}
+                </span>
+                <span className="mt-0.5 block text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+                  {guide.readTime}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

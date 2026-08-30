@@ -347,6 +347,9 @@ const en = {
   home: {
     welcomeBack: 'Welcome back, {{name}}!',
     browseGames: 'Browse Games',
+    guidesTitle: 'Guides & tips',
+    guidesSubtitle: 'How to play, how to win, and which games fit your group.',
+    allGuides: 'All guides',
     browseGamesArrow: 'Browse games →',
     viewLobbies: 'View Lobbies',
     playAsGuest: 'Play as guest',
@@ -482,6 +485,7 @@ const en = {
         benefit2: 'Bots are available when friends are offline.',
         benefit3: 'Works on phone, tablet, and desktop.',
         benefit4: 'Free to play as a guest.',
+        originNote: 'Yahtzee was the first game on Boardly. It started as a school assignment from my teacher Tarald, and became the push to finally build the site I had been planning for a long time.',
       },
       lobbies: {
         title: 'Yahtzee Lobbies',

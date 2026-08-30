@@ -1,4 +1,19 @@
 import type { Adapter, AdapterUser, AdapterAccount } from 'next-auth/adapters'
+import { SIGNUP_SOURCE_COOKIE, sanitizeSignupSource } from './signup-source'
+
+/**
+ * Best-effort: the request cookie store is only reachable inside a route handler.
+ * Dynamic import mirrors lib/next-auth.ts so this module stays importable from tests/non-request code.
+ */
+async function readSignupSourceCookie(): Promise<string | null> {
+  try {
+    const { cookies } = await import('next/headers')
+    const store = await cookies()
+    return sanitizeSignupSource(store.get(SIGNUP_SOURCE_COOKIE)?.value)
+  } catch {
+    return null
+  }
+}
 
 type AdapterPrismaClient = Pick<
   typeof import('./db').prisma,
@@ -17,12 +32,14 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
   return {
     async createUser(user: AdapterUser) {
       const username = user.name || (user.email ? user.email.split('@')[0] : null)
+      const signupSource = await readSignupSourceCookie()
       const created = await prisma.users.create({
         data: {
           email: user.email,
           emailVerified: user.emailVerified ?? null,
           image: null,
           username: username ?? null,
+          signupSource,
         },
       })
       return {

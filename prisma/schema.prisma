@@ -30,6 +30,7 @@ model Users {
   totpEnabled           Boolean   @default(false)
   totpPendingSecret     String?
   isGuest           Boolean   @default(false) // Flag for guest (temporary) users
+  signupSource      String?   @db.VarChar(120) // Acquisition source captured at account creation (utm:/ref:/direct)
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
   banReason       String?

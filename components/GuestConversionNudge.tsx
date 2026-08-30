@@ -3,8 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { readLocal, writeLocal } from '@/lib/safe-storage'
+import { trackSignupPrompt } from '@/lib/analytics'
 
-const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v1'
+// v2: dismissal expires after 24h (v1 hid the nudge forever after one click).
+const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v2'
+const DISMISS_TTL_MS = 24 * 60 * 60 * 1000
+
+function isDismissed(): boolean {
+  const raw = readLocal(DISMISS_KEY)
+  if (!raw) return false
+  const dismissedAt = Number(raw)
+  return Number.isFinite(dismissedAt) && Date.now() - dismissedAt < DISMISS_TTL_MS
+}
 
 interface GuestConversionNudgeProps {
   registerUrl: string
@@ -16,8 +26,9 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
 
   useEffect(() => {
     try {
-      if (!readLocal(DISMISS_KEY)) {
+      if (!isDismissed()) {
         setVisible(true)
+        trackSignupPrompt('shown')
       }
     } catch {
       // localStorage unavailable (SSR or privacy mode) — don't show
@@ -25,8 +36,9 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
   }, [])
 
   const dismiss = () => {
+    trackSignupPrompt('dismissed')
     try {
-      writeLocal(DISMISS_KEY, '1')
+      writeLocal(DISMISS_KEY, String(Date.now()))
     } catch {
       // ignore
     }
@@ -49,6 +61,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
           <div className="mt-3 flex flex-wrap gap-2">
             <a
               href={registerUrl}
+              onClick={() => trackSignupPrompt('clicked')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors sm:text-sm"
             >
               <span>✨</span>

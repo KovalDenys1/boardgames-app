@@ -59,6 +59,7 @@ describe('Guest Helpers', () => {
                     username: guestName,
                     email: `guest-${guestId}@boardly.guest`,
                     isGuest: true,
+                    signupSource: null,
                     lastActiveAt: expect.any(Date),
                 },
             })

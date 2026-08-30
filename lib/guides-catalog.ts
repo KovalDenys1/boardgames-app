@@ -1,0 +1,195 @@
+/**
+ * Single source of truth for the SEO guide pages under /guides.
+ * Used by the guides index, the sitemap, and the "Guides" section that links
+ * the guides from `/` and `/games` (the only two pages Google crawls today).
+ * Guide content is English-only, so titles/descriptions are deliberately not
+ * routed through i18n – they mirror the page <title>s.
+ */
+
+export type GuideCategory = 'how-to-play' | 'strategy' | 'best-of'
+
+export interface GuideEntry {
+  slug: string
+  title: string
+  description: string
+  emoji: string
+  readTime: string
+  accent: string
+  category: GuideCategory
+  /** Last content change (YYYY-MM-DD) – drives sitemap lastModified. */
+  updated: string
+}
+
+export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
+  {
+    slug: 'how-to-play-yahtzee-online',
+    title: 'How to Play Yahtzee Online',
+    description: 'Scoring categories, strategy tips, and how to set up a multiplayer game.',
+    emoji: '🎲',
+    readTime: '5 min',
+    accent: 'var(--bd-sky)',
+    category: 'how-to-play',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'how-to-play-spy-game-online',
+    title: 'How to Play Guess the Spy',
+    description: 'Tips for finding the spy, bluffing, and running a great game night.',
+    emoji: '🕵️',
+    readTime: '4 min',
+    accent: 'var(--bd-lav)',
+    category: 'how-to-play',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'how-to-play-memory-card-game-online',
+    title: 'How to Play Memory Card Game',
+    description: 'Rules, difficulty levels, and strategy for the classic matching game.',
+    emoji: '🧠',
+    readTime: '4 min',
+    accent: 'var(--bd-mint)',
+    category: 'how-to-play',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'how-to-play-tic-tac-toe-online',
+    title: 'How to Play Tic Tac Toe Online',
+    description: 'All 8 winning lines and the strategy to never lose.',
+    emoji: '⭕',
+    readTime: '4 min',
+    accent: 'var(--bd-coral)',
+    category: 'how-to-play',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'how-to-play-connect-four-online',
+    title: 'How to Play Connect Four Online',
+    description: 'Drop discs, get four in a row, beat your opponent. Rules and winning tips.',
+    emoji: '🔴',
+    readTime: '3 min',
+    accent: 'var(--bd-sun)',
+    category: 'how-to-play',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'how-to-play-alias-online',
+    title: 'How to Play Alias Online',
+    description: 'Describe words, help your team guess, and score more than the other team.',
+    emoji: '🗣️',
+    readTime: '4 min',
+    accent: 'var(--bd-coral)',
+    category: 'how-to-play',
+    updated: '2026-05-26',
+  },
+]
+
+export const STRATEGY_GUIDES: GuideEntry[] = [
+  {
+    slug: 'yahtzee-strategy-guide',
+    title: 'Yahtzee Strategy Guide — How to Win More Often',
+    description: 'When to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
+    emoji: '🏆',
+    readTime: '6 min',
+    accent: 'var(--bd-sky)',
+    category: 'strategy',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'connect-four-strategy-guide',
+    title: 'Connect Four Strategy Guide — How to Win Every Time',
+    description: 'Center control, double threats, and the key traps that catch most players off guard.',
+    emoji: '🔴',
+    readTime: '5 min',
+    accent: 'var(--bd-sun)',
+    category: 'strategy',
+    updated: '2026-05-26',
+  },
+]
+
+export const BEST_OF_GUIDES: GuideEntry[] = [
+  {
+    slug: 'best-free-multiplayer-browser-games',
+    title: 'Best Free Multiplayer Browser Games in 2026',
+    description: 'No download, no payment — the best games to play with friends right now.',
+    emoji: '🎮',
+    readTime: '4 min',
+    accent: 'var(--bd-sun)',
+    category: 'best-of',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'best-2-player-games-online',
+    title: 'Best 2 Player Games Online — Free, No Download',
+    description: 'Tic Tac Toe, Memory, Yahtzee and more for playing with one friend.',
+    emoji: '👥',
+    readTime: '4 min',
+    accent: 'var(--bd-sun)',
+    category: 'best-of',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'best-3-player-games-online',
+    title: 'Best 3 Player Games Online — Free, No Download',
+    description: 'Yahtzee, Memory, Guess the Spy — the best games for groups of three.',
+    emoji: '🎮',
+    readTime: '3 min',
+    accent: 'var(--bd-mint)',
+    category: 'best-of',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'best-online-games-for-game-night',
+    title: 'Best Online Games for Game Night',
+    description: 'Five games that work for any group size — with tips for hosting online.',
+    emoji: '🎉',
+    readTime: '5 min',
+    accent: 'var(--bd-lav)',
+    category: 'best-of',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'best-games-to-play-on-zoom',
+    title: 'Best Games to Play on Zoom — Free, No Download',
+    description: 'Browser games that work perfectly alongside any video call. No screen sharing needed.',
+    emoji: '💻',
+    readTime: '4 min',
+    accent: 'var(--bd-sky)',
+    category: 'best-of',
+    updated: '2026-05-26',
+  },
+  {
+    slug: 'best-party-games-online',
+    title: 'Best Party Games Online — Free to Play',
+    description: 'The best online party games for groups of 4 or more — no download, no account.',
+    emoji: '🎊',
+    readTime: '4 min',
+    accent: 'var(--bd-coral)',
+    category: 'best-of',
+    updated: '2026-05-26',
+  },
+]
+
+export const ALL_GUIDES: GuideEntry[] = [...HOW_TO_PLAY_GUIDES, ...STRATEGY_GUIDES, ...BEST_OF_GUIDES]
+
+/**
+ * The six guides surfaced on `/` and `/games`. Chosen by search demand
+ * (GSC 2026-08-29: "board games online", "2 player …", "free online board games")
+ * and by the most-visited game page (Guess the Spy).
+ */
+export const FEATURED_GUIDE_SLUGS = [
+  'best-free-multiplayer-browser-games',
+  'best-2-player-games-online',
+  'best-party-games-online',
+  'how-to-play-spy-game-online',
+  'how-to-play-yahtzee-online',
+  'best-games-to-play-on-zoom',
+] as const
+
+export function getFeaturedGuides(): GuideEntry[] {
+  const bySlug = new Map(ALL_GUIDES.map((guide) => [guide.slug, guide]))
+  return FEATURED_GUIDE_SLUGS.map((slug) => {
+    const guide = bySlug.get(slug)
+    if (!guide) throw new Error(`Featured guide "${slug}" is not in ALL_GUIDES`)
+    return guide
+  })
+}

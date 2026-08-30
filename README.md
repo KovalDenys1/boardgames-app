@@ -4,6 +4,12 @@ Real-time multiplayer board games platform built with Next.js, TypeScript, Supab
 
 Production: <https://boardly.online>
 
+## Origin
+
+Boardly is an idea I had been carrying around for a long time: a place to play board games with friends online, no downloads, no accounts required.
+
+The push to actually build it came from a school assignment. My teacher, Tarald, asked us to implement Yahtzee. I finished the assignment and realised this was the moment to start the site I had been thinking about. Yahtzee became the first game on Boardly, and everything else grew from there.
+
 ## Games
 
 **Available (6):** Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Memory, Alias

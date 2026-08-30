@@ -178,6 +178,7 @@ describe('POST /api/auth/register', () => {
         email: 'new@example.com',
         username: 'new_user',
         passwordHash: 'hashed-password',
+        signupSource: null,
       },
     })
     expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalledWith({

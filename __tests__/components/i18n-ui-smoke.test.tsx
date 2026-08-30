@@ -3,6 +3,8 @@ import i18n, { changeLanguageLazy } from '@/i18n'
 import YahtzeeResults from '@/components/YahtzeeResults'
 import SpyResults from '@/components/SpyResults'
 
+jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
+
 describe('i18n UI smoke checks', () => {
   afterEach(async () => {
     await act(async () => {

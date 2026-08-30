@@ -6,6 +6,7 @@ import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 import { registerSchema } from '@/lib/validation/auth'
+import { getSignupSourceFromRequest } from '@/lib/signup-source'
 import { z } from 'zod'
 
 const limiter = rateLimit(rateLimitPresets.auth)
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
         email,
         username,
         passwordHash,
+        signupSource: getSignupSourceFromRequest(request),
         // emailVerified will be set when user clicks verification link
       },
     })

@@ -349,6 +349,9 @@ const uk: Translation = {
   home: {
     welcomeBack: 'З поверненням, {{name}}!',
     browseGames: 'Огляд ігор',
+    guidesTitle: 'Гайди та поради',
+    guidesSubtitle: 'Як грати, як перемагати і які ігри підходять вашій компанії.',
+    allGuides: 'Усі гайди',
     browseGamesArrow: 'Дивитись ігри →',
     viewLobbies: 'Переглянути лобі',
     playAsGuest: 'Грати як гість',
@@ -484,6 +487,7 @@ const uk: Translation = {
         benefit2: 'Боти доступні, коли друзі офлайн.',
         benefit3: 'Працює на телефоні, планшеті та комп\'ютері.',
         benefit4: 'Безкоштовна гра як гість.',
+        originNote: 'Yahtzee – перша гра на Boardly. Усе почалося зі шкільного завдання від мого вчителя Tarald, і це стало поштовхом нарешті зробити сайт, який я давно задумував.',
       },
       lobbies: {
         title: 'Лобі Ятці',

@@ -104,7 +104,7 @@ describe('POST /api/auth/guest-session', () => {
       guestName: 'Guest_Name-2',
       guestToken: 'guest-token-1',
     })
-    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-id-1', 'Guest_Name-2')
+    expect(mockGetOrCreateGuestUser).toHaveBeenCalledWith('guest-id-1', 'Guest_Name-2', null)
     expect(mockCreateGuestToken).toHaveBeenCalledWith('guest-user-1', 'Guest_Name-2')
   })
 })
