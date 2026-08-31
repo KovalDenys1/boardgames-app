@@ -1966,6 +1966,7 @@ const en = {
     players: 'players',
     vsBots: 'Vs bots',
     withPlayers: 'With players',
+    needsGroup: 'Needs {{count}}+ players',
     waitingForPlayers: 'Room created — waiting for players to join!',
   },
   leaderboard: {

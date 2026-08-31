@@ -22,6 +22,7 @@ const QUICK_PLAY_GAMES = getAvailableGameTypes().map((type) => {
     label: meta.name,
     players: playerRange,
     supportsBots,
+    minPlayers: meta.minPlayers,
     // Same per-game accent the ribbon and detail pages already use.
     accentColor: meta.accentColor,
   }
@@ -230,7 +231,9 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                       >
                         {game.supportsBots
                           ? `🤖 ${t('quickPlay.vsBots', 'Vs bots')}`
-                          : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
+                          : game.minPlayers >= 4
+                            ? `👥 ${t('quickPlay.needsGroup', { count: game.minPlayers })}`
+                            : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
                       </span>
                     )}
                   </div>
@@ -253,7 +256,9 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                     >
                       {game.supportsBots
                         ? `🤖 ${t('quickPlay.vsBots', 'Vs bots')}`
-                        : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
+                        : game.minPlayers >= 4
+                          ? `👥 ${t('quickPlay.needsGroup', { count: game.minPlayers })}`
+                          : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
                     </span>
                   )}
                 </button>
