@@ -25,6 +25,7 @@ export type LobbyCreateConfig = {
   allowedPlayers: number[]
   defaultMaxPlayers: number
   turnTimer?: { options: number[]; default: number }
+  gameModes?: { options: string[]; default: string }
   rounds?: { options: number[]; default: number | null }
   difficulty?: { options: string[]; default: string }
 }
@@ -280,6 +281,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       allowedPlayers: [2, 3, 4],
       defaultMaxPlayers: 4,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
+      gameModes: { options: ['classic', 'short'], default: 'classic' },
     },
   },
   {

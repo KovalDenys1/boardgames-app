@@ -134,4 +134,24 @@ describe('POST /api/quick-play', () => {
     const res = await POST(makeRequest({ gameType: 'alias' }))
     expect(res.status).toBe(401)
   })
+
+  it('creates quick-play lobbies with a 45s turn timer (#779)', async () => {
+    const res = await POST(makeRequest({ gameType: 'tic_tac_toe' }))
+    expect(res.status).toBe(200)
+
+    const createArgs = (prisma.lobbies.create as jest.Mock).mock.calls[0][0]
+    expect(createArgs.data.turnTimer).toBe(45)
+  })
+
+  it('starts yahtzee quick-play in short mode (#779)', async () => {
+    const res = await POST(makeRequest({ gameType: 'yahtzee' }))
+    expect(res.status).toBe(200)
+
+    const createArgs = (prisma.lobbies.create as jest.Mock).mock.calls[0][0]
+    expect(createArgs.data.turnTimer).toBe(45)
+    const rawState = createArgs.data.games.create.state
+    const persistedState = typeof rawState === 'string' ? JSON.parse(rawState) : rawState
+    expect(persistedState.data.mode).toBe('short')
+  })
+
 })

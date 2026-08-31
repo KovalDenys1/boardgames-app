@@ -19,6 +19,27 @@ export const ALL_CATEGORIES = [
 
 export type YahtzeeCategory = (typeof ALL_CATEGORIES)[number]
 
+/**
+ * Game mode. 'classic' = all 15 categories. 'short' = lower section only
+ * (9 rounds, ~40% shorter) — added to fight Yahtzee's chronic mid-game
+ * abandonment (#779). The upper-section bonus never applies in short mode
+ * because no upper categories can be scored.
+ */
+export type YahtzeeMode = 'classic' | 'short'
+
+export const SHORT_MODE_CATEGORIES: readonly YahtzeeCategory[] = [
+  'onePair', 'twoPairs', 'threeOfKind', 'fourOfKind', 'fullHouse',
+  'smallStraight', 'largeStraight', 'yahtzee', 'chance',
+]
+
+export function getActiveCategories(mode: YahtzeeMode = 'classic'): readonly YahtzeeCategory[] {
+  return mode === 'short' ? SHORT_MODE_CATEGORIES : ALL_CATEGORIES
+}
+
+export function normalizeYahtzeeMode(value: unknown): YahtzeeMode {
+  return value === 'short' ? 'short' : 'classic'
+}
+
 export interface YahtzeeScorecard {
   ones?: number
   twos?: number
@@ -168,8 +189,8 @@ export function calculateTotalScore(scorecard: YahtzeeScorecard): number {
   return upperSection + upperBonus + lowerSection
 }
 
-export function isGameFinished(scorecard: YahtzeeScorecard): boolean {
-  return ALL_CATEGORIES.every(cat => scorecard[cat] !== undefined)
+export function isGameFinished(scorecard: YahtzeeScorecard, mode: YahtzeeMode = 'classic'): boolean {
+  return getActiveCategories(mode).every(cat => scorecard[cat] !== undefined)
 }
 
 // Priority order for wasting categories when no points available
@@ -196,15 +217,16 @@ const WASTE_PRIORITY: YahtzeeCategory[] = [
  */
 export function selectBestAvailableCategory(
   dice: number[],
-  scorecard: YahtzeeScorecard
+  scorecard: YahtzeeScorecard,
+  mode: YahtzeeMode = 'classic'
 ): YahtzeeCategory {
-  // Get available categories
-  const availableCategories = ALL_CATEGORIES.filter(
+  // Get available categories for the active mode
+  const availableCategories = getActiveCategories(mode).filter(
     cat => scorecard[cat] === undefined
   )
 
   if (availableCategories.length === 0) {
-    return 'ones' // Fallback (shouldn't happen)
+    return mode === 'short' ? 'chance' : 'ones' // Fallback (shouldn't happen)
   }
 
   // Calculate score for each available category

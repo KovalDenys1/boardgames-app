@@ -37,6 +37,7 @@ export class YahtzeeBot extends BaseBot<YahtzeeGame, YahtzeeBotDecision> {
             throw new Error('No current player')
         }
 
+        const mode = this.gameEngine.getMode()
         const scorecard = this.gameEngine.getScorecard(currentPlayer.id)
         if (!scorecard) {
             throw new Error('No scorecard found for bot')
@@ -44,7 +45,7 @@ export class YahtzeeBot extends BaseBot<YahtzeeGame, YahtzeeBotDecision> {
 
         // If no rolls left, must score
         if (rollsLeft === 0) {
-            const category = YahtzeeBotAI.selectCategory(dice, scorecard)
+            const category = YahtzeeBotAI.selectCategory(dice, scorecard, mode)
             return {
                 type: 'score',
                 category,
@@ -61,7 +62,7 @@ export class YahtzeeBot extends BaseBot<YahtzeeGame, YahtzeeBotDecision> {
 
         // For second/third roll, decide whether to roll again or score
         // Calculate expected value of rolling vs scoring now
-        const bestCategory = YahtzeeBotAI.selectCategory(dice, scorecard)
+        const bestCategory = YahtzeeBotAI.selectCategory(dice, scorecard, mode)
         const currentScore = calculateScore(dice, bestCategory)
 
         // Simple heuristic: if score is good enough, take it; otherwise roll
@@ -75,7 +76,7 @@ export class YahtzeeBot extends BaseBot<YahtzeeGame, YahtzeeBotDecision> {
         }
 
         // Roll again, but hold promising dice
-        const diceToHold = YahtzeeBotAI.decideDiceToHold(dice, held, rollsLeft, scorecard)
+        const diceToHold = YahtzeeBotAI.decideDiceToHold(dice, held, rollsLeft, scorecard, mode)
         return {
             type: 'roll',
             diceToHold,

@@ -109,4 +109,13 @@ describe('leave-behavior metadata (#759)', () => {
       }
     }
   })
+
+  it('yahtzee lobbyCreateConfig declares game modes (#779)', () => {
+    const yahtzee = getCatalogGames().find((g) => g.gameType === 'yahtzee')
+    expect(yahtzee?.lobbyCreateConfig?.gameModes).toEqual({
+      options: ['classic', 'short'],
+      default: 'classic',
+    })
+  })
+
 })

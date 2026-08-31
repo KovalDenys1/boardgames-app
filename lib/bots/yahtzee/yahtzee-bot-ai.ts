@@ -1,4 +1,4 @@
-import { ALL_CATEGORIES, YahtzeeCategory, calculateScore, YahtzeeScorecard } from '@/lib/yahtzee'
+import { YahtzeeCategory, YahtzeeMode, calculateScore, getActiveCategories, YahtzeeScorecard } from '@/lib/yahtzee'
 
 /**
  * Yahtzee Bot AI - Pure decision logic without game engine coupling
@@ -22,12 +22,13 @@ export class YahtzeeBotAI {
     dice: number[],
     currentHeld: boolean[],
     rollsLeft: number,
-    scorecard: YahtzeeScorecard
+    scorecard: YahtzeeScorecard,
+    mode: YahtzeeMode = 'classic'
   ): number[] {
     if (rollsLeft === 0) return []
 
     const diceCounts = this.countDice(dice)
-    const availableCategories = this.getAvailableCategories(scorecard)
+    const availableCategories = this.getAvailableCategories(scorecard, mode)
 
     // First roll - aim for high-value patterns
     if (rollsLeft === 3) {
@@ -43,9 +44,10 @@ export class YahtzeeBotAI {
    */
   static selectCategory(
     dice: number[],
-    scorecard: YahtzeeScorecard
+    scorecard: YahtzeeScorecard,
+    mode: YahtzeeMode = 'classic'
   ): YahtzeeCategory {
-    const availableCategories = this.getAvailableCategories(scorecard)
+    const availableCategories = this.getAvailableCategories(scorecard, mode)
 
     // Task 2.1: Graceful fallback if no categories available
     // This should never happen in normal gameplay, but provides safety
@@ -416,8 +418,10 @@ export class YahtzeeBotAI {
   /**
    * Helper: Get available categories from scorecard
    */
-  private static getAvailableCategories(scorecard: YahtzeeScorecard): YahtzeeCategory[] {
-    return ALL_CATEGORIES.filter(cat => scorecard[cat] === undefined)
+  private static getAvailableCategories(scorecard: YahtzeeScorecard, mode: YahtzeeMode = 'classic'): YahtzeeCategory[] {
+    // In short mode upper categories are excluded here, which also keeps the
+    // upper-bonus priority logic dormant (it only fires for upper categories).
+    return getActiveCategories(mode).filter(cat => scorecard[cat] === undefined)
   }
 
   /**

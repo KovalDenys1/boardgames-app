@@ -1,8 +1,10 @@
 import { GameEngine, Player, Move, GameConfig } from '../game-engine'
-import { ALL_CATEGORIES, YahtzeeCategory, YahtzeeScorecard, rollDice, calculateScore, calculateTotalScore, isGameFinished } from '../yahtzee'
+import { YahtzeeCategory, YahtzeeMode, YahtzeeScorecard, getActiveCategories, normalizeYahtzeeMode, rollDice, calculateScore, calculateTotalScore, isGameFinished } from '../yahtzee'
 
 export interface YahtzeeGameData {
   round: number
+  /** Game mode; persisted in state.data so it survives restore and rematch. Absent on legacy games = classic. */
+  mode?: YahtzeeMode
   dice: number[] // 5 dice values (1-6)
   held: boolean[] // which dice are held
   rollsLeft: number
@@ -24,6 +26,8 @@ export class YahtzeeGame extends GameEngine {
   getInitialGameData(): YahtzeeGameData {
     return {
       round: 1,
+      // this.config is assigned before getInitialGameData() runs in the GameEngine constructor
+      mode: normalizeYahtzeeMode(this.config?.rules?.mode),
       dice: [1, 2, 3, 4, 5], // Initial dice values (not rolled yet)
       held: [false, false, false, false, false],
       rollsLeft: 3,
@@ -84,6 +88,9 @@ export class YahtzeeGame extends GameEngine {
         
         // Must have rolled at least once
         if (gameData.rollsLeft === 3) return false
+
+        // Category must exist in the active mode's set
+        if (!getActiveCategories(this.getMode()).includes(category)) return false
 
         const playerScorecard = gameData.scores[playerIndex] || {}
         return playerScorecard[category] === undefined
@@ -183,7 +190,7 @@ export class YahtzeeGame extends GameEngine {
     // Check if all players have filled all categories
     for (let i = 0; i < this.state.players.length; i++) {
       const scorecard = gameData.scores[i]
-      if (!scorecard || !isGameFinished(scorecard)) {
+      if (!scorecard || !isGameFinished(scorecard, this.getMode())) {
         return null // Game not finished
       }
     }
@@ -235,7 +242,7 @@ export class YahtzeeGame extends GameEngine {
     const currentPlayerScorecard = gameData.scores[currentPlayerIndex] || {}
 
     // Count only supported score categories to stay robust against legacy keys.
-    const filledCategories = ALL_CATEGORIES.filter(
+    const filledCategories = getActiveCategories(this.getMode()).filter(
       (category) => currentPlayerScorecard[category] !== undefined
     ).length
 
@@ -251,6 +258,9 @@ export class YahtzeeGame extends GameEngine {
     // Initialize scorecards for all players
     const gameData = this.state.data as YahtzeeGameData
     gameData.scores = this.state.players.map(() => ({}))
+    // Re-resolve the mode from config at start: game-create rebuilds the engine
+    // with startConfig.rules mirrored from the waiting game's state (#779)
+    gameData.mode = normalizeYahtzeeMode(this.config?.rules?.mode ?? gameData.mode)
     
     this.state.status = 'playing';
     this.state.updatedAt = new Date();
@@ -260,6 +270,10 @@ export class YahtzeeGame extends GameEngine {
   // Only advance turn on score moves, not on roll or hold
   protected shouldAdvanceTurn(move: Move): boolean {
     return move.type === 'score';
+  }
+
+  getMode(): YahtzeeMode {
+    return normalizeYahtzeeMode((this.state.data as YahtzeeGameData).mode)
   }
 
   getScorecard(playerId: string): YahtzeeScorecard {
