@@ -1958,6 +1958,7 @@ const no = {
     players: 'spillere',
     vsBots: 'Mot boter',
     withPlayers: 'Med spillere',
+    needsGroup: 'Krever {{count}}+ spillere',
     waitingForPlayers: 'Rom opprettet — venter på spillere!',
   },
   leaderboard: {

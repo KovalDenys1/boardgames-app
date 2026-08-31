@@ -1958,6 +1958,7 @@ const ru = {
     players: 'игроки',
     vsBots: 'С ботами',
     withPlayers: 'С игроками',
+    needsGroup: 'Нужно {{count}}+ игроков',
     waitingForPlayers: 'Комната создана — ждём игроков!',
   },
   leaderboard: {

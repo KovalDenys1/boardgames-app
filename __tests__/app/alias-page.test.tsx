@@ -162,6 +162,25 @@ describe('AliasLobbyPage', () => {
     await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
   })
 
+  it('shows the try-bot-games banner in the waiting phase when below min players (#780)', async () => {
+    const response = buildLobbyResponse()
+    response.activeGame.state.data.phase = 'waiting'
+    response.activeGame.players = [
+      { id: 'player-1', userId: 'user-1', name: 'Alice', user: { username: 'Alice' } },
+    ]
+    ;(response.activeGame as Record<string, unknown>).createdAt = new Date(Date.now() - 2 * 60_000).toISOString()
+    mockFetchWithGuest.mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response)
+
+    render(<AliasLobbyPage code="ABCD" onGameReset={jest.fn()} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('game.ui.tryBotGamesTitle')).toBeInTheDocument()
+    })
+  })
+
   it('redirects away when a game-abandoned broadcast is received', async () => {
     render(<AliasLobbyPage code="ABCD" />)
     await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())

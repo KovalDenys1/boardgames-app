@@ -1971,6 +1971,7 @@ const uk: Translation = {
     players: 'гравці',
     vsBots: 'З ботами',
     withPlayers: 'З гравцями',
+    needsGroup: 'Потрібно {{count}}+ гравців',
     waitingForPlayers: 'Кімнату створено — чекаємо на гравців!',
   },
   leaderboard: {

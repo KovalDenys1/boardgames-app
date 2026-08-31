@@ -23,6 +23,8 @@ import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
+import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
+import { getGameMetadata } from '@/lib/game-catalog'
 
 interface AliasPageProps {
   code: string
@@ -53,6 +55,7 @@ interface Game {
   status: string
   state: unknown
   players: GamePlayer[]
+  createdAt?: string
 }
 
 interface GuessMessage {
@@ -375,7 +378,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const { isLeavingLobbyRef: isLeavingRef, leaveLobby } = useLeaveLobby(code, 'Alias')
   // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
   useLobbyHeartbeat(code, !isSpectator)
-  const minPlayersRequired = 4
+  const aliasMetadata = getGameMetadata('alias')
+  const minPlayersRequired = aliasMetadata?.minPlayers ?? 4
+  const maxPlayersAllowed = aliasMetadata?.maxPlayers ?? 16
 
   const getCurrentUserId = useCallback(() => {
     return isGuest ? guestId : session?.user?.id
@@ -591,7 +596,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         body: JSON.stringify({
           gameType: 'alias',
           lobbyId: lobby.id,
-          config: { maxPlayers: 16, minPlayers: 4 },
+          config: { maxPlayers: maxPlayersAllowed, minPlayers: minPlayersRequired },
         }),
       })
       if (!res.ok) {
@@ -714,7 +719,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // ── PHASE 0 — Lobby (pre-game) ─────────────────────────────────────────────
   if (resolvedStatus === 'waiting' || !data) {
     const { team1, team2 } = computePreviewTeams(players)
-    const ready = players.length >= 4
+    const ready = players.length >= minPlayersRequired
 
     const TeamCard = ({ side, name, accent, accentDeep, list }: {
       side: 'left' | 'right'
@@ -809,7 +814,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <span style={{ width: 1, height: 36, background: 'rgba(251,246,238,0.2)' }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <BdLabel style={{ color: 'rgba(251,246,238,0.6)' }}>Min players</BdLabel>
-                <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32 }}>4</span>
+                <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32 }}>{minPlayersRequired}</span>
               </div>
             </div>
           </div>
@@ -835,7 +840,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}>
                 {ready
                   ? t('alias.allSetReady')
-                  : t('alias.needMorePlayers', { count: Math.max(0, 4 - players.length) })}
+                  : t('alias.needMorePlayers', { count: Math.max(0, minPlayersRequired - players.length) })}
               </span>
             </div>
             {isHost ? (
@@ -859,6 +864,15 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               </span>
             )}
           </div>
+
+          {/* Alias has no bots by design (#626); when the group hasn't formed,
+              suggest bot-ready games instead of waiting forever (#780 — the
+              banner never rendered here because Alias skips WaitingRoom). */}
+          {!ready && game?.createdAt && (
+            <div style={{ marginTop: 20 }}>
+              <TryBotGamesBanner waitingSinceMs={new Date(game.createdAt).getTime()} />
+            </div>
+          )}
         </main>
       </div>
     )
