@@ -29,6 +29,7 @@ const createLobbySchema = z.object({
   theme: z.enum(LOBBY_THEME_IDS as [LobbyTheme, ...LobbyTheme[]]).default(FREE_LOBBY_THEME),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
   memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
+  yahtzeeMode: z.enum(['classic', 'short']).optional(),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
       gameType,
       ticTacToeRounds,
       memoryDifficulty,
+      yahtzeeMode,
       theme,
     } = createLobbySchema.parse(body)
 
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
+    const normalizedYahtzeeMode = gameType === 'yahtzee' ? (yahtzeeMode ?? 'classic') : undefined
 
     log.info('Creating lobby', {
       gameType,
@@ -121,6 +124,7 @@ export async function POST(request: NextRequest) {
       turnTimer,
       ...(gameType === 'tic_tac_toe' ? { targetRounds: normalizedTicTacToeRounds } : {}),
       ...(gameType === 'memory' ? { difficulty: normalizedMemoryDifficulty } : {}),
+      ...(gameType === 'yahtzee' ? { mode: normalizedYahtzeeMode } : {}),
     })
 
     // Deactivate any previous waiting lobbies owned by this creator so they don't
@@ -162,7 +166,13 @@ export async function POST(request: NextRequest) {
                 difficulty: normalizedMemoryDifficulty,
               },
             }
-          : undefined
+          : gameType === 'yahtzee'
+            ? {
+                rules: {
+                  mode: normalizedYahtzeeMode,
+                },
+              }
+            : undefined
 
     const tempEngine = createGameEngine(
       gameType,

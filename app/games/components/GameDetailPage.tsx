@@ -38,6 +38,8 @@ type GameDetailPageProps = {
   benefitsTitle: string
   benefits: string[]
   originNote?: string
+  /** Prominent callout for games that need a real group (no bots), e.g. Alias (#780) */
+  groupNotice?: string
   guideHref?: string
   playVsBotGameType?: string
 }
@@ -94,6 +96,7 @@ export default function GameDetailPage({
   benefitsTitle,
   benefits,
   originNote,
+  groupNotice,
   guideHref,
   playVsBotGameType,
 }: GameDetailPageProps) {
@@ -147,6 +150,11 @@ export default function GameDetailPage({
                   {t('home.browseGames')}
                 </Link>
               </div>
+              {groupNotice && (
+                <p className="mt-4 rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900 dark:border-amber-600/60 dark:bg-amber-900/20 dark:text-amber-200">
+                  👥 {groupNotice}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-center lg:justify-end">

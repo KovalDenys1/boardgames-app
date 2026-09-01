@@ -363,6 +363,60 @@ describe('POST /api/game/create', () => {
     expect(persistedState?.data?.match?.targetRounds).toBe(5)
   })
 
+  it('preserves configured Yahtzee short mode when starting from waiting state (#779)', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+
+    const yahtzeeWaitingGame = {
+      ...mockWaitingGame,
+      state: JSON.stringify({
+        data: {
+          mode: 'short',
+        },
+      }),
+    }
+
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      gameType: 'yahtzee',
+      maxPlayers: 4,
+      games: [yahtzeeWaitingGame],
+    } as any)
+
+    let persistedState: any
+    mockPrisma.games.update.mockImplementation((args: any) => {
+      persistedState = readPersistedState(args.data.state)
+      return Promise.resolve({
+        ...yahtzeeWaitingGame,
+        status: 'playing',
+        gameType: 'yahtzee',
+        state: args.data.state,
+        players: yahtzeeWaitingGame.players.map((p: any) => ({
+          ...p,
+          user: {
+            ...p.user,
+            bot: null,
+          },
+        })),
+      } as any)
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'yahtzee',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 4, minPlayers: 1 },
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.game).toBeDefined()
+    expect(persistedState?.data?.mode).toBe('short')
+  })
+
   it('preserves configured Memory difficulty when starting from waiting state', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
 

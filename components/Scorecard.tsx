@@ -2,11 +2,13 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { YahtzeeScorecard, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
+import { YahtzeeScorecard, YahtzeeCategory, YahtzeeMode, calculateScore } from '@/lib/yahtzee'
 import { sounds } from '@/lib/sounds'
 
 interface ScorecardProps {
   scorecard: YahtzeeScorecard
+  /** 'short' hides the upper section and the 63-bonus UI (#779) */
+  mode?: YahtzeeMode
   currentDice: number[]
   rollsLeft?: number
   onSelectCategory: (category: YahtzeeCategory) => void
@@ -88,6 +90,7 @@ const rowVariants: Record<CategoryState, string> = {
 
 const Scorecard = React.memo(function Scorecard({
   scorecard,
+  mode = 'classic',
   currentDice,
   rollsLeft = 0,
   onSelectCategory,
@@ -124,16 +127,18 @@ const Scorecard = React.memo(function Scorecard({
     }
   }, [scorecard])
 
-  const upperTotal = upperSection.reduce((sum, cat) => sum + (scorecard[cat] ?? 0), 0)
-  const bonus = upperTotal >= 63 ? 35 : 0
+  const showUpperSection = mode !== 'short'
+  const activeUpperSection = showUpperSection ? upperSection : []
+  const upperTotal = activeUpperSection.reduce((sum, cat) => sum + (scorecard[cat] ?? 0), 0)
+  const bonus = showUpperSection && upperTotal >= 63 ? 35 : 0
   const lowerTotal = lowerSection.reduce((sum, cat) => sum + (scorecard[cat] ?? 0), 0)
   const total = upperTotal + bonus + lowerTotal
   const bonusProgress = Math.min(100, (upperTotal / 63) * 100)
-  const filledCategories = [...upperSection, ...lowerSection].filter((category) => scorecard[category] !== undefined).length
-  const remainingCategories = upperSection.length + lowerSection.length - filledCategories
+  const filledCategories = [...activeUpperSection, ...lowerSection].filter((category) => scorecard[category] !== undefined).length
+  const remainingCategories = activeUpperSection.length + lowerSection.length - filledCategories
   const bonusNeeded = Math.max(0, 63 - upperTotal)
   const scoringInsights = React.useMemo(() => {
-    const options = [...upperSection, ...lowerSection]
+    const options = [...activeUpperSection, ...lowerSection]
       .filter((category) => scorecard[category] === undefined)
       .map((category) => ({
         category,
@@ -327,14 +332,16 @@ const Scorecard = React.memo(function Scorecard({
           )}
           <div className="flex shrink-0 items-center gap-1.5">
             <span className="bd-chip px-2.5 py-1 text-[10px]">
-              {filledCategories}/{upperSection.length + lowerSection.length} filled
+              {filledCategories}/{activeUpperSection.length + lowerSection.length} filled
             </span>
             <span className="bd-chip px-2.5 py-1 text-[10px]">
               {remainingCategories} left
             </span>
-            <span className={`bd-chip px-2.5 py-1 text-[10px] ${bonus > 0 ? 'bd-chip-mint' : 'bd-chip-sun'}`}>
-              {bonus > 0 ? '+35 bonus ready' : `${bonusNeeded} to bonus`}
-            </span>
+            {showUpperSection && (
+              <span className={`bd-chip px-2.5 py-1 text-[10px] ${bonus > 0 ? 'bd-chip-mint' : 'bd-chip-sun'}`}>
+                {bonus > 0 ? '+35 bonus ready' : `${bonusNeeded} to bonus`}
+              </span>
+            )}
             {isCurrentPlayer && canSelectCategory && (
               <span className="bd-chip bd-chip-lav px-2.5 py-1 text-[10px]">
                 {playableNowCount > 0 ? `${playableNowCount} scoring options` : 'Choose a slot'}
@@ -391,8 +398,9 @@ const Scorecard = React.memo(function Scorecard({
       )}
 
       {/* Two-column body — each column scrolls independently on small viewports */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 overflow-hidden divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: 'var(--bd-line)' }}>
-        {/* ── Upper section ── */}
+      <div className={`flex-1 min-h-0 grid grid-cols-1 ${showUpperSection ? 'sm:grid-cols-2' : ''} overflow-hidden divide-y sm:divide-y-0 sm:divide-x`} style={{ borderColor: 'var(--bd-line)' }}>
+        {/* ── Upper section (hidden in short mode) ── */}
+        {showUpperSection && (
         <div className="flex flex-col min-h-0 overflow-y-auto px-3 pt-2 pb-1.5">
           {/* Section header */}
           <div className="mb-1.5 flex flex-shrink-0 items-center justify-between gap-2">
@@ -453,6 +461,7 @@ const Scorecard = React.memo(function Scorecard({
             </span>
           </div>
         </div>
+        )}
 
         {/* ── Lower section ── */}
         <div className="flex flex-col min-h-0 overflow-y-auto px-3 pt-3 pb-2">

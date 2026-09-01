@@ -171,6 +171,9 @@ const ru = {
       difficultyHard: 'Сложная',
       gameMode: 'Режим игры',
       gameModeHelper: 'Быстрый режим, короткий режим и моды появятся скоро!',
+      gameModeClassic: 'Классика (15 раундов)',
+      gameModeShort: 'Короткая (9 раундов)',
+      gameModeShortHelper: 'Короткий режим — только нижняя секция: пары, стриты, фул-хаус, Яцзы. Примерно на 40% быстрее.',
       comingSoon: 'Скоро',
       password: 'Пароль',
       passwordPlaceholder: 'Оставьте пустым для публичного лобби',
@@ -1955,6 +1958,7 @@ const ru = {
     players: 'игроки',
     vsBots: 'С ботами',
     withPlayers: 'С игроками',
+    needsGroup: 'Нужно {{count}}+ игроков',
     waitingForPlayers: 'Комната создана — ждём игроков!',
   },
   leaderboard: {

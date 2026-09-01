@@ -180,6 +180,9 @@ const uk: Translation = {
       difficultyHard: 'Складна',
       gameMode: 'Режим гри',
       gameModeHelper: 'Швидкий режим, короткий режим та моди з\'являться незабаром!',
+      gameModeClassic: 'Класика (15 раундів)',
+      gameModeShort: 'Коротка (9 раундів)',
+      gameModeShortHelper: 'Короткий режим — лише нижня секція: пари, стрити, фул-хаус, Яцзи. Приблизно на 40% швидше.',
       comingSoon: 'Незабаром',
       password: 'Пароль',
       passwordPlaceholder: 'Залиште порожнім для публічного лобі',
@@ -1968,6 +1971,7 @@ const uk: Translation = {
     players: 'гравці',
     vsBots: 'З ботами',
     withPlayers: 'З гравцями',
+    needsGroup: 'Потрібно {{count}}+ гравців',
     waitingForPlayers: 'Кімнату створено — чекаємо на гравців!',
   },
   leaderboard: {

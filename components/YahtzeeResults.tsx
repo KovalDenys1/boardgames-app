@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { ALL_CATEGORIES } from '@/lib/yahtzee'
+import { YahtzeeMode, getActiveCategories } from '@/lib/yahtzee'
 import GuestConversionNudge from './GuestConversionNudge'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
+  /** 'short' shows 9 rounds instead of 15 (#779) */
+  mode?: YahtzeeMode
   currentUserId: string | null
   canStartGame: boolean
   canRequestRematch?: boolean
@@ -56,9 +58,10 @@ export default function YahtzeeResults({
   autoReturnAt = null,
   isGuest = false,
   registerUrl = '/auth/register',
+  mode = 'classic',
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
-  const totalRounds = ALL_CATEGORIES.length
+  const totalRounds = getActiveCategories(mode).length
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {

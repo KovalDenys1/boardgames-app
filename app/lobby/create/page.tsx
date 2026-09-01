@@ -21,10 +21,13 @@ import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type L
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
+type YahtzeeGameMode = 'classic' | 'short'
 
 type GameSettings = {
   hasTurnTimer?: boolean
   hasGameModes?: boolean
+  gameModeOptions?: YahtzeeGameMode[]
+  defaultGameMode?: YahtzeeGameMode
   hasRoundSelection?: boolean
   hasDifficultySelection?: boolean
   turnTimerOptions?: number[]
@@ -60,7 +63,9 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
             hasTurnTimer: !!g.lobbyCreateConfig.turnTimer,
             turnTimerOptions: g.lobbyCreateConfig.turnTimer?.options,
             defaultTurnTimer: g.lobbyCreateConfig.turnTimer?.default,
-            hasGameModes: false,
+            hasGameModes: !!g.lobbyCreateConfig.gameModes,
+            gameModeOptions: g.lobbyCreateConfig.gameModes?.options as YahtzeeGameMode[] | undefined,
+            defaultGameMode: (g.lobbyCreateConfig.gameModes?.default as YahtzeeGameMode | undefined) ?? 'classic',
             hasRoundSelection: !!g.lobbyCreateConfig.rounds,
             roundOptions: g.lobbyCreateConfig.rounds?.options,
             defaultRounds: g.lobbyCreateConfig.rounds?.default ?? null,
@@ -105,6 +110,7 @@ function CreateLobbyPage() {
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     allowSpectators: false,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60,
+    yahtzeeMode: GAME_INFO[selectedGameType].settings.defaultGameMode ?? 'classic',
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
     gameType: selectedGameType as GameType,
@@ -128,6 +134,7 @@ function CreateLobbyPage() {
         ...prev,
         maxPlayers: gameInfo.defaultMaxPlayers,
         turnTimer: gameInfo.settings.defaultTurnTimer || 60,
+        yahtzeeMode: gameInfo.settings.defaultGameMode ?? 'classic',
         ticTacToeRounds: gameInfo.settings.defaultRounds ?? null,
         memoryDifficulty: gameInfo.settings.defaultDifficulty ?? 'easy',
         gameType: selectedGameType,
@@ -209,6 +216,7 @@ function CreateLobbyPage() {
           boardSize,
         } : {}),
         ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
+        ...(formData.gameType === 'yahtzee' ? { yahtzeeMode: formData.yahtzeeMode } : {}),
       }
 
       const res = await fetchWithGuest('/api/lobby', {
@@ -758,11 +766,25 @@ function CreateLobbyPage() {
                   </div>
                 )}
 
+                {gameInfo.settings.hasGameModes && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-bd-ink">🎲 {t('lobby.create.gameMode')}</label>
+                    <div className="flex gap-2">
+                      {(gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map((m) => (
+                        <button key={m} type="button" onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
+                          {m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-bd-ink-muted">{t('lobby.create.gameModeShortHelper')}</p>
+                  </div>
+                )}
+
                 {gameInfo.settings.hasTurnTimer && (
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-bd-ink">⏱ {t('lobby.create.turnTimer')}</label>
                     <div className="flex gap-2">
-                      {[30, 60, 90, 120].map((s) => (
+                      {(gameInfo.settings.turnTimerOptions ?? [30, 60, 90, 120]).map((s) => (
                         <button key={s} type="button" onClick={() => setFormData({ ...formData, turnTimer: s })} className={chipOpt(formData.turnTimer === s)}>{s}s</button>
                       ))}
                     </div>

@@ -171,6 +171,9 @@ const no = {
       difficultyHard: 'Vanskelig',
       gameMode: 'Spillmodus',
       gameModeHelper: 'Rask modus, kort modus og mods kommer snart!',
+      gameModeClassic: 'Klassisk (15 runder)',
+      gameModeShort: 'Kort (9 runder)',
+      gameModeShortHelper: 'Kort modus spiller kun nedre seksjon — par, straighter, hus, Yatzy. Omtrent 40 % raskere.',
       comingSoon: 'Kommer snart',
       password: 'Passord',
       passwordPlaceholder: 'La stå tomt for offentlig lobby',
@@ -1955,6 +1958,7 @@ const no = {
     players: 'spillere',
     vsBots: 'Mot boter',
     withPlayers: 'Med spillere',
+    needsGroup: 'Krever {{count}}+ spillere',
     waitingForPlayers: 'Rom opprettet — venter på spillere!',
   },
   leaderboard: {

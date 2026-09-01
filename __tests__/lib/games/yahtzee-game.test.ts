@@ -471,4 +471,96 @@ describe('YahtzeeGame', () => {
       expect(calculateScore(dice, 'chance')).toBe(15)
     })
   })
+
+  describe('short mode (#779)', () => {
+    const SHORT_SCORECARD = {
+      onePair: 6,
+      twoPairs: 8,
+      threeOfKind: 15,
+      fourOfKind: 20,
+      fullHouse: 25,
+      smallStraight: 30,
+      largeStraight: 40,
+      yahtzee: 50,
+      // chance is missing
+    }
+
+    function createShortGame(): YahtzeeGame {
+      const shortGame = new YahtzeeGame('short-game', {
+        maxPlayers: 4,
+        minPlayers: 1,
+        rules: { mode: 'short' },
+      })
+      testPlayers.forEach(player => shortGame.addPlayer(player))
+      shortGame.startGame()
+      return shortGame
+    }
+
+    it('defaults to classic mode without rules', () => {
+      expect(game.getMode()).toBe('classic')
+    })
+
+    it('reads short mode from config.rules and persists it in game data', () => {
+      const shortGame = createShortGame()
+      expect(shortGame.getMode()).toBe('short')
+      expect((shortGame.getState().data as YahtzeeGameData).mode).toBe('short')
+    })
+
+    it('mode survives restoreState round-trip', () => {
+      const shortGame = createShortGame()
+      const restored = new YahtzeeGame('restored')
+      restored.restoreState(shortGame.getState())
+      expect(restored.getMode()).toBe('short')
+    })
+
+    it('rejects scoring an upper-section category in short mode', () => {
+      const shortGame = createShortGame()
+      const data = shortGame.getState().data as YahtzeeGameData
+      data.rollsLeft = 2
+      data.dice = [1, 1, 1, 2, 3]
+
+      const upperMove = {
+        playerId: 'player1',
+        type: 'score' as const,
+        data: { category: 'ones' as YahtzeeCategory },
+        timestamp: new Date(),
+      }
+      expect(shortGame.validateMove(upperMove)).toBe(false)
+
+      const lowerMove = {
+        playerId: 'player1',
+        type: 'score' as const,
+        data: { category: 'onePair' as YahtzeeCategory },
+        timestamp: new Date(),
+      }
+      expect(shortGame.validateMove(lowerMove)).toBe(true)
+    })
+
+    it('ends the game after the 9 lower-section categories are filled', () => {
+      const shortGame = createShortGame()
+      const data = shortGame.getState().data as YahtzeeGameData
+      data.rollsLeft = 2
+      data.scores[0] = { ...SHORT_SCORECARD }
+      data.scores[1] = { ...SHORT_SCORECARD, chance: 15 }
+
+      expect(shortGame.checkWinCondition()).toBeNull()
+
+      shortGame.processMove({
+        playerId: 'player1',
+        type: 'score' as const,
+        data: { category: 'chance' as YahtzeeCategory },
+        timestamp: new Date(),
+      })
+
+      expect(shortGame.checkWinCondition()).not.toBeNull()
+    })
+
+    it('getRound counts only active categories', () => {
+      const shortGame = createShortGame()
+      const data = shortGame.getState().data as YahtzeeGameData
+      data.scores[0] = { onePair: 6, fullHouse: 25 }
+      expect(shortGame.getRound()).toBe(3)
+    })
+  })
+
 })

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
-import { ALL_CATEGORIES, YahtzeeCategory } from '@/lib/yahtzee'
+import { YahtzeeCategory, getActiveCategories } from '@/lib/yahtzee'
 import {
   formatCompactDuration,
   formatGameTypeLabel,
@@ -168,7 +168,8 @@ export default function GameResultsModal({
     if (!game || game.gameType !== 'yahtzee' || !game.state?.gameData) return null
 
     const gameData = game.state.gameData as Record<string, unknown>
-    const categories: YahtzeeCategory[] = [...ALL_CATEGORIES]
+    const yahtzeeMode = gameData.mode === 'short' ? 'short' as const : 'classic' as const
+    const categories: YahtzeeCategory[] = [...getActiveCategories(yahtzeeMode)]
 
     return (
       <div style={cardStyle}>

@@ -171,6 +171,9 @@ const en = {
       difficultyHard: 'Hard',
       gameMode: 'Game Mode',
       gameModeHelper: 'Fast mode, short mode, and mods coming soon!',
+      gameModeClassic: 'Classic (15 rounds)',
+      gameModeShort: 'Short (9 rounds)',
+      gameModeShortHelper: 'Short mode plays the lower section only — pairs, straights, full house, Yahtzee. About 40% faster.',
       comingSoon: 'Coming Soon',
       password: 'Password',
       passwordPlaceholder: 'Leave empty for public lobby',
@@ -1966,6 +1969,7 @@ const en = {
     players: 'players',
     vsBots: 'Vs bots',
     withPlayers: 'With players',
+    needsGroup: 'Needs {{count}}+ players',
     waitingForPlayers: 'Room created — waiting for players to join!',
   },
   leaderboard: {
