@@ -108,6 +108,24 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>7a. Advertising</h2>
+              <p className="mb-3">
+                We show ads from third-party ad networks (including Google AdSense) to users without a Premium subscription.
+                These vendors use cookies and similar technologies to serve ads, including ads based on your prior visits to
+                this and other websites. Google&apos;s use of advertising cookies enables it and its partners to serve
+                personalised ads; where required (for example in the EEA and UK), personalised ads are only shown with your consent,
+                and non-personalised ads are shown otherwise.
+              </p>
+              <p className="mb-3">
+                You can opt out of personalised advertising by visiting{' '}
+                <a href="https://adssettings.google.com" className="underline" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>{' '}
+                or{' '}
+                <a href="https://www.aboutads.info/choices" className="underline" target="_blank" rel="noopener noreferrer">www.aboutads.info</a>.
+                Premium subscribers do not see ads.
+              </p>
+            </section>
+
+            <section>
               <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>8. Children&apos;s Privacy</h2>
               <p>
                 Boardly is not intended for users under 13 years of age. We do not knowingly collect personal
