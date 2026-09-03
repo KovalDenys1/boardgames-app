@@ -5,8 +5,13 @@ import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { getStripe, PREMIUM_PRICE_ID } from '@/lib/stripe'
 import { apiLogger } from '@/lib/logger'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
 const log = apiLogger('/api/stripe/checkout')
+// cancel and reactivate were limited from the start; checkout was not, so an
+// authenticated caller could loop it into unbounded Stripe checkout sessions
+// and, on the stale-customer path, unbounded customer objects (#805).
+const limiter = rateLimit(rateLimitPresets.api)
 
 /**
  * True if a stored stripeCustomerId no longer resolves on Stripe's side —
@@ -54,6 +59,9 @@ async function recreateStripeCustomer(user: { id: string; email: string | null }
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitResult = await limiter(req)
+  if (rateLimitResult) return rateLimitResult
+
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

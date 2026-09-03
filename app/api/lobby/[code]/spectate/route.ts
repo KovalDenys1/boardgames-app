@@ -29,6 +29,7 @@ export async function GET(
       maxPlayers: true,
       allowSpectators: true,
       maxSpectators: true,
+      password: true,
       spectatorCount: true,
       turnTimer: true,
       isActive: true,
@@ -90,6 +91,18 @@ export async function GET(
   if (!isAdminView) {
     if (!lobby.allowSpectators) {
       return NextResponse.json({ error: 'Spectator mode is disabled for this lobby' }, { status: 403 })
+    }
+
+    // Joining a password-protected lobby requires the password; spectating did
+    // not check it at all, so anyone guessing the 4-digit code could watch a
+    // lobby its owner had deliberately closed off. Spectators have no way to
+    // supply a password yet, so the restricted lobby simply cannot be watched —
+    // a prompt for them would be the nicer follow-up.
+    if (lobby.password) {
+      return NextResponse.json(
+        { error: 'Spectator mode is disabled for this lobby' },
+        { status: 403 }
+      )
     }
 
     if (lobby.maxSpectators > 0 && lobby.spectatorCount >= lobby.maxSpectators) {

@@ -37,7 +37,7 @@ export async function PATCH(
 
   const lobby = await prisma.lobbies.findUnique({
     where: { code },
-    select: { id: true, allowSpectators: true },
+    select: { id: true, allowSpectators: true, maxSpectators: true },
   })
 
   if (!lobby) {
@@ -48,9 +48,17 @@ export async function PATCH(
     return NextResponse.json({ error: 'Spectators not allowed' }, { status: 403 })
   }
 
+  // The count is a client report, so it cannot be trusted to be honest — and an
+  // inflated one is not harmless: the spectate route refuses everyone once the
+  // stored count reaches maxSpectators, so any caller could lock a lobby's
+  // spectators out by reporting a large number (#804). Clamp to the lobby's own
+  // limit, which is the highest value that can ever be legitimate.
+  const reported = parsed.data.count
+  const count = lobby.maxSpectators > 0 ? Math.min(reported, lobby.maxSpectators) : reported
+
   await prisma.lobbies.update({
     where: { id: lobby.id },
-    data: { spectatorCount: parsed.data.count },
+    data: { spectatorCount: count },
   })
 
   return NextResponse.json({ success: true })
