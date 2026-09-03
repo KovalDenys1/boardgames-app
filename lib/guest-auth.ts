@@ -4,6 +4,23 @@ import jwt, { SignOptions } from 'jsonwebtoken'
 const GUEST_TOKEN_ISSUER = 'boardly-guest'
 const DEFAULT_GUEST_TOKEN_TTL = '12h'
 
+/**
+ * Long-lived proof of *who* a guest is, separate from the short-lived token
+ * that authorises their requests.
+ *
+ * The session token lasts 12h, and once it expired the guest session route had
+ * nothing to recognise the person by and minted a brand new guest — so a guest
+ * who came back the next day was a different user and cross-day retention could
+ * not be measured at all (#818). This token carries identity only: it is signed
+ * with a distinct type, so presenting it where a session token is expected
+ * fails, and it can never be used to authorise a request on its own.
+ *
+ * It is still a bearer credential, which is why it is signed rather than being
+ * a bare guest id — a plain id in localStorage would let anyone who learned one
+ * take over that guest.
+ */
+const DEFAULT_GUEST_IDENTITY_TTL = '180d'
+
 interface GuestJwtPayload extends jwt.JwtPayload {
   type?: string
   guestName?: string
@@ -46,6 +63,33 @@ export function createGuestToken(guestId: string, guestName: string): string {
       expiresIn,
     }
   )
+}
+
+export function createGuestIdentityToken(guestId: string): string {
+  const expiresIn = (process.env.GUEST_IDENTITY_EXPIRES_IN ||
+    DEFAULT_GUEST_IDENTITY_TTL) as SignOptions['expiresIn']
+
+  return jwt.sign(
+    { type: 'guest-identity', version: 1 },
+    getGuestJwtSecret(),
+    { subject: guestId, issuer: GUEST_TOKEN_ISSUER, expiresIn }
+  )
+}
+
+/** Resolves the guest this identity token belongs to, or null. */
+export function verifyGuestIdentityToken(token: string): string | null {
+  try {
+    const decoded = jwt.verify(token, getGuestJwtSecret(), {
+      issuer: GUEST_TOKEN_ISSUER,
+    }) as GuestJwtPayload
+
+    // A session token must not be accepted here and vice versa.
+    if (decoded.type !== 'guest-identity') return null
+
+    return typeof decoded.sub === 'string' ? decoded.sub : null
+  } catch {
+    return null
+  }
 }
 
 export function verifyGuestToken(token: string): GuestTokenClaims | null {

@@ -6,6 +6,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { hasBotSupport } from '@/lib/game-registry'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
+import { recordLobbyParticipation } from '@/lib/lobby-participation'
 
 export async function POST(
   request: Request,
@@ -108,6 +109,13 @@ export async function POST(
           isReady: true,
           score: 0
         }
+      })
+      await recordLobbyParticipation({
+        lobbyId: lobby.id,
+        lobbyCode: lobby.code,
+        gameType: lobby.gameType,
+        userId: botUser.id,
+        isBot: true,
       })
     } catch (error) {
       // If another request added the same bot concurrently, treat as idempotent success.

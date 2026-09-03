@@ -29,6 +29,7 @@ import {
   stringifyPersistedGameState,
   toPersistedGameStateInput,
 } from '@/lib/persisted-game-state'
+import { recordLobbyParticipation } from '@/lib/lobby-participation'
 
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const UNLIMITED_SPECTATORS_VALUE = 0
@@ -705,6 +706,16 @@ export async function POST(
         if (result.alreadyJoined) {
           return NextResponse.json({ game, player })
         }
+
+        // Outside the transaction on purpose: an analytics write must never be
+        // able to roll back or delay someone joining a game (#816).
+        await recordLobbyParticipation({
+          lobbyId: lobby.id,
+          lobbyCode: lobby.code,
+          gameType: toPersistedGameType(runtimeGameType),
+          userId: player.userId,
+          isGuest: !!player.user?.isGuest,
+        })
 
         break
       } catch (error) {

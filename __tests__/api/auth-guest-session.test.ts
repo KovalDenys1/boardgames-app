@@ -29,8 +29,10 @@ jest.mock('@/lib/rate-limit', () => ({
 jest.mock('@/lib/guest-auth', () => ({
   createGuestId: jest.fn(),
   createGuestToken: jest.fn(),
+  createGuestIdentityToken: jest.fn(() => 'identity-token'),
   getGuestTokenFromRequest: jest.fn(),
   verifyGuestToken: jest.fn(),
+  verifyGuestIdentityToken: jest.fn(() => null),
 }))
 
 jest.mock('@/lib/guest-helpers', () => ({
@@ -100,6 +102,7 @@ describe('POST /api/auth/guest-session', () => {
 
     expect(response.status).toBe(200)
     expect(payload).toEqual({
+      guestIdentityToken: 'identity-token',
       guestId: 'guest-user-1',
       guestName: 'Guest_Name-2',
       guestToken: 'guest-token-1',
