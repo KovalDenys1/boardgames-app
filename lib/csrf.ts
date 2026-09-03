@@ -75,7 +75,10 @@ function isOriginAllowed(requestOrigin: string, allowedOrigin: string): boolean 
  * cryptographically. Matching is exact, so a path merely starting with one of
  * these is not exempt.
  */
-const SIGNATURE_AUTHENTICATED_WEBHOOK_PATHS = new Set(['/api/stripe/webhook'])
+const SIGNATURE_AUTHENTICATED_WEBHOOK_PATHS = new Set([
+  '/api/stripe/webhook',
+  '/api/resend/inbound',
+])
 
 export function isSignatureAuthenticatedWebhook(pathname: string): boolean {
   return SIGNATURE_AUTHENTICATED_WEBHOOK_PATHS.has(pathname)
