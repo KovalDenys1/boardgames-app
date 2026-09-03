@@ -1117,6 +1117,7 @@ const uk: Translation = {
       botAutoAddTip: 'Бот буде автоматично доданий, якщо ви почнете гру наодинці',
       needMorePlayers: 'Потрібен ще {{count}} гравець, щоб почати',
       needMorePlayers_other: 'Потрібно ще {{count}} гравців, щоб почати',
+      startSoloTip: 'Можна почати самому — чекати не потрібно',
       tip: 'Підказка',
       waitingForHost: 'Очікуємо, поки хост почне...',
       host: 'Хост',
