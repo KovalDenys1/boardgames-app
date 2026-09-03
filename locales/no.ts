@@ -1115,6 +1115,7 @@ const no = {
       botAutoAddTip: 'En bot blir automatisk lagt til hvis du starter alene',
       needMorePlayers: 'Trenger {{count}} spiller til for å starte',
       needMorePlayers_other: 'Trenger {{count}} spillere til for å starte',
+      startSoloTip: 'Du kan starte alene — ingen grunn til å vente',
       tip: 'Tips',
       waitingForHost: 'Venter på at verten skal starte...',
       host: 'Vert',
