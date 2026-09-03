@@ -196,10 +196,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Boardly" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icons/icon-192.svg" sizes="192x192" type="image/svg+xml" />
-        <link rel="icon" href="/icons/icon-512.svg" sizes="512x512" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <link rel="mask-icon" href="/icons/icon-maskable-512.svg" color="#1F1B16" />
+        <link rel="icon" href="/icons/icon-192.svg?v=2" sizes="192x192" type="image/svg+xml" />
+        <link rel="icon" href="/icons/icon-512.svg?v=2" sizes="512x512" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=2" />
+        <link rel="mask-icon" href="/icons/icon-maskable-512.svg?v=2" color="#1F1B16" />
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
