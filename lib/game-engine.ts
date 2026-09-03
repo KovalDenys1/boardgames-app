@@ -189,6 +189,11 @@ export abstract class GameEngine {
 
     this.processMove(move);
     this.state.updatedAt = new Date();
+    // Every accepted move counts as activity, not only one that hands the turn
+    // over. advanceTurnIndex() used to be the sole writer, so games that do not
+    // rotate a turn index per action — guess the spy, alias — never advanced
+    // lastMoveAt at all and their drop-off could not be located (#815).
+    this.state.lastMoveAt = Date.now();
 
     // Check for winner
     const winner = this.checkWinCondition();

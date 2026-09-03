@@ -110,11 +110,13 @@ describe('leave-behavior metadata (#759)', () => {
     }
   })
 
-  it('yahtzee lobbyCreateConfig declares game modes (#779)', () => {
+  it('yahtzee lobbyCreateConfig defaults to short mode (#779, #812)', () => {
+    // Classic runs 15 rounds and no game has ever been finished from the
+    // mid-game, so short is the default and classic an explicit opt-in.
     const yahtzee = getCatalogGames().find((g) => g.gameType === 'yahtzee')
     expect(yahtzee?.lobbyCreateConfig?.gameModes).toEqual({
-      options: ['classic', 'short'],
-      default: 'classic',
+      options: ['short', 'classic'],
+      default: 'short',
     })
   })
 
