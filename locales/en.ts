@@ -1115,6 +1115,7 @@ const en = {
       botAutoAddTip: 'A bot will be automatically added if you start alone',
       needMorePlayers: 'Need {{count}} more player to start',
       needMorePlayers_other: 'Need {{count}} more players to start',
+      startSoloTip: 'You can start on your own — no need to wait',
       tip: 'Tip',
       waitingForHost: 'Waiting for host to start...',
       host: 'Host',

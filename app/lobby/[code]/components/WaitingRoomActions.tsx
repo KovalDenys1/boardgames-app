@@ -30,6 +30,7 @@ export default function WaitingRoomActions({
   const canAddMorePlayers = playerCount < maxPlayers
   const canStartWithAutoBot = supportsBots && !hasBot && playerCount > 0 && playerCount < minPlayers && canAddMorePlayers
   const canStartImmediately = playerCount >= minPlayers || canStartWithAutoBot
+  const isAloneAndCanStart = playerCount === 1 && canStartImmediately
   const creatorName = lobby?.creator?.username || t('lobby.ownerFallback')
 
   if (startingGame) {
@@ -90,6 +91,16 @@ export default function WaitingRoomActions({
       {!canStartImmediately && (
         <p className="text-center text-xs text-bd-sun-deep">
           {t('game.ui.needMorePlayers', { count: Math.max(minPlayers - playerCount, 0) })}
+        </p>
+      )}
+
+      {/* A host sitting alone can already start — a bot is added automatically,
+          or the game allows one player. Nothing said so, so 193 of 221 lobbies
+          that never started had exactly one person in them, and not one of them
+          used the add-bot action buried in the empty player slot (#814). */}
+      {isAloneAndCanStart && (
+        <p className="text-center text-xs font-semibold text-bd-mint-deep">
+          {canStartWithAutoBot ? t('game.ui.botAutoAddTip') : t('game.ui.startSoloTip')}
         </p>
       )}
 
