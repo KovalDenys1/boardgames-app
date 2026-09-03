@@ -10,28 +10,58 @@ async function updateSubscriptionState(
   customerId: string,
   subscriptionId: string | null,
   until: Date | null,
-  cancelAtPeriodEnd: boolean
+  cancelAtPeriodEnd: boolean,
+  fallbackUserId?: string | null
 ) {
-  // stripeCustomerId is unique, so this touches at most one row. A zero-row
-  // result means we received a subscription for a customer we don't recognise —
-  // previously that returned 200 and the entitlement was silently dropped.
-  const result = await prisma.users.updateMany({
-    where: { stripeCustomerId: customerId },
-    data: {
-      premiumUntil: until,
-      stripeSubscriptionId: subscriptionId,
-      premiumCancelAtPeriod: cancelAtPeriodEnd,
-    },
-  })
-
-  if (result.count === 0) {
-    log.error('Stripe subscription event matched no user', undefined, {
-      customerId,
-      subscriptionId,
-    })
+  const data = {
+    premiumUntil: until,
+    stripeSubscriptionId: subscriptionId,
+    premiumCancelAtPeriod: cancelAtPeriodEnd,
   }
 
-  return result.count
+  // stripeCustomerId is unique, so this touches at most one row.
+  const result = await prisma.users.updateMany({
+    where: { stripeCustomerId: customerId },
+    data,
+  })
+
+  if (result.count > 0) {
+    return result.count
+  }
+
+  // The customer id on the event does not match any row. That happens when
+  // checkout recreated the Stripe customer after the stored id went stale, so
+  // events for the old id no longer resolve. Stripe carries our own userId in
+  // the subscription metadata, so recover from it and repair the stored id
+  // rather than dropping a paid customer's entitlement.
+  if (fallbackUserId) {
+    const repaired = await prisma.users.updateMany({
+      where: { id: fallbackUserId },
+      data: { ...data, stripeCustomerId: customerId },
+    })
+
+    if (repaired.count > 0) {
+      log.warn('Recovered Stripe event via subscription metadata userId', {
+        customerId,
+        subscriptionId,
+        userId: fallbackUserId,
+      })
+      return repaired.count
+    }
+  }
+
+  log.error('Stripe subscription event matched no user', undefined, {
+    customerId,
+    subscriptionId,
+    fallbackUserId,
+  })
+
+  return 0
+}
+
+function metadataUserId(subscription: Stripe.Subscription): string | null {
+  const userId = subscription.metadata?.userId
+  return typeof userId === 'string' && userId.length > 0 ? userId : null
 }
 
 function resolveSubscriptionEnd(subscription: Stripe.Subscription): Date | null {
@@ -45,12 +75,20 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const sub = event.data.object as Stripe.Subscription
-      await updateSubscriptionState(
+      const updated = await updateSubscriptionState(
         sub.customer as string,
         sub.id,
         resolveSubscriptionEnd(sub),
-        sub.cancel_at_period_end
+        sub.cancel_at_period_end,
+        metadataUserId(sub)
       )
+      // Throwing releases the idempotency claim below and answers Stripe with a
+      // 500 so it retries. Returning 200 here would tell Stripe the entitlement
+      // was applied and burn the event id, leaving a paying customer without
+      // Premium and no way for the delivery to be reprocessed.
+      if (updated === 0) {
+        throw new Error(`Subscription event matched no user (customer ${sub.customer})`)
+      }
       log.info(`Subscription ${event.type}`, {
         customerId: sub.customer,
         status: sub.status,
@@ -61,7 +99,16 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
 
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription
-      await updateSubscriptionState(sub.customer as string, null, null, false)
+      // Deliberately does not throw on a zero-row result: if no user holds this
+      // customer id there is no entitlement left to revoke, and retrying for
+      // days would never succeed.
+      await updateSubscriptionState(
+        sub.customer as string,
+        null,
+        null,
+        false,
+        metadataUserId(sub)
+      )
       log.info('Subscription deleted', { customerId: sub.customer })
       break
     }
@@ -83,12 +130,16 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       // Re-read the subscription so the period end comes from Stripe rather than
       // being inferred from the checkout session.
       const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
-      await updateSubscriptionState(
+      const granted = await updateSubscriptionState(
         customerId,
         subscriptionId,
         resolveSubscriptionEnd(subscription),
-        subscription.cancel_at_period_end
+        subscription.cancel_at_period_end,
+        metadataUserId(subscription) ?? session.metadata?.userId ?? null
       )
+      if (granted === 0) {
+        throw new Error(`Checkout session matched no user (customer ${customerId})`)
+      }
       log.info('Checkout session completed', { customerId, subscriptionId })
       break
     }
