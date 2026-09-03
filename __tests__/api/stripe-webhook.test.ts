@@ -31,6 +31,7 @@ function subscriptionEvent(overrides = {}) {
   return {
     id: 'evt_1',
     type: 'customer.subscription.updated',
+    created: Math.floor(Date.now() / 1000),
     data: {
       object: {
         id: 'sub_1',
@@ -115,6 +116,37 @@ describe('POST /api/stripe/webhook — entitlement must never be silently droppe
     const res = await POST(request())
 
     // Nothing left to revoke, so retrying for days would never succeed.
+    expect(res.status).toBe(200)
+    expect(prisma.stripeWebhookEvents.delete).not.toHaveBeenCalled()
+  })
+
+  it('never revokes a live subscription when a superseded customer id is cancelled', async () => {
+    // The regression this guards: the user already moved to a new Stripe
+    // customer and is paying on a new subscription; the OLD customer's
+    // subscription is cancelled later and its event still carries the same
+    // metadata.userId. Recovering from metadata here would clear a live
+    // entitlement and rewrite stripeCustomerId back to the dead id.
+    event = subscriptionEvent()
+    event.type = 'customer.subscription.deleted'
+    prisma.users.updateMany.mockResolvedValue({ count: 0 })
+
+    const res = await POST(request())
+
+    expect(res.status).toBe(200)
+    // Only the customer-id lookup ran; the metadata fallback must not fire.
+    expect(prisma.users.updateMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops retrying an orphaned event once a retry can no longer help', async () => {
+    // A premium account deleted without cancelling its Stripe subscription
+    // produces events that will never resolve. Retrying each for Stripe's full
+    // window risks the endpoint being disabled for every customer.
+    event = subscriptionEvent()
+    event.created = Math.floor(Date.now() / 1000) - 60 * 60
+    prisma.users.updateMany.mockResolvedValue({ count: 0 })
+
+    const res = await POST(request())
+
     expect(res.status).toBe(200)
     expect(prisma.stripeWebhookEvents.delete).not.toHaveBeenCalled()
   })
