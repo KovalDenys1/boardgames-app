@@ -181,6 +181,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
         </div>
       </div>
     ),
-    { width: 1200, height: 630 }
+    {
+      width: 1200,
+      height: 630,
+      // Unauthenticated, and every distinct 4-digit code is a fresh Prisma query
+      // plus a full satori render on the nodejs runtime. Without caching the
+      // whole keyspace can be walked for compute cost (#805). Link previews are
+      // fetched repeatedly by crawlers and chat clients, so this also removes
+      // most of the real traffic.
+      headers: {
+        'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    }
   )
 }
