@@ -270,9 +270,28 @@ export default function SpectatorLobbyPage() {
       // window.location.search may not reflect the new URL yet during the
       // synchronous render pass, but is always settled by the time effects run.
       const adminViewRequested = new URLSearchParams(window.location.search).get('admin') === '1'
-      const adminQuery = adminViewRequested ? '?adminView=true' : ''
-      const res = await fetchWithGuest(`/api/lobby/${code}/spectate${adminQuery}`, { cache: 'no-store' })
-      const json = await res.json()
+
+      const request = (asAdmin: boolean) =>
+        fetchWithGuest(`/api/lobby/${code}/spectate${asAdmin ? '?adminView=true' : ''}`, {
+          cache: 'no-store',
+        })
+
+      let res = await request(adminViewRequested)
+      let json = await res.json()
+
+      // An admin reaching this page from an ordinary Watch button never asked
+      // for admin view, so a lobby with spectating disabled or full used to
+      // dead-end them. Retry once as admin instead of maintaining two separate
+      // Watch buttons; the API re-checks the role against the database, so a
+      // stale client-side role only costs one wasted request.
+      const isAdmin = session?.user?.role === 'admin'
+      const retryableAsAdmin =
+        json?.code === 'SPECTATOR_LIMIT_REACHED' || res.status === 403
+      if (!res.ok && !adminViewRequested && isAdmin && retryableAsAdmin) {
+        res = await request(true)
+        json = await res.json()
+      }
+
       if (!res.ok) {
         if (json?.code === 'PLAYER_IN_GAME') {
           setIsPlayerInGame(true)
@@ -295,7 +314,7 @@ export default function SpectatorLobbyPage() {
     } finally {
       setLoading(false)
     }
-  }, [code])
+  }, [code, session?.user?.role])
 
   useEffect(() => {
     void loadSnapshot()
@@ -456,7 +475,7 @@ export default function SpectatorLobbyPage() {
 
   if (isPlayerInGame) {
     return (
-      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             🎮
@@ -476,7 +495,7 @@ export default function SpectatorLobbyPage() {
 
   if (isLimitReached) {
     return (
-      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             👥
@@ -497,7 +516,7 @@ export default function SpectatorLobbyPage() {
 
   if (loading) {
     return (
-      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card flex w-full max-w-sm flex-col items-center gap-4 p-8 text-center">
           <LoadingSpinner size="lg" />
           <div>
@@ -511,7 +530,7 @@ export default function SpectatorLobbyPage() {
 
   if (!data) {
     return (
-      <div className="bd-page bd-screen flex min-h-[var(--game-h)] items-center justify-center p-6">
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             👀
