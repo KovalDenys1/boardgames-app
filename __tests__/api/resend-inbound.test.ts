@@ -128,10 +128,18 @@ describe('POST /api/resend/inbound', () => {
     expect(sent.html).toBe('<p>help</p>')
   })
 
-  it('returns 500 so Resend retries when fetching the email fails', async () => {
+  it('returns 500 so Resend retries when fetching the email fails transiently', async () => {
     global.fetch = jest.fn().mockResolvedValueOnce({ ok: false, status: 502 })
     const res = await POST(signedRequest(receivedEvent))
     expect(res.status).toBe(500)
+  })
+
+  it('acknowledges a permanent failure instead of replaying it forever', async () => {
+    // A 4xx from Resend's own API will fail identically on every retry, so
+    // asking for one just schedules the same error (#824).
+    global.fetch = jest.fn().mockResolvedValueOnce({ ok: false, status: 404 })
+    const res = await POST(signedRequest(receivedEvent))
+    expect(res.status).toBe(200)
   })
 
   it('returns 500 so Resend retries when forwarding fails', async () => {

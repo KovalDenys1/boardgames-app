@@ -47,17 +47,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await prisma.pushSubscriptions.deleteMany({ where: { id: { in: oldest.map((s) => s.id) } } })
   }
 
-  await prisma.pushSubscriptions.upsert({
-    where: { endpoint },
-    create: {
-      userId,
-      endpoint,
-      p256dh,
-      auth,
-      userAgent: req.headers.get('user-agent') ?? undefined,
-    },
-    update: { p256dh, auth, updatedAt: new Date() },
+  // Keyed on endpoint alone, the update path would let anyone who learned
+  // another user's endpoint overwrite that subscription's encryption keys and
+  // silently break their notifications. Scope the update to the caller and
+  // reassign the row if the same endpoint reappears under a new user, which is
+  // what happens when a device is handed over or a browser profile is reused.
+  const updated = await prisma.pushSubscriptions.updateMany({
+    where: { endpoint, userId },
+    data: { p256dh, auth, updatedAt: new Date() },
   })
+
+  if (updated.count === 0) {
+    await prisma.pushSubscriptions.deleteMany({ where: { endpoint } })
+    await prisma.pushSubscriptions.create({
+      data: {
+        userId,
+        endpoint,
+        p256dh,
+        auth,
+        userAgent: req.headers.get('user-agent') ?? undefined,
+      },
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

@@ -34,6 +34,14 @@ function verifySignature(req: NextRequest, body: string): boolean {
   })
 }
 
+// Resend retries on a non-2xx. A 4xx from its own API is permanent — a deleted
+// message, a malformed forward — so answering 500 there just replays the same
+// failure on a schedule. Only ask for a retry when the failure could pass
+// (network, 429, 5xx) (#824).
+function isTransient(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text()
 
@@ -70,8 +78,10 @@ export async function POST(req: NextRequest) {
       emailId: event.data.email_id,
       status: emailRes.status,
     })
-    // 500 so Resend retries the delivery.
-    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Fetch failed' },
+      { status: isTransient(emailRes.status) ? 500 : 200 }
+    )
   }
 
   const email: {
@@ -103,7 +113,10 @@ export async function POST(req: NextRequest) {
       emailId: event.data.email_id,
       status: sendRes.status,
     })
-    return NextResponse.json({ error: 'Forward failed' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Forward failed' },
+      { status: isTransient(sendRes.status) ? 500 : 200 }
+    )
   }
 
   log.info('Inbound email forwarded', {
