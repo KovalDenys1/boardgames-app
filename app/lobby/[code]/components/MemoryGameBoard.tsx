@@ -675,6 +675,7 @@ export default function MemoryGameBoard({
       meta={`${matchedPairs}/${totalPairs}`}
       secs={timeLeft}
       turnTimerLimit={turnTimerLimit}
+      isYourTurn={!isSpectator && isMyTurn}
       barColor="var(--bd-mint)"
       isSpectator={isSpectator}
     />

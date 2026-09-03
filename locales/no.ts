@@ -1116,6 +1116,7 @@ const no = {
       needMorePlayers: 'Trenger {{count}} spiller til for å starte',
       needMorePlayers_other: 'Trenger {{count}} spillere til for å starte',
       startSoloTip: 'Du kan starte alene — ingen grunn til å vente',
+      firstMoveNudge: 'Din tur — velg et trekk for å fortsette',
       tip: 'Tips',
       waitingForHost: 'Venter på at verten skal starte...',
       host: 'Vert',

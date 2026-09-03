@@ -873,6 +873,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             meta={isSpectator ? `#${gameData.moveCount + 1}` : t('games.tictactoe.game.moveNum', { num: gameData.moveCount + 1 })}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
+            isYourTurn={!isSpectator && isMyTurn()}
             barColor={gameData.currentSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'}
             leadingIcon={<TttMark mark={gameData.currentSymbol} size={22} />}
             isSpectator={isSpectator}
