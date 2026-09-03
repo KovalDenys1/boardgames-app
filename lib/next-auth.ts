@@ -227,16 +227,15 @@ export const authOptions: NextAuthOptions = {
               return '/suspended'
             }
 
-            // A user with this email already exists — allow sign-in and let
-            // PrismaAdapter link the OAuth account to the existing user.
-            // Also ensure emailVerified is set for convenience.
-            await prisma.users.update({
-              where: { id: existingUserByEmail.id },
-              data: { emailVerified: existingUserByEmail.emailVerified ?? new Date() }
-            })
-
+            // Deliberately does not write emailVerified here. This branch is
+            // reached on nothing more than an email match, before any linking is
+            // decided, and no provider sets allowDangerousEmailAccountLinking —
+            // so the sign-in that follows actually fails with
+            // OAuthAccountNotLinked. Writing from here let anyone who created a
+            // provider account with someone else's address mark that stranger's
+            // account as verified, defeating our own proof of ownership (#802).
             const log = apiLogger('OAuth signIn')
-            log.info('OAuth sign-in allowed — email exists, will link to existing user', {
+            log.info('OAuth sign-in reached an existing account with this email', {
               existingUserId: existingUserByEmail.id,
               provider: account.provider,
               email: normalizedOAuthEmail
@@ -348,11 +347,26 @@ export const authOptions: NextAuthOptions = {
       if (token.id && (typeof lastAvatarSync !== 'number' || Date.now() - lastAvatarSyncTime > THIRTY_MINUTES)) {
         const dbUser = await prisma.users.findUnique({
           where: { id: String(token.id) },
-          select: { avatarUrl: true, username: true, image: true, emailVerified: true },
+          // role and suspended are re-read here on purpose: proxy.ts decides
+          // admin access and the suspension redirect from these claims, and a
+          // 30-day session would otherwise keep asserting them long after the
+          // database changed (#803).
+          select: {
+            avatarUrl: true,
+            username: true,
+            image: true,
+            emailVerified: true,
+            role: true,
+            suspended: true,
+          },
         })
         token.picture = dbUser?.avatarUrl ?? dbUser?.image ?? null
         if (dbUser?.username) token.name = dbUser.username
         if (dbUser?.emailVerified) token.emailVerified = dbUser.emailVerified
+        if (dbUser) {
+          token.role = dbUser.role
+          token.suspended = dbUser.suspended
+        }
         token.avatarResolved = Date.now()
       }
 
