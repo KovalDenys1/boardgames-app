@@ -26,10 +26,22 @@ export interface GameStatusBannerProps {
   /** Optional icon before the title (TTT mark, C4 disc). */
   leadingIcon?: React.ReactNode
   isSpectator?: boolean
+  /** Whether the viewer is the acting player — drives the idle nudge below. */
+  isYourTurn?: boolean
 }
 
 /** Single danger threshold for every game (was 5s in TTT/C4, 10s in Memory). */
 const DANGER_SECONDS = 10
+
+/**
+ * How long the acting player may sit on their turn before the banner says so.
+ *
+ * About a third of abandoned games never record a single move, and the roster
+ * shows both players were present when the clock started — the game began with
+ * everyone in place and nobody moved (#817). Rather than let the turn timer run
+ * out in silence, say whose move it is once it is clearly not being noticed.
+ */
+const IDLE_NUDGE_SECONDS = 15
 
 export default function GameStatusBanner({
   isFinished,
@@ -42,6 +54,7 @@ export default function GameStatusBanner({
   barColor,
   leadingIcon,
   isSpectator = false,
+  isYourTurn = false,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
 
@@ -83,7 +96,12 @@ export default function GameStatusBanner({
 
   const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
   const danger = secs <= DANGER_SECONDS
+  // secs counts down, so elapsed is what the timer has already spent. With no
+  // timer configured there is nothing to measure against, so no nudge.
+  const elapsed = turnTimerLimit > 0 ? turnTimerLimit - secs : 0
+  const showIdleNudge = isYourTurn && turnTimerLimit > 0 && elapsed >= IDLE_NUDGE_SECONDS
   return (
+    <>
     <div style={{
       padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
       border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
@@ -111,6 +129,17 @@ export default function GameStatusBanner({
       }}>
         :{String(secs).padStart(2, '0')}
       </div>
-    </div>
+      </div>
+      {showIdleNudge && (
+        <div style={{
+          marginTop: 8, padding: '8px 12px', borderRadius: 12,
+          background: 'var(--bd-sun)', color: 'var(--bd-ink)',
+          fontSize: 12, fontWeight: 700, textAlign: 'center',
+          border: '1.5px solid var(--bd-ink)',
+        }}>
+          {t('game.ui.firstMoveNudge')}
+        </div>
+      )}
+    </>
   )
 }

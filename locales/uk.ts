@@ -1118,6 +1118,7 @@ const uk: Translation = {
       needMorePlayers: 'Потрібен ще {{count}} гравець, щоб почати',
       needMorePlayers_other: 'Потрібно ще {{count}} гравців, щоб почати',
       startSoloTip: 'Можна почати самому — чекати не потрібно',
+      firstMoveNudge: 'Ваш хід — оберіть дію, щоб продовжити',
       tip: 'Підказка',
       waitingForHost: 'Очікуємо, поки хост почне...',
       host: 'Хост',
