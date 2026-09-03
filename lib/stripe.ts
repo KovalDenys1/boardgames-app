@@ -15,5 +15,5 @@ export function getStripe(): Stripe {
 }
 
 export const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID ?? ''
-export const PREMIUM_PRICE_AMOUNT = '29 kr'
+export const PREMIUM_PRICE_AMOUNT = '$2.99'
 export const PREMIUM_PRICE_LABEL = 'Boardly Premium'
