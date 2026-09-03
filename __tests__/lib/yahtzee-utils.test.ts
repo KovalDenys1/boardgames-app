@@ -1,5 +1,6 @@
 import { generateLobbyCode } from '@/lib/lobby'
 import { getActiveCategories,
+  normalizeYahtzeeMode,
   calculateScore,
   calculateTotalScore,
   isGameFinished,
@@ -341,6 +342,23 @@ describe('Yahtzee Score Calculation', () => {
       expect(getActiveCategories('short')).toHaveLength(9)
       expect(getActiveCategories('short')).not.toContain('ones')
       expect(getActiveCategories('classic')).toHaveLength(15)
+    })
+  })
+
+  describe('normalizeYahtzeeMode (#812)', () => {
+    it('still resolves an unset mode to classic', () => {
+      // #812 made short the default for NEW lobbies, at the creation call site.
+      // This resolver must keep defaulting to classic: it also resolves the mode
+      // of games already in flight, and almost none of them recorded one. If it
+      // flipped, a 15-category game in progress would be judged finished at 9.
+      expect(normalizeYahtzeeMode(undefined)).toBe('classic')
+      expect(normalizeYahtzeeMode(null)).toBe('classic')
+      expect(normalizeYahtzeeMode('')).toBe('classic')
+    })
+
+    it('honours an explicit mode', () => {
+      expect(normalizeYahtzeeMode('short')).toBe('short')
+      expect(normalizeYahtzeeMode('classic')).toBe('classic')
     })
   })
 
