@@ -17,7 +17,6 @@ interface Friend {
   id: string
   username: string | null
   avatar: string | null
-  email: string
   presence?: FriendPresence
 }
 

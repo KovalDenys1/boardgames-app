@@ -141,7 +141,6 @@ export async function POST(req: NextRequest) {
             username: true,
             image: true,
             avatarUrl: true,
-            email: true
           }
         },
         receiver: {
@@ -150,7 +149,6 @@ export async function POST(req: NextRequest) {
             username: true,
             image: true,
             avatarUrl: true,
-            email: true
           }
         }
       }
@@ -267,7 +265,6 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             avatarUrl: true,
-            email: true
           }
         },
         receiver: {
@@ -276,7 +273,6 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             avatarUrl: true,
-            email: true
           }
         }
       },
