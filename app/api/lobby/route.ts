@@ -16,6 +16,7 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
+import { sweepStaleLobbiesIfDue } from '@/lib/lobby-health'
 
 const log = apiLogger('/api/lobby')
 
@@ -316,6 +317,9 @@ export async function GET(request: NextRequest) {
     const maxPlayers = searchParams.get('maxPlayers')
     const sortBy = searchParams.get('sortBy') || 'createdAt' // 'createdAt', 'playerCount', 'name'
     const sortOrder = searchParams.get('sortOrder') || 'desc' // 'asc', 'desc'
+
+    // Settle staleness as the list is read rather than trusting the cron (#806).
+    await sweepStaleLobbiesIfDue()
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     // Build where clause

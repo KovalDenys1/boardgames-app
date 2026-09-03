@@ -273,3 +273,33 @@ export async function cleanupStaleLobbiesAndGames(
 
   return result
 }
+
+/**
+ * Opportunistic sweep, throttled per instance.
+ *
+ * The scheduled sweep is triggered from a GitHub Actions cron asking for
+ * every five minutes, but GitHub throttles frequent schedules and silently
+ * drops ticks — on 2026-09-03 it ran five times in a day, roughly every four hours,
+ * every run reporting success. Dead lobbies therefore sat in the list for hours
+ * after they qualified for cleanup (#806).
+ *
+ * Staleness is a property of the data, not of a scheduler, so the lobby list
+ * settles it as it is read. Bounded by the same batch limit as the cron and
+ * throttled so only one request a minute per instance pays for it; failures are
+ * swallowed because a janitor must never break the page it runs under.
+ */
+let lastOpportunisticSweep = 0
+const OPPORTUNISTIC_SWEEP_INTERVAL_MS = 60_000
+
+export async function sweepStaleLobbiesIfDue(): Promise<void> {
+  if (Date.now() - lastOpportunisticSweep < OPPORTUNISTIC_SWEEP_INTERVAL_MS) {
+    return
+  }
+  lastOpportunisticSweep = Date.now()
+
+  try {
+    await cleanupStaleLobbiesAndGames()
+  } catch {
+    // Never surface a janitor failure to a reader.
+  }
+}

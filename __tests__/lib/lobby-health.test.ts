@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
+import { cleanupStaleLobbiesAndGames, sweepStaleLobbiesIfDue } from '@/lib/lobby-health'
 import { prisma } from '@/lib/db'
 
 jest.mock('@/lib/db', () => ({
@@ -192,5 +192,31 @@ describe('cleanupStaleLobbiesAndGames', () => {
         }),
       })
     )
+  })
+})
+
+describe('sweepStaleLobbiesIfDue (#806)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPrisma.lobbies.findMany.mockResolvedValue([])
+  })
+
+  it('sweeps once and then throttles, so a busy list does not sweep per request', async () => {
+    // The scheduled sweep runs on a GitHub cron asking for every five minutes
+    // that in practice fired five times in a day, so the read path settles
+    // staleness itself — but it must not do so on every single request.
+    await sweepStaleLobbiesIfDue()
+    const afterFirst = mockPrisma.lobbies.findMany.mock.calls.length
+    expect(afterFirst).toBeGreaterThan(0)
+
+    await sweepStaleLobbiesIfDue()
+    await sweepStaleLobbiesIfDue()
+    expect(mockPrisma.lobbies.findMany.mock.calls.length).toBe(afterFirst)
+  })
+
+  it('swallows a janitor failure rather than breaking the page it runs under', async () => {
+    jest.advanceTimersByTime?.(0)
+    mockPrisma.lobbies.findMany.mockRejectedValue(new Error('db down'))
+    await expect(sweepStaleLobbiesIfDue()).resolves.toBeUndefined()
   })
 })
