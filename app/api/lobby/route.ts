@@ -114,7 +114,11 @@ export async function POST(request: NextRequest) {
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
-    const normalizedYahtzeeMode = gameType === 'yahtzee' ? (yahtzeeMode ?? 'classic') : undefined
+    // Short is the default for new lobbies: classic runs 15 rounds and no game
+    // has ever been finished from the mid-game, while short finishes in a
+    // sitting (#812). normalizeYahtzeeMode still defaults to classic — it also
+    // resolves the mode of games already in flight, which must not change.
+    const normalizedYahtzeeMode = gameType === 'yahtzee' ? (yahtzeeMode ?? 'short') : undefined
 
     log.info('Creating lobby', {
       gameType,

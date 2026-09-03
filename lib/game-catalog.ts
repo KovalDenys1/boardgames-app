@@ -281,7 +281,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       allowedPlayers: [2, 3, 4],
       defaultMaxPlayers: 4,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
-      gameModes: { options: ['classic', 'short'], default: 'classic' },
+      gameModes: { options: ['short', 'classic'], default: 'short' },
     },
   },
   {
