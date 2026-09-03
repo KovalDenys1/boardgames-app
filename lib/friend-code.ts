@@ -58,10 +58,12 @@ export async function ensureUserHasFriendCode(userId: string): Promise<string> {
 export async function findUserByFriendCode(friendCode: string) {
   return prisma.users.findUnique({
     where: { friendCode },
+    // No email: the caller returns this object to the requesting user, and a
+    // friend code is only 5 digits, so selecting it here leaks addresses to
+    // anyone enumerating codes.
     select: {
       id: true,
       username: true,
-      email: true,
       image: true,
       avatarUrl: true,
       friendCode: true

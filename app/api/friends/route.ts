@@ -52,7 +52,6 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             avatarUrl: true,
-            email: true,
             publicProfileId: true,
             premiumUntil: true,
             bot: true,  // Bot relation
@@ -69,7 +68,6 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             avatarUrl: true,
-            email: true,
             publicProfileId: true,
             premiumUntil: true,
             bot: true,  // Bot relation

@@ -20,7 +20,6 @@ interface Friend {
   id: string
   username: string | null
   avatar: string | null
-  email: string
   publicProfileId: string | null
   friendshipId: string
   friendsSince: string
