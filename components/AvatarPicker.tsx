@@ -7,7 +7,7 @@ import { showToast } from '@/lib/i18n-toast'
 
 const ALL_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8, 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const
 export const PREMIUM_PACK_ID = 'premium-pack-1'
-export const PREMIUM_PACK_PRICE = '$2.99'
+export const PREMIUM_PACK_PRICE = '29 kr'
 
 type AvatarPickerProps = {
   currentAvatarUrl: string | null
