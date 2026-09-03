@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { verifyCsrfToken } from '@/lib/csrf'
+import { getStripe } from '@/lib/stripe'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/delete-account')
@@ -59,7 +60,9 @@ export async function POST(req: NextRequest) {
         id: true,
         email: true,
         username: true,
-        bot: true  // Bot relation
+        bot: true,  // Bot relation
+        stripeCustomerId: true,
+        stripeSubscriptionId: true
       }
     })
 
@@ -110,6 +113,38 @@ export async function POST(req: NextRequest) {
         ]
       }
     })
+
+    // Cancel billing BEFORE the row goes, and fail closed if that does not work.
+    // stripeCustomerId and stripeSubscriptionId live on Users, so deleting the
+    // row destroys the only mapping we have while the subscription in Stripe
+    // stays active: the person keeps being charged, cannot sign in to stop it,
+    // and no query of ours can even find them afterwards (#827). A user who
+    // stays deletable is recoverable; a silently billed ghost is not.
+    if (user.stripeSubscriptionId) {
+      try {
+        await getStripe().subscriptions.cancel(user.stripeSubscriptionId)
+        log.info('Cancelled Stripe subscription before account deletion', {
+          userId: user.id,
+          subscriptionId: user.stripeSubscriptionId,
+        })
+      } catch (err) {
+        const alreadyGone =
+          typeof err === 'object' && err !== null && 'code' in err &&
+          (err as { code?: string }).code === 'resource_missing'
+
+        if (!alreadyGone) {
+          log.error(
+            'Refusing to delete an account whose subscription could not be cancelled',
+            err instanceof Error ? err : new Error(String(err)),
+            { userId: user.id, subscriptionId: user.stripeSubscriptionId }
+          )
+          return NextResponse.json(
+            { error: 'Could not cancel your subscription. Please try again shortly.' },
+            { status: 502 }
+          )
+        }
+      }
+    }
 
     // Delete the user (this will cascade delete sessions, accounts, players, lobbies)
     await prisma.users.delete({
