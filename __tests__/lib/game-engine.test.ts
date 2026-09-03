@@ -423,3 +423,47 @@ describe('GameEngine', () => {
     })
   })
 })
+
+class NoTurnRotationGame extends GameEngine {
+  constructor(gameId: string) {
+    super(gameId, 'test-no-rotation', { maxPlayers: 8, minPlayers: 2 })
+  }
+  getInitialGameData() { return {} }
+  validateMove(move: Move): boolean { return move.type === 'vote' }
+  processMove(): void {}
+  checkWinCondition(): Player | null { return null }
+  getGameRules(): string[] { return [] }
+  // Guess the spy and alias behave like this: an action is not a turn hand-over.
+  protected shouldAdvanceTurn(): boolean { return false }
+}
+
+describe('move telemetry (#815)', () => {
+  it('advances lastMoveAt even when a move does not rotate the turn', () => {
+    // advanceTurnIndex() used to be the only writer of lastMoveAt, so spy and
+    // alias never advanced it: 24 of 24 finished spy games showed no move, and
+    // any drop-off analysis of them was an artifact of the missing field.
+    const game = new NoTurnRotationGame('g1')
+    game.addPlayer({ id: 'p1', name: 'A' } as Player)
+    game.addPlayer({ id: 'p2', name: 'B' } as Player)
+    game.startGame()
+
+    const atStart = game.getState().lastMoveAt as number
+    jest.advanceTimersByTime(5000)
+    expect(game.makeMove({ type: 'vote', playerId: 'p1' } as Move)).toBe(true)
+
+    expect(game.getState().lastMoveAt as number).toBeGreaterThan(atStart)
+  })
+
+  it('does not advance lastMoveAt for a rejected move', () => {
+    const game = new NoTurnRotationGame('g2')
+    game.addPlayer({ id: 'p1', name: 'A' } as Player)
+    game.addPlayer({ id: 'p2', name: 'B' } as Player)
+    game.startGame()
+
+    const atStart = game.getState().lastMoveAt as number
+    jest.advanceTimersByTime(5000)
+    expect(game.makeMove({ type: 'nonsense', playerId: 'p1' } as Move)).toBe(false)
+
+    expect(game.getState().lastMoveAt as number).toBe(atStart)
+  })
+})
