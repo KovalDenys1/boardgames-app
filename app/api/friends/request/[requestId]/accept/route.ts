@@ -53,14 +53,12 @@ export async function POST(
           select: {
             id: true,
             username: true,
-            email: true,
           },
         },
         receiver: {
           select: {
             id: true,
             username: true,
-            email: true,
           },
         },
       },

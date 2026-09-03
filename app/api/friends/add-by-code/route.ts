@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     // Get current user
     const currentUser = await prisma.users.findUnique({
       where: { id: session.user.id },
-      select: { id: true, username: true, email: true, bot: true }
+      select: { id: true, username: true, bot: true }
     })
 
     if (!currentUser) {
@@ -148,7 +148,6 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            email: true,
             image: true,
             avatarUrl: true
           }

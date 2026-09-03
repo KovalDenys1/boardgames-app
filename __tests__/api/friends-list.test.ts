@@ -98,6 +98,20 @@ describe('GET /api/friends', () => {
     } as any)
   })
 
+  it('does not ask Prisma for the friend\'s email address', async () => {
+    // The response spreads whatever the select returned, so the select is the
+    // guard. Addresses leaked from here until 2026-09-03 because email was in
+    // it. Assert on the query rather than the body: the mock cannot prove a
+    // field is absent that the real select no longer requests.
+    mockPrisma.friendships.findMany.mockResolvedValue([] as any)
+    mockPrisma.games.findMany.mockResolvedValue([] as any)
+
+    await GET(buildRequest())
+
+    const select = JSON.stringify(mockPrisma.friendships.findMany.mock.calls[0][0])
+    expect(select).not.toContain('"email"')
+  })
+
   it('masks friend presence when showOnlineStatus is disabled', async () => {
     mockPrisma.friendships.findMany.mockResolvedValue([createFriendship(false)] as any)
     mockPrisma.games.findMany.mockResolvedValue([
