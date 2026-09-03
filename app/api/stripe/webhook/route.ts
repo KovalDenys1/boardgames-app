@@ -34,7 +34,14 @@ async function updateSubscriptionState(
   // events for the old id no longer resolve. Stripe carries our own userId in
   // the subscription metadata, so recover from it and repair the stored id
   // rather than dropping a paid customer's entitlement.
-  if (fallbackUserId) {
+  //
+  // The fallback may only ever GRANT. A mismatched customer id is also exactly
+  // what a superseded subscription looks like: the user already moved on to a
+  // new customer and a live subscription, and the old one is cancelled later.
+  // Letting a revoking event through here would clear that live entitlement and
+  // rewrite stripeCustomerId back to the dead id — worse than the dropped grant
+  // this fallback exists to prevent.
+  if (fallbackUserId && until !== null) {
     const repaired = await prisma.users.updateMany({
       where: { id: fallbackUserId },
       data: { ...data, stripeCustomerId: customerId },
@@ -70,6 +77,18 @@ function resolveSubscriptionEnd(subscription: Stripe.Subscription): Date | null 
   return isActive && periodEnd ? new Date(periodEnd * 1000) : null
 }
 
+// A delivery is only worth failing (and so retrying) while the miss could still
+// be a race with checkout's own write. Past that window the event is orphaned —
+// most often because the account was deleted without cancelling its Stripe
+// subscription — and every renewal or status change for it would otherwise 5xx
+// on each retry for Stripe's full ~3-day window. Sustained 5xx gets the endpoint
+// disabled, which would stop entitlement for every customer, not just that one.
+const RETRYABLE_EVENT_AGE_MS = 15 * 60 * 1000
+
+function isWorthRetrying(event: Stripe.Event): boolean {
+  return Date.now() - event.created * 1000 < RETRYABLE_EVENT_AGE_MS
+}
+
 async function handleEvent(event: Stripe.Event): Promise<void> {
   switch (event.type) {
     case 'customer.subscription.created':
@@ -85,8 +104,9 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       // Throwing releases the idempotency claim below and answers Stripe with a
       // 500 so it retries. Returning 200 here would tell Stripe the entitlement
       // was applied and burn the event id, leaving a paying customer without
-      // Premium and no way for the delivery to be reprocessed.
-      if (updated === 0) {
+      // Premium and no way for the delivery to be reprocessed. Only do it while
+      // a retry could still help — see RETRYABLE_EVENT_AGE_MS.
+      if (updated === 0 && isWorthRetrying(event)) {
         throw new Error(`Subscription event matched no user (customer ${sub.customer})`)
       }
       log.info(`Subscription ${event.type}`, {
@@ -135,9 +155,9 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
         subscriptionId,
         resolveSubscriptionEnd(subscription),
         subscription.cancel_at_period_end,
-        metadataUserId(subscription) ?? session.metadata?.userId ?? null
+        metadataUserId(subscription)
       )
-      if (granted === 0) {
+      if (granted === 0 && isWorthRetrying(event)) {
         throw new Error(`Checkout session matched no user (customer ${customerId})`)
       }
       log.info('Checkout session completed', { customerId, subscriptionId })
