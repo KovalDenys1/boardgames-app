@@ -899,6 +899,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             meta={`#${gameData.moveCount + 1}`}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
+            isYourTurn={!isSpectator && isMyTurn()}
             barColor={gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW}
             leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)', transition: 'background 0.2s' }} />}
             isSpectator={isSpectator}
