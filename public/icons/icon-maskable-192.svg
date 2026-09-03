@@ -1,8 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <!-- full bleed background for maskable -->
-  <rect width="192" height="192" fill="#1F1B16"/>
-  <!-- safe zone content (centered, ~20% padding each side) -->
-  <rect x="55" y="55" width="86" height="86" rx="18" fill="#FF6B5B"/>
-  <rect x="50" y="50" width="86" height="86" rx="18" fill="#FFC44D"/>
-  <text x="93" y="112" font-family="system-ui, Arial, sans-serif" font-size="72" font-weight="900" fill="#1F1B16" text-anchor="middle">B</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" fill="#FBF6EE"/>
+<g transform="translate(71.68 71.68) scale(0.72)">
+  <!-- B-tile brand mark: ink tile, coral offset shadow, amber B, -6deg rotate -->
+  <g transform="rotate(-6 256 256)">
+    <rect x="76" y="76" width="360" height="360" rx="96" fill="#FF6B5B" transform="translate(26 26)"/>
+    <rect x="76" y="76" width="360" height="360" rx="96" fill="#1F1B16"/>
+    <text x="256" y="270" font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="260" fill="#FFC44D" text-anchor="middle" dominant-baseline="central">B</text>
+  </g>
+
+</g>
 </svg>
