@@ -2,9 +2,11 @@ import jwt from 'jsonwebtoken'
 import {
   createGuestId,
   createGuestToken,
+  createGuestIdentityToken,
   getGuestClaimsFromRequest,
   getGuestTokenFromRequest,
   verifyGuestToken,
+  verifyGuestIdentityToken,
 } from '@/lib/guest-auth'
 
 describe('guest-auth', () => {
@@ -117,5 +119,39 @@ describe('guest-auth', () => {
       guestId: 'guest-claims',
       guestName: 'Claims User',
     })
+  })
+})
+
+describe('guest identity token (#818)', () => {
+  const originalEnv = process.env
+
+  beforeEach(() => {
+    process.env = { ...originalEnv, NEXTAUTH_SECRET: 'test-nextauth-secret' }
+    delete process.env.GUEST_JWT_SECRET
+  })
+
+  afterAll(() => {
+    process.env = originalEnv
+  })
+
+  it('resolves back to the same guest, so a returning visitor is not a new person', () => {
+    const token = createGuestIdentityToken('guest-1')
+    expect(verifyGuestIdentityToken(token)).toBe('guest-1')
+  })
+
+  it('cannot be used where a session token is expected', () => {
+    // It carries identity only. If it authorised requests, a long-lived bearer
+    // credential in localStorage would be a much bigger prize than a 12h one.
+    const identity = createGuestIdentityToken('guest-1')
+    expect(verifyGuestToken(identity)).toBeNull()
+  })
+
+  it('does not accept a session token as proof of identity', () => {
+    const session = createGuestToken('guest-1', 'Ann')
+    expect(verifyGuestIdentityToken(session)).toBeNull()
+  })
+
+  it('rejects a forged token', () => {
+    expect(verifyGuestIdentityToken('not-a-token')).toBeNull()
   })
 })

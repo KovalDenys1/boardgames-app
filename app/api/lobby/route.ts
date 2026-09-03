@@ -17,6 +17,7 @@ import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 import { sweepStaleLobbiesIfDue } from '@/lib/lobby-health'
+import { recordLobbyParticipation } from '@/lib/lobby-participation'
 
 const log = apiLogger('/api/lobby')
 
@@ -275,6 +276,17 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
+
+    // Recorded on join rather than on game start: 28% of lobbies never start,
+    // and how many people were waiting in those is precisely what could not be
+    // answered once the guest purge took their Players rows with them (#816).
+    await recordLobbyParticipation({
+      lobbyId: lobby.id,
+      lobbyCode: lobby.code,
+      gameType: persistedGameType,
+      userId: requestUser.id,
+      isGuest: requestUser.isGuest,
+    })
 
     return NextResponse.json({
       lobby,

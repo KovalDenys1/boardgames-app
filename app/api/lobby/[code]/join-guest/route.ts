@@ -19,6 +19,7 @@ import {
 } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { recordLobbyParticipation } from '@/lib/lobby-participation'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -167,6 +168,14 @@ export async function POST(
           userId: guestUser.id,
           position: nextPosition,
         },
+      })
+
+      await recordLobbyParticipation({
+        lobbyId: lobby.id,
+        lobbyCode: lobby.code,
+        gameType: activeGame.gameType,
+        userId: guestUser.id,
+        isGuest: true,
       })
 
       // Refresh game data

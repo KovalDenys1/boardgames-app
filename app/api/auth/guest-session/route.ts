@@ -5,8 +5,10 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import {
   createGuestId,
   createGuestToken,
+  createGuestIdentityToken,
   getGuestTokenFromRequest,
   verifyGuestToken,
+  verifyGuestIdentityToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { getSignupSourceFromRequest } from '@/lib/signup-source'
@@ -18,6 +20,7 @@ const limiter = rateLimit(rateLimitPresets.auth)
 const guestSessionSchema = z.object({
   guestName: z.string().trim().min(2).max(20).regex(/^[\w\s-]+$/u, 'Invalid characters'),
   guestToken: z.string().optional(),
+  guestIdentityToken: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -38,7 +41,16 @@ export async function POST(request: NextRequest) {
     const providedToken = parsed.data.guestToken || getGuestTokenFromRequest(request)
     const existingGuest = providedToken ? verifyGuestToken(providedToken) : null
 
-    const guestId = existingGuest?.guestId || createGuestId()
+    // The session token only lasts 12h. Once it expired there was nothing left
+    // to recognise a returning guest by, so a new one was minted and cross-day
+    // retention could not be measured (#818). The identity token outlives the
+    // session and is checked as a fallback; it is signed with its own type, so
+    // it cannot be used to authorise anything by itself.
+    const identityGuestId = parsed.data.guestIdentityToken
+      ? verifyGuestIdentityToken(parsed.data.guestIdentityToken)
+      : null
+
+    const guestId = existingGuest?.guestId || identityGuestId || createGuestId()
     const guestUser = await getOrCreateGuestUser(guestId, parsed.data.guestName, getSignupSourceFromRequest(request))
     const guestName = guestUser.username || parsed.data.guestName
     const guestToken = createGuestToken(guestUser.id, guestName)
@@ -47,6 +59,7 @@ export async function POST(request: NextRequest) {
       guestId: guestUser.id,
       guestName,
       guestToken,
+      guestIdentityToken: createGuestIdentityToken(guestUser.id),
     })
   } catch (error) {
     // Handle Prisma unique constraint violations specifically

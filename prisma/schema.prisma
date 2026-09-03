@@ -8,20 +8,20 @@ datasource db {
 }
 
 model Users {
-  id            String    @id @default(cuid())
-  email         String?   @unique
-  pendingEmail  String?   @unique
-  emailVerified DateTime? @db.Timestamptz(3)
-  username      String?   @unique
-  friendCode      String?   @unique // Short numeric code for adding friends (e.g., "12345")
-  publicProfileId String?   @unique // Stable public ID used in shareable profile links
-  passwordHash    String?
-  image           String?
-  avatarUrl         String?
-  bio             String?
-  accentColor       String?
-  featuredGame      String?
-  premiumCardStyle  String?
+  id                    String    @id @default(cuid())
+  email                 String?   @unique
+  pendingEmail          String?   @unique
+  emailVerified         DateTime? @db.Timestamptz(3)
+  username              String?   @unique
+  friendCode            String?   @unique // Short numeric code for adding friends (e.g., "12345")
+  publicProfileId       String?   @unique // Stable public ID used in shareable profile links
+  passwordHash          String?
+  image                 String?
+  avatarUrl             String?
+  bio                   String?
+  accentColor           String?
+  featuredGame          String?
+  premiumCardStyle      String?
   stripeCustomerId      String?   @unique
   stripeSubscriptionId  String?   @unique
   premiumUntil          DateTime? @db.Timestamptz(3)
@@ -29,15 +29,15 @@ model Users {
   totpSecret            String?
   totpEnabled           Boolean   @default(false)
   totpPendingSecret     String?
-  isGuest           Boolean   @default(false) // Flag for guest (temporary) users
-  signupSource      String?   @db.VarChar(120) // Acquisition source captured at account creation (utm:/ref:/direct)
-  role            UserRole  @default(user)
-  suspended       Boolean   @default(false)
-  banReason       String?
-  banExpiresAt    DateTime? @db.Timestamptz(3)
-  lastActiveAt    DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
-  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+  isGuest               Boolean   @default(false) // Flag for guest (temporary) users
+  signupSource          String?   @db.VarChar(120) // Acquisition source captured at account creation (utm:/ref:/direct)
+  role                  UserRole  @default(user)
+  suspended             Boolean   @default(false)
+  banReason             String?
+  banExpiresAt          DateTime? @db.Timestamptz(3)
+  lastActiveAt          DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
 
   accounts Accounts[]
   lobbies  Lobbies[]  @relation("LobbyCreator")
@@ -71,15 +71,15 @@ enum ProfileVisibility {
 }
 
 model AccountPreferences {
-  id                String            @id @default(cuid())
-  userId            String            @unique
-  user              Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileVisibility ProfileVisibility @default(public)
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  user                  Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileVisibility     ProfileVisibility @default(public)
   showOnlineStatus      Boolean           @default(true)
   onboardingCompletedAt DateTime?         @db.Timestamptz(3)
   onboardingSkippedAt   DateTime?         @db.Timestamptz(3)
   createdAt             DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+  updatedAt             DateTime          @updatedAt @db.Timestamptz(3)
 
   @@index([userId])
   @@index([profileVisibility])
@@ -193,23 +193,23 @@ model LobbyInvites {
 }
 
 model Games {
-  id          String               @id @default(cuid())
-  lobbyId     String
-  lobby       Lobbies              @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
-  state       Json                 @db.JsonB
-  status      GameStatus           @default(waiting)
-  gameType    GameType             @default(yahtzee)
+  id               String               @id @default(cuid())
+  lobbyId          String
+  lobby            Lobbies              @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  state            Json                 @db.JsonB
+  status           GameStatus           @default(waiting)
+  gameType         GameType             @default(yahtzee)
   abandonedAt      DateTime?            @db.Timestamptz(3)
   startedAt        DateTime?            @db.Timestamptz(3) // Set when game transitions waiting → playing
   endedAt          DateTime?            @db.Timestamptz(3) // Set on any terminal transition (finished/abandoned/cancelled)
-  durationSeconds  Int?                                    // floor((endedAt - startedAt) / 1000); null if no startedAt
-  terminalMetadata Json?                @db.JsonB           // { outcome, winnerUserId?, isDraw, reason?, playerResults[] }
-  currentTurn Int                  @default(0)
-  lastMoveAt  DateTime             @default(now()) @db.Timestamptz(3) // Track when last move was made for timer
-  createdAt   DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime             @default(now()) @updatedAt @db.Timestamptz(3)
-  players     Players[]
-  snapshots   GameStateSnapshots[]
+  durationSeconds  Int? // floor((endedAt - startedAt) / 1000); null if no startedAt
+  terminalMetadata Json?                @db.JsonB // { outcome, winnerUserId?, isDraw, reason?, playerResults[] }
+  currentTurn      Int                  @default(0)
+  lastMoveAt       DateTime             @default(now()) @db.Timestamptz(3) // Track when last move was made for timer
+  createdAt        DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime             @default(now()) @updatedAt @db.Timestamptz(3)
+  players          Players[]
+  snapshots        GameStateSnapshots[]
 
   @@index([lobbyId])
   @@index([lobbyId, status])
@@ -267,26 +267,51 @@ enum FriendRequestStatus {
   cancelled
 }
 
+/// Append-only record of who took part in a lobby, written when they join.
+///
+/// Deliberately has **no relation to Users**: guest rows are hard-deleted after
+/// three days of inactivity and `Players.userId` cascades, which destroyed the
+/// roster of 49% of all games and left the usable analytics window at four days
+/// (#816). It is also written at join rather than at game start, so lobbies that
+/// never started — 28% of them — still record how many people were waiting.
+///
+/// `participantKey` is a salted hash, never the user id or name: the goal is to
+/// keep anonymised aggregates, not to outlive the guest-data retention rule.
+model LobbyParticipations {
+  id             String   @id @default(cuid())
+  lobbyId        String
+  lobbyCode      String
+  gameType       GameType
+  participantKey String
+  isBot          Boolean  @default(false)
+  isGuest        Boolean  @default(false)
+  joinedAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([lobbyId, participantKey])
+  @@index([lobbyId])
+  @@index([joinedAt])
+}
+
 model Players {
-  id         String   @id @default(cuid())
-  gameId     String
-  game       Games    @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  userId     String
-  user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  score      Int      @default(0)
-  finalScore Int? // Final score after game ends
-  placement  Int? // Final placement (1st, 2nd, 3rd, 4th)
-  scorecard  String?  @db.Text // JSON string with game-specific scorecard
-  position   Int // Player position in game (0, 1, 2, 3)
-  isReady    Boolean   @default(false)
-  isWinner   Boolean   @default(false)
-  leftAt     DateTime? @db.Timestamptz(3)
-  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  id              String    @id @default(cuid())
+  gameId          String
+  game            Games     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId          String
+  user            Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score           Int       @default(0)
+  finalScore      Int? // Final score after game ends
+  placement       Int? // Final placement (1st, 2nd, 3rd, 4th)
+  scorecard       String?   @db.Text // JSON string with game-specific scorecard
+  position        Int // Player position in game (0, 1, 2, 3)
+  isReady         Boolean   @default(false)
+  isWinner        Boolean   @default(false)
+  leftAt          DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   // Updated every ~10s by the client while a player has the lobby/game open
   // (see useLobbyHeartbeat). Used for zero-signal disconnect detection
   // (#675) — a stale value means the player closed their tab/browser
   // without ever calling the explicit leave API.
-  lastHeartbeatAt DateTime @default(now()) @db.Timestamptz(3)
+  lastHeartbeatAt DateTime  @default(now()) @db.Timestamptz(3)
 
   @@unique([gameId, userId])
   @@index([gameId])
@@ -498,7 +523,7 @@ model StripeWebhookEvents {
 
 model Feedback {
   id        String   @id @default(cuid())
-  type      String   // 'bug' | 'feature' | 'other'
+  type      String // 'bug' | 'feature' | 'other'
   status    String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
   message   String
   email     String?
