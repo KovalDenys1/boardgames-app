@@ -135,7 +135,12 @@ describe('GET /api/lobby', () => {
     expect(data.lobbies[0].creator?.email).toBeUndefined()
     expect(data.stats.totalLobbies).toBe(1)
     expect(data.stats.waitingLobbies).toBe(1)
-    const queryArgs = mockPrisma.lobbies.findMany.mock.calls[0][0] as any
+    // The route also runs the opportunistic staleness sweep (#806), which
+    // queries lobbies first, so pick the list query by its shape rather than
+    // by call order.
+    const queryArgs = mockPrisma.lobbies.findMany.mock.calls
+      .map((call) => call[0] as any)
+      .find((args) => args?.select?.creator) as any
     expect(queryArgs.select.creator.select.id).toBe(true)
     expect(queryArgs.select.creator.select.email).toBeUndefined()
     expect(res.headers.get('cache-control')).toContain('no-store')
