@@ -156,7 +156,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
       type: 'alias',
       name: 'Alias',
       icon: '🗣️',
-      minPlayers: 4,
+      minPlayers: 3,
       maxPlayers: 16,
       supportsBots: false,
       translationKey: 'alias',

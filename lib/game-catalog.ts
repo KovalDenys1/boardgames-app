@@ -194,7 +194,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     icon: '🗣️',
     svgId: 'alias',
     accentColor: 'var(--bd-coral)',
-    minPlayers: 4,
+    minPlayers: 3,
     maxPlayers: 16,
     supportsBots: false,
     translationKey: 'alias',

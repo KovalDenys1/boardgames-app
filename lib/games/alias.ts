@@ -38,9 +38,20 @@ export interface AliasGameData {
   winnerId: string | null
 }
 
+/**
+ * The player count at which Alias stops being a team game.
+ *
+ * Alias needs somebody to describe to, which is why the minimum was four: a
+ * team of one has no guesser and its turn cannot happen at all. 61% of Alias
+ * lobbies never started, so the minimum is now three — played the way three
+ * people actually play it, with everyone as their own team, the describer
+ * rotating, and the two who are not describing both guessing (#847).
+ */
+export const SOLO_PLAYER_COUNT = 3
+
 export class AliasGame extends GameEngine {
   constructor(gameId: string) {
-    super(gameId, 'alias', { maxPlayers: 16, minPlayers: 4 })
+    super(gameId, 'alias', { maxPlayers: 16, minPlayers: SOLO_PLAYER_COUNT })
   }
 
   getInitialGameData(): AliasGameData {
@@ -82,7 +93,56 @@ export class AliasGame extends GameEngine {
       a.playerIds.length <= b.playerIds.length ? a : b
     )
     smaller.playerIds.push(player.id)
+    this.syncTeamLayout()
     return true
+  }
+
+  /**
+   * Keep the team layout matching the number of people in the room, so the
+   * lobby shows the game that is actually about to be played rather than
+   * rearranging itself at the start whistle.
+   *
+   * Only ever runs during team assignment: once a round is under way the teams
+   * carry scores and turn counts, and a fourth player arriving mid-game must
+   * not dissolve them.
+   */
+  syncTeamLayout(): void {
+    const data = this.state.data as AliasGameData
+    if (data.phase !== 'team_assignment') return
+
+    // Someone who has left is still on state.players until the row is cleaned
+    // up, and a team built for them would never get a turn.
+    const players = this.state.players.filter((p) => p.isActive !== false)
+    const isSolo = data.teams.length === SOLO_PLAYER_COUNT
+
+    if (players.length === SOLO_PLAYER_COUNT) {
+      if (isSolo && data.teams.every((t, i) => t.playerIds[0] === players[i]?.id)) return
+      data.teams = players.map((player, i) => ({
+        id: `team-${i + 1}`,
+        name: player.name,
+        playerIds: [player.id],
+        score: 0,
+        describerIndex: 0,
+      }))
+    } else if (isSolo) {
+      // Back to two teams: the solo layout only ever holds for exactly three.
+      const ordered = players.map((p) => p.id)
+      data.teams = [
+        { id: 'team-1', name: 'Team 1', playerIds: [], score: 0, describerIndex: 0 },
+        { id: 'team-2', name: 'Team 2', playerIds: [], score: 0, describerIndex: 0 },
+      ]
+      ordered.forEach((id, i) => data.teams[i % 2].playerIds.push(id))
+    } else {
+      return
+    }
+
+    data.currentTeamIndex = 0
+    data.teamTurnCounts = Object.fromEntries(data.teams.map((t) => [t.id, 0]))
+  }
+
+  /** True while the three-player layout is in force — one player per team. */
+  isSoloLayout(): boolean {
+    return (this.state.data as AliasGameData).teams.length === SOLO_PLAYER_COUNT
   }
 
   startGame(): boolean {
@@ -129,6 +189,9 @@ export class AliasGame extends GameEngine {
       }
       case 'assign_team': {
         if (data.phase !== 'team_assignment') return false
+        // With three players every team is one player, so there is nothing to
+        // switch to — moving would leave someone with an empty team (#847).
+        if (this.isSoloLayout()) return false
         const { teamId } = move.data as { teamId: string }
         return data.teams.some(t => t.id === teamId)
       }
@@ -180,6 +243,9 @@ export class AliasGame extends GameEngine {
         break
       }
       case 'start_round': {
+        // Last chance to match the layout to the room: someone may have left
+        // during assignment, which is the one case addPlayer cannot catch.
+        this.syncTeamLayout()
         // Assign any unassigned players to the smallest team
         const assignedIds = new Set(data.teams.flatMap(t => t.playerIds))
         for (const player of this.state.players) {
@@ -311,17 +377,12 @@ export class AliasGame extends GameEngine {
   }
 
   private _finishGame(data: AliasGameData): void {
-    const [team1, team2] = data.teams
-    let winningTeam: (typeof data.teams)[number] | null = null
-    if (team1.score > team2.score) {
-      data.winnerId = team1.id
-      winningTeam = team1
-    } else if (team2.score > team1.score) {
-      data.winnerId = team2.id
-      winningTeam = team2
-    } else {
-      data.winnerId = 'tie'
-    }
+    // Written for any number of teams: with three players there are three of
+    // them, one per person (#847).
+    const best = Math.max(...data.teams.map((t) => t.score))
+    const leaders = data.teams.filter((t) => t.score === best)
+    const winningTeam = leaders.length === 1 ? leaders[0] : null
+    data.winnerId = winningTeam ? winningTeam.id : 'tie'
     data.phase = 'game_over'
     this.state.status = 'finished'
     // state.winner tracks the first player of the winning team (team games can't have one winner)

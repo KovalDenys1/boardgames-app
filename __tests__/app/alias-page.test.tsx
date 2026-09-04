@@ -208,7 +208,7 @@ describe('AliasLobbyPage', () => {
 
     act(() => {
       broadcastHandlers['player-left']?.({
-        payload: { userId: 'user-4', username: 'Dave', remainingPlayers: 3 },
+        payload: { userId: 'user-4', username: 'Dave', remainingPlayers: 2 },
       })
     })
 
@@ -216,6 +216,22 @@ describe('AliasLobbyPage', () => {
       expect(toast.info).toHaveBeenCalledWith('toast.playerLeft', undefined, { player: 'Dave' })
       expect(mockReplace).toHaveBeenCalledWith('/games')
     })
+  })
+
+  it('keeps three players in the room, since three is now a game (#847)', async () => {
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
+
+    act(() => {
+      broadcastHandlers['player-left']?.({
+        payload: { userId: 'user-4', username: 'Dave', remainingPlayers: 3 },
+      })
+    })
+
+    await waitFor(() => {
+      expect(toast.info).toHaveBeenCalledWith('toast.playerLeft', undefined, { player: 'Dave' })
+    })
+    expect(mockReplace).not.toHaveBeenCalled()
   })
 })
 

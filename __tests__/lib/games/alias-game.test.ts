@@ -16,6 +16,12 @@ function addFourPlayers(game: AliasGame) {
   game.addPlayer({ id: 'p4', name: 'Dave', score: 0, isActive: true })
 }
 
+function addThreePlayers(game: AliasGame) {
+  game.addPlayer({ id: 'p1', name: 'Alice', score: 0, isActive: true })
+  game.addPlayer({ id: 'p2', name: 'Bob', score: 0, isActive: true })
+  game.addPlayer({ id: 'p3', name: 'Carol', score: 0, isActive: true })
+}
+
 // Starts the game AND sends start_round so the game enters turn_active.
 function startRound(game: AliasGame) {
   game.startGame()
@@ -56,13 +62,26 @@ describe('AliasGame', () => {
   })
 
   describe('startGame', () => {
-    it('rejects start when fewer than 4 players', () => {
+    it('rejects start when fewer than 3 players', () => {
+      const game = new AliasGame('g1')
+      game.addPlayer({ id: 'p1', name: 'Alice', score: 0, isActive: true })
+      game.addPlayer({ id: 'p2', name: 'Bob', score: 0, isActive: true })
+      const result = game.startGame()
+      expect(result).toBe(false)
+    })
+
+    it('starts with three, who play as three teams of one (#847)', () => {
       const game = new AliasGame('g1')
       game.addPlayer({ id: 'p1', name: 'Alice', score: 0, isActive: true })
       game.addPlayer({ id: 'p2', name: 'Bob', score: 0, isActive: true })
       game.addPlayer({ id: 'p3', name: 'Carol', score: 0, isActive: true })
-      const result = game.startGame()
-      expect(result).toBe(false)
+
+      expect(game.startGame()).toBe(true)
+      // A team of one has nobody to describe to, which is why four used to be
+      // the minimum. Three people play as three teams instead.
+      expect(game.isSoloLayout()).toBe(true)
+      expect(getData(game).teams.map((t) => t.playerIds)).toEqual([['p1'], ['p2'], ['p3']])
+      expect(getData(game).teams.map((t) => t.name)).toEqual(['Alice', 'Bob', 'Carol'])
     })
 
     it('starts the game and enters team_assignment phase', () => {
@@ -319,5 +338,84 @@ describe('AliasGame', () => {
       expect(skipped).toBe(5)
       expect(data.teams[0].score).toBe(0) // 5 guessed - 5 skipped = 0
     })
+  })
+})
+
+describe('AliasGame with three players (#847)', () => {
+  it('refuses manual team switching, since every team is one player', () => {
+    const game = new AliasGame('g1')
+    addThreePlayers(game)
+    game.startGame()
+
+    // Accepting this would leave whoever moved with an empty team and give
+    // someone else two players, which is the 2v1 split that cannot be played.
+    expect(game.makeMove(createMove('assign_team', 'p1', { teamId: 'team-2' }))).toBe(false)
+    expect(getData(game).teams.map((t) => t.playerIds)).toEqual([['p1'], ['p2'], ['p3']])
+  })
+
+  it('rotates the describer across all three and scores each of them', () => {
+    const game = new AliasGame('g1')
+    addThreePlayers(game)
+    startRound(game)
+
+    const describers: string[] = []
+    for (let turn = 0; turn < 3; turn += 1) {
+      const data = getData(game)
+      const team = data.teams[data.currentTeamIndex]
+      const describerId = team.playerIds[team.describerIndex]
+      describers.push(describerId)
+
+      // One guessed word, then hand over.
+      expect(game.makeMove(createMove('word_action', describerId, { action: 'guess' }))).toBe(true)
+      expect(game.makeMove(createMove('end_turn', describerId))).toBe(true)
+      if (getData(game).phase === 'turn_results') {
+        expect(game.makeMove(createMove('next_turn', describerId))).toBe(true)
+      }
+    }
+
+    // Everyone describes, and the point goes to whoever was describing.
+    expect(describers).toEqual(['p1', 'p2', 'p3'])
+    expect(getData(game).teams.map((t) => t.score)).toEqual([1, 1, 1])
+  })
+
+  it('lets the third team win, which the old two-team check made impossible', () => {
+    const game = new AliasGame('g1')
+    addThreePlayers(game)
+    startRound(game)
+
+    // _finishGame used to destructure [team1, team2], so a third team could
+    // never win no matter what it scored.
+    const data = getData(game)
+    data.teams[0].score = 2
+    data.teams[1].score = 3
+    data.teams[2].score = 9
+    // Everyone else is done; the last turn of the game belongs to team-3.
+    for (const team of data.teams) data.teamTurnCounts[team.id] = data.turnsPerTeam
+    data.teamTurnCounts[data.teams[2].id] = data.turnsPerTeam - 1
+    data.currentTeamIndex = 2
+
+    game.makeMove(createMove('end_turn', 'p3'))
+
+    expect(getData(game).phase).toBe('game_over')
+    expect(getData(game).winnerId).toBe('team-3')
+    expect(game.getState().winner).toBe('p3')
+  })
+  it('calls a three-way draw a tie', () => {
+    const game = new AliasGame('g1')
+    addThreePlayers(game)
+    startRound(game)
+
+    const data = getData(game)
+    for (const team of data.teams) {
+      team.score = 4
+      data.teamTurnCounts[team.id] = data.turnsPerTeam
+    }
+    data.teamTurnCounts[data.teams[2].id] = data.turnsPerTeam - 1
+    data.currentTeamIndex = 2
+
+    game.makeMove(createMove('end_turn', 'p3'))
+
+    expect(getData(game).winnerId).toBe('tie')
+    expect(game.getState().winner).toBeUndefined()
   })
 })
