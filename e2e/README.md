@@ -24,9 +24,11 @@ Three tests, each standing in for a check that used to be done by hand:
 | `realtime-chat.spec.ts` — a message written in one browser arrives in another | opening two windows and typing into both (#801, #845) |
 | `realtime-chat.spec.ts` — every player can resolve the topic, nobody else can | — |
 | `realtime-chat.spec.ts` — a message is still there after a reload | checking chat history survives (#854) |
+| `spectator.spec.ts` — a spectator sees the game start without reloading | watching a lobby you are not playing in (#845, #862) |
+| `spectator.spec.ts` — a lobby with spectators disabled gives out no topic | — |
 | `alias-three-players.spec.ts` — three teams of one, one describer and two guessers | playing a three-handed Alias round (#847) |
 
-These found #852 and both halves of #854.
+These found #852, both halves of #854, and #862 — where the test written to guard #845 showed that #845 had broken spectating an hour after shipping.
 
 ## How they are built
 
@@ -55,12 +57,17 @@ only reason these tests exist. Consequences:
   because `/api/auth/guest-session` allows five requests per fifteen minutes and
   a suite that fails on its fourth run of the afternoon teaches you to stop
   running it.
-- The global setup clears the loopback rate-limit counters. Since #854 those
-  counters are shared in Redis rather than per-process, so restarting the dev
-  server no longer forgives them and two runs would exhaust the lobby-create
-  limit for the rest of the window. Only `::1`, `127.0.0.1` and `unknown` keys
-  are touched — behind Vercel the limiter always keys on a real address, so this
-  cannot reach anybody else's counters.
+- **Import `test` from `./support/fixtures`, not from `@playwright/test`.** That
+  fixture clears this machine's rate-limit counters before **each** test. Since
+  #854 the counters are shared in Redis, so the suite competes with itself: the
+  auth preset allows five requests per fifteen minutes and every spectator needs
+  a guest of their own, which a full run exhausts partway through. Clearing once
+  per run was not enough. Only `::1`, `127.0.0.1` and `unknown` keys are touched
+  — behind Vercel the limiter always keys on a real address, so this cannot
+  reach anybody else's counters.
+- Spectating needs `allowSpectators`, which is Premium, so `enableSpectators()`
+  sets it in the database. What is under test is the spectator path, not the
+  paywall.
 
 ## If a change to `lib/` seems to have no effect
 

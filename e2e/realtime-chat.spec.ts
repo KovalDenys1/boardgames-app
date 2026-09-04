@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './support/fixtures'
 import { contextForGuest, createGuestLobby, joinAsGuest } from './support/lobby'
 import { watchRealtimeSubscription } from './support/realtime'
 
