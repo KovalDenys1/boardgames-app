@@ -48,6 +48,15 @@ function createPrismaClient() {
   const client = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    omit: {
+      // Lobbies.realtimeSecret names the realtime topic (#845), so it is a
+      // bearer token: whoever holds it can subscribe to the lobby. Several
+      // routes read a lobby row and spread it into their response, and one of
+      // those spreading the secret would hand it to exactly the outsiders the
+      // column exists to keep out. Omitting it globally makes every read that
+      // wants it say so — see lib/lobby-realtime-topic.ts.
+      lobbies: { realtimeSecret: true },
+    },
   })
     .$extends(resilienceExtension)
     .$extends(dbMonitor.createExtension())
