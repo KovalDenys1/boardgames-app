@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
+import { SpyGame, SpyGamePhase, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
@@ -8,6 +8,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { runSpyBots } from '@/lib/spy-bot-runner'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -38,8 +39,13 @@ export async function POST(
       where: { id: gameId },
       include: {
         players: {
-          include: {
-            user: true,
+          select: {
+            userId: true,
+            user: {
+              // Only what the bot runner needs — the full user row carries the
+              // email address and this route has no use for it.
+              select: { id: true, username: true, bot: true },
+            },
           },
         },
         lobby: true,
@@ -129,6 +135,10 @@ export async function POST(
     // Initialize round (assigns roles, selects location)
     spyGame.initializeRound(activeLocations.locations)
 
+    // Bots confirm their role straight away, so the round only ever waits on the
+    // humans in it (#813).
+    const botMoves = await runSpyBots(spyGame, game.players)
+
     // Get updated state
     const updatedState = spyGame.getState()
 
@@ -166,15 +176,20 @@ export async function POST(
       log.info('Spy game round initialized', { gameId })
     }
 
-    void broadcastToLobby(game.lobby.code, 'spy-round-start', { state: updatedState })
+    // Never the raw state: it carries spyPlayerId, playerRoles and the location,
+    // and this goes to every subscriber on the lobby topic. Each player reads
+    // their own role from GET /api/game/[gameId]/spy-role instead.
+    const broadcastState = sanitizeSpyStateForBroadcast(updatedState)
+
+    void broadcastToLobby(game.lobby.code, 'spy-round-start', { state: broadcastState })
     void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
-      payload: { state: updatedState },
+      payload: { state: broadcastState },
     })
 
     return NextResponse.json({
       success: true,
-      state: updatedState,
+      state: broadcastState,
     })
   } catch (err) {
     log.error('Error initializing Spy round', err as Error)

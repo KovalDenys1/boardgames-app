@@ -13,11 +13,22 @@ describe('getLobbyPlayerRequirements', () => {
   })
 
   it('returns strict minimum requirements for non-bot games', () => {
-    const requirements = getLobbyPlayerRequirements('guess_the_spy')
+    const requirements = getLobbyPlayerRequirements('alias')
 
     expect(requirements).toEqual({
-      gameType: 'guess_the_spy',
+      gameType: 'alias',
       supportsBots: false,
+      minPlayersRequired: 4,
+      desiredPlayerCount: 4,
+    })
+  })
+
+  // Spy keeps its three-player minimum now that it has bots — the difference is
+  // that a lone host can reach it by filling the other two seats (#813).
+  it('keeps the three-player minimum for Spy and marks it bot-capable', () => {
+    expect(getLobbyPlayerRequirements('guess_the_spy')).toEqual({
+      gameType: 'guess_the_spy',
+      supportsBots: true,
       minPlayersRequired: 3,
       desiredPlayerCount: 3,
     })

@@ -41,3 +41,11 @@ export { MemoryBotExecutor, type MemoryBotActionEvent } from './memory/memory-bo
 // Connect Four exports
 export { ConnectFourBot, type ConnectFourBotDecision } from './connect-four/connect-four-bot'
 export { ConnectFourBotExecutor, type ConnectFourBotActionEvent } from './connect-four/connect-four-bot-executor'
+
+// Guess the Spy exports
+export { SpyBot, type SpyBotDecision } from './guess-the-spy/spy-bot'
+export {
+    SpyBotExecutor,
+    type SpyBotActionEvent,
+    type SpyBotParticipant,
+} from './guess-the-spy/spy-bot-executor'

@@ -1,4 +1,4 @@
-import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
+import { SpyGame, SpyGamePhase, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 
 const mockLocations = [
   {
@@ -608,5 +608,47 @@ describe('SpyGame', () => {
       expect(finalState.status).toBe('finished')
       expect(finalState.winner).toBeUndefined()
     })
+  })
+})
+
+describe('sanitizeSpyStateForBroadcast', () => {
+  const LOCATIONS = [
+    { name: 'Airport', category: 'Travel', roles: ['Pilot', 'Passenger', 'Security Guard'] },
+  ]
+
+  function playingRound(): SpyGame {
+    const game = new SpyGame('spy-sanitize')
+    game.addPlayer({ id: 'p1', name: 'One' })
+    game.addPlayer({ id: 'p2', name: 'Two' })
+    game.addPlayer({ id: 'p3', name: 'Three' })
+    game.startGame()
+    game.initializeRound(LOCATIONS)
+    return game
+  }
+
+  it('withholds the spy, the roles and the location mid-round', () => {
+    const sanitized = sanitizeSpyStateForBroadcast(playingRound().getState())
+    const data = sanitized.data as Record<string, unknown>
+
+    // Everyone on the lobby topic receives this, including the spy — who is
+    // playing precisely because they do not know the location.
+    expect(data.spyPlayerId).toBeUndefined()
+    expect(data.playerRoles).toBeUndefined()
+    expect(data.location).toBeUndefined()
+
+    // What the board still needs to render.
+    expect(data.phase).toBeDefined()
+    expect(data.currentRound).toBe(1)
+    expect(Array.isArray(data.allLocationNames)).toBe(true)
+  })
+
+  it('reveals everything once the round reaches its results', () => {
+    const game = playingRound()
+    const state = game.getState()
+    ;(state.data as { phase: string }).phase = SpyGamePhase.RESULTS
+
+    const data = sanitizeSpyStateForBroadcast(game.getState()).data as Record<string, unknown>
+    expect(data.spyPlayerId).toEqual(expect.any(String))
+    expect(data.location).toBe('Airport')
   })
 })
