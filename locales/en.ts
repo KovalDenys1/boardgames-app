@@ -2130,6 +2130,9 @@ const en = {
     },
   },
   alias: {
+    soloModeTitle: 'Everyone for themselves.',
+    soloModeSubtitle: 'Three players, so there are no teams: each of you describes in turn while the other two guess. Points go to whoever is describing.',
+    soloBadge: 'Solo',
     team1: 'Team 1',
     team2: 'Team 2',
     teamPreviewNote: 'Teams are assigned when the game starts',

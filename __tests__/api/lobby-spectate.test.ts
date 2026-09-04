@@ -239,6 +239,58 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
   })
 
+  it('gives an admitted spectator the topic name but never the raw secret (#845)', async () => {
+    const SECRET = 'test-lobby-realtime-secret'
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'viewer', isGuest: false })
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      name: 'Spectate Lobby',
+      realtimeSecret: SECRET,
+      maxPlayers: 4,
+      allowSpectators: true,
+      maxSpectators: 10,
+      spectatorCount: 1,
+      turnTimer: 60,
+      isActive: true,
+      gameType: 'yahtzee',
+      createdAt: new Date('2026-02-27T18:00:00.000Z'),
+      creator: { id: 'owner-1', username: 'owner' },
+      games: [],
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.realtimeTopic).toBe(`lobby:ABC123:${SECRET}`)
+    // The secret is only ever meaningful as part of the topic name — it must
+    // not also arrive as a field on the lobby, where it would outlive the
+    // checks above in anything that caches or forwards the snapshot.
+    expect(payload.lobby.realtimeSecret).toBeUndefined()
+  })
+
+  it('gives no topic at all to a spectator the lobby turned away (#845)', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'viewer', isGuest: false })
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...(baseLobby as any),
+      realtimeSecret: 'test-lobby-realtime-secret',
+    })
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+
+    // This is the second half of #845: the lobby refused the spectator over
+    // HTTP, and its state used to keep going out on a topic they could guess.
+    expect(response.status).toBe(403)
+    expect(JSON.stringify(await response.json())).not.toContain('test-lobby-realtime-secret')
+  })
+
   it('a guest cannot use adminView even if adminView=true is requested', async () => {
     mockGetRequestAuthUser.mockResolvedValue({ id: 'guest-1', username: 'Guest', isGuest: true })
     mockPrisma.lobbies.findUnique.mockResolvedValue(baseLobby as any)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
+import { SpyGame, SpyGamePhase, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
@@ -37,11 +37,6 @@ export async function POST(
     const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
-        players: {
-          include: {
-            user: true,
-          },
-        },
         lobby: true,
       },
     })
@@ -166,15 +161,20 @@ export async function POST(
       log.info('Spy game round initialized', { gameId })
     }
 
-    void broadcastToLobby(game.lobby.code, 'spy-round-start', { state: updatedState })
+    // Never the raw state: it carries spyPlayerId, playerRoles and the location,
+    // and this goes to every subscriber on the lobby topic. Each player reads
+    // their own role from GET /api/game/[gameId]/spy-role instead.
+    const broadcastState = sanitizeSpyStateForBroadcast(updatedState)
+
+    void broadcastToLobby(game.lobby.code, 'spy-round-start', { state: broadcastState })
     void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
-      payload: { state: updatedState },
+      payload: { state: broadcastState },
     })
 
     return NextResponse.json({
       success: true,
-      state: updatedState,
+      state: broadcastState,
     })
   } catch (err) {
     log.error('Error initializing Spy round', err as Error)

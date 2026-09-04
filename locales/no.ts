@@ -2118,6 +2118,9 @@ const no = {
     }
   },
   alias: {
+    soloModeTitle: 'Alle for seg selv.',
+    soloModeSubtitle: 'Tre spillere, så ingen lag: dere forklarer etter tur mens de to andre gjetter. Poengene går til den som forklarer.',
+    soloBadge: 'Solo',
     team1: 'Lag 1',
     team2: 'Lag 2',
     teamPreviewNote: 'Lagene blir tildelt når spillet starter',

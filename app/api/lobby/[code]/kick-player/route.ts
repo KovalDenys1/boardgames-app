@@ -79,7 +79,10 @@ export async function POST(
     void broadcastToLobby(code, 'player-kicked', {
       lobbyCode: code,
       userId: targetPlayer.userId,
-      username: targetPlayer.user.username || targetPlayer.user.email || 'Player',
+      // Never fall back to the email address: this goes onto the lobby's
+      // realtime topic, which is not private and whose 4-digit code can be
+      // enumerated, so an address would be readable by anyone (#801).
+      username: targetPlayer.user.username || 'Player',
       remainingCount,
     })
 

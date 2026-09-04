@@ -36,6 +36,11 @@ type SpectatorLobbyResponse = {
   lobby: Lobby
   activeGame: Game | null
   canJoinAsPlayer: boolean
+  // The broadcast topic to subscribe to. It carries a per-lobby secret, and the
+  // snapshot request is what earns it: a lobby with spectators switched off
+  // never returns one, so its state is no longer readable by guessing the
+  // four-digit code (#845).
+  realtimeTopic?: string
 }
 
 type SpectatorChatMessage = {
@@ -327,11 +332,12 @@ export default function SpectatorLobbyPage() {
   }, [loadSnapshot])
 
   // Subscribe to lobby broadcast for realtime game state updates (legacy games: memory, yahtzee, spy)
+  const realtimeTopic = data?.realtimeTopic
   useEffect(() => {
-    if (!code) return
+    if (!code || !realtimeTopic) return
     const supabase = getSupabaseClient()
     const channel = supabase
-      .channel(`lobby:${code}`)
+      .channel(realtimeTopic)
       .on('broadcast', { event: 'game-update' }, () => void loadSnapshot())
       .on('broadcast', { event: 'game-started' }, () => void loadSnapshot())
       .on('broadcast', { event: 'player-left' }, () => void loadSnapshot())
@@ -341,7 +347,7 @@ export default function SpectatorLobbyPage() {
       void supabase.removeChannel(channel)
       gameChannelRef.current = null
     }
-  }, [code, loadSnapshot])
+  }, [code, realtimeTopic, loadSnapshot])
 
   // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat
   useEffect(() => {

@@ -65,6 +65,15 @@ interface GuessMessage {
   text: string
 }
 
+/**
+ * Alias drops teams entirely at three players — each of them is their own team,
+ * describing in turn while the other two guess (#847). The waiting room has to
+ * show that, or it promises a game that will not be played.
+ */
+function isSoloPlayerCount(playerCount: number): boolean {
+  return playerCount === 3
+}
+
 function computePreviewTeams(players: GamePlayer[]): { team1: GamePlayer[]; team2: GamePlayer[] } {
   const team1: GamePlayer[] = []
   const team2: GamePlayer[] = []
@@ -797,7 +806,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 <span style={{ color: 'var(--bd-coral-deep)' }}>{t('alias.doNotSayItShort')}</span>
               </h1>
               <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, lineHeight: 1.55, margin: 0, maxWidth: 480 }}>
-                Two teams take turns. One player describes, the rest guess.{' '}
+                {isSoloPlayerCount(players.length)
+                  ? t('alias.soloModeSubtitle')
+                  : 'Two teams take turns. One player describes, the rest guess.'}{' '}
                 <strong>+1</strong> for every word you nail, <strong>−1</strong> for skips.
               </p>
             </div>
@@ -819,13 +830,28 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
+          {isSoloPlayerCount(players.length) ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+              {players.map((player, i) => (
+                <TeamCard
+                  key={player.id}
+                  side={i === 0 ? 'left' : 'right'}
+                  name={player.name}
+                  accent={['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)'][i] ?? 'var(--bd-lav)'}
+                  accentDeep={['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)'][i] ?? '#7A6AE8'}
+                  list={[player]}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
             <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentDeep="var(--bd-coral-deep)" list={team1} />
             <div className="hidden md:flex items-center justify-center">
               <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
             </div>
             <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
-          </div>
+            </div>
+          )}
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -880,8 +906,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   // ── PHASE 1 — Team assignment ──────────────────────────────────────────────
   if (data.phase === 'team_assignment') {
-    const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)']
-    const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8']
+    const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)']
+    const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)']
+
+    // Three players means three teams of one: nobody picks a side, because
+    // there are no sides to pick (#847).
+    const isSolo = data.teams.length === 3
 
     const myTeamId = data.teams.find(t => t.playerIds.includes(currentUserId ?? ''))?.id
 
@@ -909,7 +939,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           }} />
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <BdLabel style={{ color: accentDeep }}>{`Team 0${i + 1}`}</BdLabel>
+              <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : `Team 0${i + 1}`}</BdLabel>
               <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
                 {team.name}
               </div>
@@ -957,7 +987,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             })}
           </div>
 
-          {myTeamId !== team.id ? (
+          {isSolo ? null : myTeamId !== team.id ? (
             <button
               onClick={() => handleMove('assign_team', { teamId: team.id })}
               disabled={isMoveSubmitting}
@@ -999,26 +1029,40 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               fontFamily: FONT_DISPLAY, fontWeight: 700,
               fontSize: 'clamp(32px, 5vw, 48px)', lineHeight: 1.05, margin: 0,
             }}>
-              Choose your side.
+              {isSolo ? t('alias.soloModeTitle') : 'Choose your side.'}
             </h1>
             <p style={{ color: 'var(--bd-ink-soft)', fontSize: 15, margin: 0 }}>
-              Pick a team — then host starts when everyone's ready.
+              {isSolo
+                ? t('alias.soloModeSubtitle')
+                : "Pick a team — then host starts when everyone's ready."}
             </p>
           </div>
 
-          <div className="flex flex-col gap-4 md:flex-row md:gap-5 md:items-start">
-            <div className="flex-1 min-w-0">
-              {renderTeamCard(data.teams[0], 0)}
+          {isSolo ? (
+            // No "vs" divider: with three of them there are no two sides to
+            // put it between.
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5 md:items-start">
+              {data.teams.map((team, i) => (
+                <div key={team.id} className="min-w-0">
+                  {renderTeamCard(team, i)}
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-center py-1 shrink-0 md:pt-20">
-              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
-            </div>
-            {data.teams[1] && (
+          ) : (
+            <div className="flex flex-col gap-4 md:flex-row md:gap-5 md:items-start">
               <div className="flex-1 min-w-0">
-                {renderTeamCard(data.teams[1], 1)}
+                {renderTeamCard(data.teams[0], 0)}
               </div>
-            )}
-          </div>
+              <div className="flex items-center justify-center py-1 shrink-0 md:pt-20">
+                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+              </div>
+              {data.teams[1] && (
+                <div className="flex-1 min-w-0">
+                  {renderTeamCard(data.teams[1], 1)}
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',

@@ -5,6 +5,7 @@ import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { sanitizeGameStateForSpectator } from '@/lib/spectator-state'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { buildLobbyTopic } from '@/lib/lobby-realtime-topic'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 
@@ -26,6 +27,9 @@ export async function GET(
       id: true,
       code: true,
       name: true,
+      // Returned as a topic name below, never as a field on the lobby — see the
+      // destructure before the response (#845).
+      realtimeSecret: true,
       maxPlayers: true,
       allowSpectators: true,
       maxSpectators: true,
@@ -137,7 +141,7 @@ export async function GET(
         state: JSON.stringify(sanitizeGameStateForSpectator(lobby.gameType, activeGame.state, activeGame.status)),
       }
     : null
-  const { creator, ...safeLobbyWithoutCreator } = lobby
+  const { creator, realtimeSecret, ...safeLobbyWithoutCreator } = lobby
   const sanitizedCreator = sanitizeLobbyCreatorIdentity(creator)
 
   const canJoinAsPlayer = (() => {
@@ -158,5 +162,11 @@ export async function GET(
     activeGame: sanitizedActiveGame,
     canJoinAsPlayer,
     isAdminView,
+    // Everything above already passed the allowSpectators, password and
+    // spectator-limit gates, so this is the point at which a spectator has
+    // earned the topic name. A lobby with spectators switched off never gets
+    // here, which is what closes the second half of #845: its state used to go
+    // out on a topic anyone could guess.
+    realtimeTopic: buildLobbyTopic(code, realtimeSecret),
   })
 }

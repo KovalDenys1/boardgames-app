@@ -33,6 +33,23 @@ interface UseLobbyChatOptions {
   onIncomingMessageSound?: () => void
 }
 
+/**
+ * sendChatMessage adds the sender's own message locally under a `temp-` id so it
+ * appears instantly. Drop those entries once the server's copy of the same text
+ * arrives, whichever path it arrives by.
+ */
+function withoutConfirmedOptimistic(
+  current: ChatMessagePayload[],
+  confirmed: ChatMessagePayload[]
+): ChatMessagePayload[] {
+  return current.filter((m) => {
+    if (typeof m.id !== 'string' || !m.id.startsWith('temp-')) return true
+    const age = Date.now() - parseInt(m.id.slice(5), 10)
+    if (age >= 5000) return true
+    return !confirmed.some((c) => c.userId === m.userId && c.message === m.message)
+  })
+}
+
 export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: UseLobbyChatOptions) {
   const { data: session } = useSession()
   const { isGuest, guestId, guestName } = useGuest()
@@ -49,18 +66,41 @@ export function useLobbyChat({ code, isChatVisible, onIncomingMessageSound }: Us
   const currentUserIdRef = useRef<string | null | undefined>(undefined)
   currentUserIdRef.current = isGuest ? guestId : session?.user?.id
   const soundRef = useRef(onIncomingMessageSound)
+  const codeRef = useRef(code)
+  codeRef.current = code
   soundRef.current = onIncomingMessageSound
+  const chatMessagesRef = useRef<ChatMessagePayload[]>([])
+  chatMessagesRef.current = chatMessages
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
-    setChatMessages(prev => {
-      // Remove the matching optimistic entry added by sendChatMessage
-      const filtered = prev.filter(m => {
-        if (typeof m.id !== 'string' || !m.id.startsWith('temp-')) return true
-        const age = Date.now() - parseInt(m.id.slice(5), 10)
-        return !(m.userId === message.userId && m.message === message.message && age < 5000)
-      })
-      return [...filtered, message]
-    })
+    // The lobby's realtime topic is not private and its code is four digits, so
+    // an outsider can subscribe to any lobby by enumerating codes. Chat is
+    // therefore announced without its text (#801) and the body is fetched from
+    // /api/lobby/[code]/chat, which checks membership. A payload that still
+    // carries text is handled below for the duration of a rollout.
+    if (typeof message?.message !== 'string') {
+      void fetchWithGuest(`/api/lobby/${codeRef.current}/chat`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (!Array.isArray(data?.messages)) return
+          const known = new Set(chatMessagesRef.current.map((m) => m.id))
+          const fresh = (data.messages as ChatMessagePayload[]).filter((m) => !known.has(m.id))
+          if (fresh.length === 0) return
+
+          setChatMessages((prev) => [...withoutConfirmedOptimistic(prev, fresh), ...fresh])
+
+          const last = fresh[fresh.length - 1]
+          const isOwnMessage = last.userId === currentUserIdRef.current
+          if (!isChatVisibleRef.current && !isOwnMessage) setUnreadCount((prev) => prev + 1)
+          if (!isOwnMessage) soundRef.current?.()
+        })
+        .catch(() => {
+          // Non-critical: history reloads on the next reconnect anyway.
+        })
+      return
+    }
+
+    setChatMessages(prev => [...withoutConfirmedOptimistic(prev, [message]), message])
     const isOwnMessage = message.userId === currentUserIdRef.current
     if (!isChatVisibleRef.current && !isOwnMessage) {
       setUnreadCount(prev => prev + 1)

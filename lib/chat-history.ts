@@ -5,6 +5,7 @@
  */
 
 import { logger } from './logger'
+import { getRedisRestCredentials, REDIS_CREDENTIALS_MISSING_MESSAGE } from './redis-credentials'
 
 const CHAT_KEY_PREFIX = 'chat:lobby:'
 const MAX_MESSAGES = 50
@@ -14,7 +15,9 @@ interface ChatRedisClient {
   lpush(key: string, ...values: string[]): Promise<unknown>
   ltrim(key: string, start: number, stop: number): Promise<unknown>
   expire(key: string, seconds: number): Promise<unknown>
-  lrange(key: string, start: number, stop: number): Promise<string[]>
+  // Not string[]: the Upstash REST client deserializes JSON on the way out, so
+  // what comes back is whatever was stored — see parseStoredMessage below.
+  lrange(key: string, start: number, stop: number): Promise<unknown[]>
 }
 
 interface UpstashRedisModule {
@@ -27,13 +30,17 @@ let _clientPromise: Promise<ChatRedisClient | null> | null = null
 async function getChatRedisClient(): Promise<ChatRedisClient | null> {
   if (_client !== undefined) return _client
 
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  const credentials = getRedisRestCredentials()
 
-  if (!url || !token) {
+  if (!credentials) {
+    // Say so. This used to return null in silence, which is how an empty chat
+    // history looked exactly like a lobby where nobody had spoken (#852).
+    logger.warn(`chat-history: ${REDIS_CREDENTIALS_MISSING_MESSAGE} History will be empty.`)
     _client = null
     return null
   }
+
+  const { url, token } = credentials
 
   if (!_clientPromise) {
     _clientPromise = import('@upstash/redis')
@@ -71,6 +78,32 @@ function lobbyKey(lobbyCode: string): string {
 }
 
 /**
+ * Turn one stored entry back into a message.
+ *
+ * persistChatMessage writes a JSON string, but the Upstash REST client parses
+ * JSON on the way out, so what lrange returns is already an object. Calling
+ * JSON.parse on it throws, the entry was dropped, and every read returned an
+ * empty list — which is to say chat history never worked, even when Redis was
+ * connected (#854). Accept both shapes, because which one arrives depends on
+ * the client, not on us.
+ */
+function parseStoredMessage(entry: unknown): StoredChatMessage | null {
+  if (typeof entry === 'string') {
+    try {
+      return JSON.parse(entry) as StoredChatMessage
+    } catch {
+      return null
+    }
+  }
+
+  if (entry && typeof entry === 'object' && typeof (entry as StoredChatMessage).message === 'string') {
+    return entry as StoredChatMessage
+  }
+
+  return null
+}
+
+/**
  * Persist a chat message. Silently no-ops if Redis is unavailable.
  */
 export async function persistChatMessage(msg: StoredChatMessage): Promise<void> {
@@ -105,13 +138,7 @@ export async function getChatHistory(lobbyCode: string): Promise<StoredChatMessa
     const raw = await redis.lrange(lobbyKey(lobbyCode), 0, MAX_MESSAGES - 1)
     // raw is newest-first; reverse to get chronological order
     return raw
-      .map((s) => {
-        try {
-          return JSON.parse(s) as StoredChatMessage
-        } catch {
-          return null
-        }
-      })
+      .map(parseStoredMessage)
       .filter((m): m is StoredChatMessage => m !== null)
       .reverse()
   } catch (err) {

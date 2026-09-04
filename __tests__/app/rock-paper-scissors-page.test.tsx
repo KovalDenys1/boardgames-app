@@ -92,6 +92,12 @@ jest.mock('@/components/LoadingSpinner', () => ({
   default: () => <div data-testid="loading-spinner" />,
 }))
 
+// The realtime topic carries a per-lobby secret and is fetched from the server
+// (#845). Supabase itself is mocked below, so the name only has to be stable.
+jest.mock('@/lib/lobby-realtime-topic-client', () => ({
+  fetchLobbyTopic: jest.fn(async (code: string) => `lobby:${code}:test-secret`),
+}))
+
 jest.mock('@/lib/supabase-client', () => ({
   getSupabaseClient: jest.fn(() => ({
     channel: jest.fn(() => mockChannel),
