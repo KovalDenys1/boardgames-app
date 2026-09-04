@@ -1,8 +1,10 @@
 # End-to-end tests
 
 ```
-npm run test:e2e        # headless
+npm run test:e2e        # headless, against a dev server it starts itself
 npm run test:e2e:ui     # Playwright's UI mode, for debugging a failure
+
+E2E_BASE_URL=https://boardly.online npm run test:e2e   # verify a release
 ```
 
 Playwright starts `next dev` on **port 3100** by itself — 3000 is often taken by
@@ -53,10 +55,13 @@ only reason these tests exist. Consequences:
 - They need `.env.local` and **cannot run in CI**, which has no secrets.
 - Every lobby they create is named `E2E — …` and the global teardown deletes it.
   Games and players cascade; guest users are left to the existing guest purge.
-- One guest identity is cached in `e2e/.auth/host.json` (gitignored) and reused,
-  because `/api/auth/guest-session` allows five requests per fifteen minutes and
-  a suite that fails on its fourth run of the afternoon teaches you to stop
-  running it.
+- Guest identities are cached per role in `e2e/.auth/` (gitignored) and reused,
+  because `/api/auth/guest-session` allows five requests per fifteen minutes.
+  Tokens last 12h. This matters most against a deployment: there the limiter
+  keys on the runner's real IP, which the per-test clearing deliberately will
+  not touch, so minting a guest per run made the spectator tests unrunnable
+  after a couple of attempts. Reuse is safe because a cached guest is never
+  added to a lobby as a player.
 - **Import `test` from `./support/fixtures`, not from `@playwright/test`.** That
   fixture clears this machine's rate-limit counters before **each** test. Since
   #854 the counters are shared in Redis, so the suite competes with itself: the
@@ -75,3 +80,15 @@ Playwright reuses a dev server that is already listening on 3100. Next's dev
 server hot-reloads most things but keeps module-level state — the memoised Redis
 client, for one — so a change to how a client is constructed needs the server
 restarted: `lsof -ti:3100 | xargs kill -9`. This cost half an hour once already.
+
+## Against a deployment
+
+`E2E_BASE_URL` skips the local dev server and points the same tests at a
+released app — which is the release check, rather than curling for a 200.
+
+The rate limits are real there and cannot be cleared: the limiter keys on the
+runner's public IP, and the per-test clearing only ever touches loopback. Lobby
+creation allows ten per hour against a bucket that resets on the hour, and the
+suite makes six. **So: one production run per hour.** Guest identities are
+cached, so repeat runs no longer spend the tighter five-per-fifteen-minutes
+auth budget.
