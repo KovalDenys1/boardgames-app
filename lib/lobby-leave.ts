@@ -207,7 +207,9 @@ export async function performPlayerLeave(
       ? await reassignLobbyCreatorIfNeeded(log, lobby.id, activeGame.id, code)
       : null
 
-  const departedPlayerName = player.user.username || player.user.email || 'Guest'
+  // Broadcast onto a non-private topic, so an email must never be the fallback
+  // for a missing username (#801).
+  const departedPlayerName = player.user.username || 'Guest'
   const playerLeftEventPayload = {
     userId,
     playerId: userId,
