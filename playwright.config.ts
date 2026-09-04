@@ -1,4 +1,14 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+import dotenv from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
+
+// The workers re-evaluate this file, so loading the environment here is what
+// lets the fixtures reach Redis without spawning a process per test.
+for (const file of ['.env.local', '.env']) {
+  const path = resolve(process.cwd(), file)
+  if (existsSync(path)) dotenv.config({ path, override: false, quiet: true })
+}
 
 /**
  * End-to-end tests, run on demand rather than in CI.
@@ -26,7 +36,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [['list']],
-  globalSetup: './e2e/support/global-setup.ts',
   globalTeardown: './e2e/support/global-teardown.ts',
 
   timeout: 90_000,
@@ -47,7 +56,9 @@ export default defineConfig({
 
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 
-  webServer: {
+  // Pointed at a deployment (E2E_BASE_URL), there is nothing to start — the
+  // suite then verifies the released app rather than the working copy.
+  webServer: process.env.E2E_BASE_URL ? undefined : {
     // `next dev` rather than a production build: a build takes minutes, and
     // dev mode also skips the origin-based CSRF check for localhost, which the
     // API-driven setup in e2e/support/lobby.ts relies on.
