@@ -113,7 +113,18 @@ export async function POST(
   }
 
   await persistChatMessage(chatMessage)
-  void broadcastToLobby(code, 'chat-message', chatMessage)
+
+  // Announce that there is a new message, never its text. Posting and reading
+  // chat are both gated on lobby membership above, but the realtime topic this
+  // lands on is not private and the lobby code is four digits, so anyone able
+  // to enumerate codes could read every conversation. Clients fetch the body
+  // from GET /api/lobby/[code]/chat, which applies the same membership check
+  // (#801).
+  void broadcastToLobby(code, 'chat-message', {
+    id: chatMessage.id,
+    lobbyCode: code,
+    timestamp: chatMessage.timestamp,
+  })
 
   return NextResponse.json({ ok: true })
 }
