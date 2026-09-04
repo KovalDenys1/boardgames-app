@@ -345,9 +345,16 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
 
-      if (data.serverBroadcasted !== true) {
-        void reconcileWithServerSnapshot()
-      }
+      // Always, deliberately. This used to read `if (data.serverBroadcasted
+      // !== true)`, a field no server has ever set — so it always reconciled
+      // anyway, while looking like an optimisation someone could "finish" by
+      // returning that flag. Doing so without awaiting the broadcast would
+      // reintroduce #859 here: the client would trust a delivery nobody
+      // checked and sit on a stale board while the server moved on. The state
+      // is already in this response and applying it directly would save the
+      // request, but reconcile also refreshes players and lobby data, so that
+      // is a separate change (#861).
+      void reconcileWithServerSnapshot()
 
       trackMoveSubmitApplied({
         gameType: 'yahtzee',
@@ -587,9 +594,16 @@ export function useGameActions(props: UseGameActionsProps) {
         },
       })
 
-      if (data.serverBroadcasted !== true) {
-        void reconcileWithServerSnapshot()
-      }
+      // Always, deliberately. This used to read `if (data.serverBroadcasted
+      // !== true)`, a field no server has ever set — so it always reconciled
+      // anyway, while looking like an optimisation someone could "finish" by
+      // returning that flag. Doing so without awaiting the broadcast would
+      // reintroduce #859 here: the client would trust a delivery nobody
+      // checked and sit on a stale board while the server moved on. The state
+      // is already in this response and applying it directly would save the
+      // request, but reconcile also refreshes players and lobby data, so that
+      // is a separate change (#861).
+      void reconcileWithServerSnapshot()
 
       trackMoveSubmitApplied({
         gameType: 'yahtzee',
