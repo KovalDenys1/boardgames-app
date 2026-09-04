@@ -140,6 +140,15 @@ export function useBotTurn({
 
       retryAttemptRef.current = 0
       clientLogger.log('🤖 Bot turn completed:', responseData)
+
+      // Every failure path above reconciles or retries; success used to be the
+      // only one with no safety net. The route answers 200 once the move is
+      // applied and persisted, and sends the new state on a fire-and-forget
+      // broadcast whose result it discards — so a broadcast that never lands
+      // left this board on the bot's turn forever while the server had moved
+      // on to the human. Who then lost on time for a turn they were never
+      // shown, because the timer reads lastMoveAt from this stale state (#859).
+      await reconcileAfterBotTurn('bot-turn-complete')
     } catch (error) {
       clientLogger.error('🤖 Bot turn error:', error)
       if (retryAttemptRef.current < MAX_BOT_RETRIES) {
