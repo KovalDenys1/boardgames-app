@@ -9,6 +9,7 @@ interface SetGuestModeOptions {
     guestId?: string
     guestName?: string
     guestToken?: string
+    guestIdentityToken?: string
 }
 
 interface GuestContextType {
@@ -26,11 +27,16 @@ const GuestContext = createContext<GuestContextType | undefined>(undefined)
 const GUEST_ID_KEY = 'boardly_guest_id'
 const GUEST_NAME_KEY = 'boardly_guest_name'
 const GUEST_TOKEN_KEY = 'boardly_guest_token'
+// Outlives the 12h session token so a guest returning the next day is the same
+// person rather than a brand new one (#818). Identity only — it authorises
+// nothing on its own.
+const GUEST_IDENTITY_KEY = 'boardly_guest_identity'
 
 interface GuestSessionResponse {
     guestId: string
     guestName: string
     guestToken: string
+    guestIdentityToken?: string
 }
 
 export function GuestProvider({ children }: { children: ReactNode }) {
@@ -59,6 +65,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         writeLocal(GUEST_ID_KEY, session.guestId)
         writeLocal(GUEST_NAME_KEY, session.guestName)
         writeLocal(GUEST_TOKEN_KEY, session.guestToken)
+        if (session.guestIdentityToken) {
+            writeLocal(GUEST_IDENTITY_KEY, session.guestIdentityToken)
+        }
     }, [])
 
     const requestGuestSession = useCallback(async (name: string, token?: string): Promise<GuestSessionResponse> => {
@@ -70,6 +79,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({
                 guestName: name,
                 guestToken: token,
+                // Sent so an expired session token can still resolve back to
+                // the same guest instead of minting a new one (#818).
+                guestIdentityToken: readLocal(GUEST_IDENTITY_KEY) || undefined,
             }),
         })
 
