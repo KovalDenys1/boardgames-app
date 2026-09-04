@@ -187,3 +187,8 @@ setup-*.*
 .agents/
 .claude/
 skills-lock.json
+
+# Playwright
+/e2e/.auth/
+/test-results/
+/playwright-report/
