@@ -89,3 +89,49 @@ test('every player in a lobby can resolve its realtime topic, and nobody else ca
   const anonymous = await request.get(`${url}/api/lobby/${code}/realtime-topic`)
   expect(anonymous.status(), 'a caller with no identity must be turned away').toBe(401)
 })
+
+/**
+ * Chat history, which until #854 had nowhere to live.
+ *
+ * `getChatHistory()` is Redis-backed and returns an empty list when no
+ * credentials are found. Production had credentials under a name the code did
+ * not read, so history was always empty — and #801 had made that same empty
+ * list the only delivery path, which is how #852 happened. Delivery no longer
+ * depends on it, but a reload does: this is the assertion that the store is
+ * really there.
+ */
+test('a message is still there after a reload', async ({ browser, request, baseURL }) => {
+  const url = baseURL!
+  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2)
+  const opponent = await joinAsGuest(request, code, url)
+
+  const hostContext = await contextForGuest(browser, host)
+  const opponentContext = await contextForGuest(browser, opponent)
+
+  try {
+    const hostPage = await hostContext.newPage()
+    const opponentPage = await opponentContext.newPage()
+
+    const hostSubscribed = watchRealtimeSubscription(hostPage, code)
+    await hostPage.goto(`/lobby/${code}`)
+    await opponentPage.goto(`/lobby/${code}`)
+    await hostSubscribed
+
+    await hostPage.getByRole('button', { name: /chat/i }).first().click()
+    const message = `still here after a reload ${Date.now()}`
+    const hostChat = hostPage.getByPlaceholder(/type a message/i)
+    await expect(hostChat).toBeVisible()
+    await hostChat.fill(message)
+    await hostChat.press('Enter')
+    await expect(hostPage.getByText(message)).toBeVisible()
+
+    // A reload throws away everything the page held in memory, so whatever
+    // comes back was read from the store.
+    await opponentPage.reload()
+    await opponentPage.getByRole('button', { name: /chat/i }).first().click()
+    await expect(opponentPage.getByText(message)).toBeVisible({ timeout: 20_000 })
+  } finally {
+    await hostContext.close()
+    await opponentContext.close()
+  }
+})
