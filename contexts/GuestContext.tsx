@@ -22,6 +22,26 @@ interface GuestContextType {
     getHeaders: () => Record<string, string>
 }
 
+/**
+ * Whether a failed session refresh means the stored identity is worthless.
+ *
+ * The refresh on page load exists to recover from token expiry — and expiry
+ * does not reach here, because the route mints a fresh guest and answers 200.
+ * What reaches here is a 400 or 409 (the stored name cannot be used), or a 429,
+ * a 5xx, or a dropped connection — none of which say anything about the
+ * identity in localStorage.
+ *
+ * Discarding it on those threw the player out of their game for a reason that
+ * had nothing to do with them: /api/auth/guest-session allows five requests per
+ * fifteen minutes **per IP**, and everyone behind one NAT — a school, an
+ * office, a mobile carrier — shares that address (#856). The token is good for
+ * 12h, so keeping it and trying again on the next load is strictly better.
+ */
+function refreshFailureInvalidatesIdentity(error: unknown): boolean {
+    const status = (error as { statusCode?: number } | null)?.statusCode
+    return status === 400 || status === 409
+}
+
 const GuestContext = createContext<GuestContextType | undefined>(undefined)
 
 const GUEST_ID_KEY = 'boardly_guest_id'
@@ -127,7 +147,8 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             const generation = guestStateGenerationRef.current
             requestGuestSession(storedName, storedToken)
                 .then((session) => applyGuestSession(session, generation))
-                .catch(() => {
+                .catch((error) => {
+                    if (!refreshFailureInvalidatesIdentity(error)) return
                     removeLocal(GUEST_ID_KEY)
                     removeLocal(GUEST_NAME_KEY)
                     removeLocal(GUEST_TOKEN_KEY)
@@ -142,7 +163,8 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         const generation = guestStateGenerationRef.current
         requestGuestSession(storedName)
             .then((session) => applyGuestSession(session, generation))
-            .catch(() => {
+            .catch((error) => {
+                if (!refreshFailureInvalidatesIdentity(error)) return
                 removeLocal(GUEST_ID_KEY)
                 removeLocal(GUEST_NAME_KEY)
                 removeLocal(GUEST_TOKEN_KEY)
