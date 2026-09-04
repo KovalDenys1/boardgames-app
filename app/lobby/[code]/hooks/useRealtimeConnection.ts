@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import { fetchLobbyTopic } from '@/lib/lobby-realtime-topic-client'
 import { clientLogger } from '@/lib/client-logger'
 import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
 import type { GameAbandonedPayload, PlayerLeftPayload } from '@/types/realtime-events'
@@ -51,6 +52,9 @@ export function useRealtimeConnection({
   onGameReset,
 }: UseRealtimeConnectionProps) {
   const [isConnected, setIsConnected] = useState(false)
+  // The broadcast topic is no longer `lobby:{code}` — it carries a per-lobby
+  // secret that only a member may fetch (#845), so subscribing waits on it.
+  const [topic, setTopic] = useState<string | null>(null)
   const broadcastChannelRef = useRef<RealtimeChannel | null>(null)
   const lobbiesChannelRef = useRef<RealtimeChannel | null>(null)
   const hasConnectedOnceRef = useRef(false)
@@ -86,6 +90,24 @@ export function useRealtimeConnection({
 
   useEffect(() => {
     if (!code || !shouldJoinLobbyRoom) {
+      setTopic(null)
+      return
+    }
+
+    let cancelled = false
+
+    void fetchLobbyTopic(code, () => cancelled).then((resolved) => {
+      if (!cancelled && resolved) setTopic(resolved)
+    })
+
+    return () => {
+      cancelled = true
+      setTopic(null)
+    }
+  }, [code, shouldJoinLobbyRoom])
+
+  useEffect(() => {
+    if (!code || !shouldJoinLobbyRoom || !topic) {
       setIsConnected(false)
       return
     }
@@ -93,7 +115,7 @@ export function useRealtimeConnection({
     const supabase = getSupabaseClient()
 
     const broadcastChannel = supabase
-      .channel(`lobby:${code}`)
+      .channel(topic)
       .on('broadcast', { event: 'game-update' }, ({ payload }) => {
         clientLogger.log('📡 game-update via Supabase Broadcast')
         onGameUpdateRef.current?.(payload as GameUpdatePayload)
@@ -135,7 +157,7 @@ export function useRealtimeConnection({
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          clientLogger.log('✅ Supabase Realtime connected:', `lobby:${code}`)
+          clientLogger.log('✅ Supabase Realtime connected:', topic)
           setIsConnected(true)
           const isReconnect = hasConnectedOnceRef.current
           hasConnectedOnceRef.current = true
@@ -175,7 +197,7 @@ export function useRealtimeConnection({
       lobbiesChannelRef.current = null
       setIsConnected(false)
     }
-  }, [code, shouldJoinLobbyRoom])
+  }, [code, shouldJoinLobbyRoom, topic])
 
   const emitWhenConnected = useCallback(
     (event: string, data: unknown) => {

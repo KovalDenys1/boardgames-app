@@ -28,8 +28,12 @@ export const LOBBY_WITH_GAMES_FOR_LEAVE_INCLUDE = {
   },
 } satisfies Prisma.LobbiesInclude
 
+// The omit mirrors the client-level default in lib/db.ts: realtimeSecret never
+// comes back unless a query asks for it by name, so a payload type that still
+// declared it would not match anything the client actually returns (#845).
 export type LobbyWithGamesForLeave = Prisma.LobbiesGetPayload<{
   include: typeof LOBBY_WITH_GAMES_FOR_LEAVE_INCLUDE
+  omit: { realtimeSecret: true }
 }>
 
 export interface PerformPlayerLeaveResult {
