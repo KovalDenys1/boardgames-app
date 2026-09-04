@@ -1,9 +1,9 @@
 import { test, expect } from './support/fixtures'
 import {
   contextForGuest,
-  createGuest,
   createGuestLobby,
   enableSpectators,
+  getCachedGuest,
   joinAsGuest,
 } from './support/lobby'
 
@@ -23,7 +23,7 @@ test('a spectator sees the game start without reloading', async ({ browser, requ
   await joinAsGuest(request, code, url)
   enableSpectators(code)
 
-  const watcher = await createGuest(request, url)
+  const watcher = await getCachedGuest(request, url, 'watcher')
   const watcherContext = await contextForGuest(browser, watcher)
   const hostContext = await contextForGuest(browser, host)
 
@@ -54,7 +54,7 @@ test('a spectator sees the game start without reloading', async ({ browser, requ
 test('a lobby with spectators disabled gives out no topic', async ({ request, baseURL }) => {
   const url = baseURL!
   const { code } = await createGuestLobby(request, 'tic_tac_toe', url, 2)
-  const outsider = await createGuest(request, url)
+  const outsider = await getCachedGuest(request, url, 'outsider')
 
   const res = await request.get(`${url}/api/lobby/${code}/spectate`, {
     headers: { 'X-Guest-Token': outsider.guestToken },
