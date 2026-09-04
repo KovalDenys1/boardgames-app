@@ -108,8 +108,67 @@ describe('useBotTurn watchdog', () => {
     await advanceAndFlush(0)
     await act(async () => { await Promise.resolve() })
 
-    // Advance past watchdog — should not trigger since fetch already resolved
-    await advanceAndFlush(WATCHDOG_MS + 100)
+    // Advance past the watchdog. It must not fire — which shows as no retry,
+    // since a fired watchdog force-unlocks and schedules a second attempt.
+    // Reconciling once is the success path doing its job (#859), not the
+    // watchdog.
+    await advanceAndFlush(WATCHDOG_MS + RETRY_DELAY_MS + 200)
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(1)
+  })
+
+  it('reconciles after a successful bot turn, rather than trusting a broadcast', async () => {
+    // The route answers 200 once the move is applied, and sends the new state
+    // on a fire-and-forget broadcast whose result it discards. Without this
+    // reconcile a broadcast that never landed left the board on the bot's turn
+    // forever, while the server had moved on to the human — who then lost on
+    // time for a turn they were never shown (#859).
+    mockFetchWithGuest.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, currentPlayerIndex: 0 }),
+    } as any)
+    const reconcileWithServerSnapshot = jest.fn().mockResolvedValue(undefined)
+    const gameEngine = makeBotEngine() as any
+
+    renderHook(() =>
+      useBotTurn({
+        game: botGame,
+        gameEngine,
+        code: 'ABCD12',
+        isGameStarted: true,
+        reconcileWithServerSnapshot,
+      })
+    )
+
+    await advanceAndFlush(0)
+    await act(async () => { await Promise.resolve() })
+
+    expect(reconcileWithServerSnapshot).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not reconcile when it was not the bot\'s turn after all', async () => {
+    // A 400 "Not bot's turn" means somebody else already moved it along; there
+    // is nothing to recover and a reconcile would only add a request.
+    mockFetchWithGuest.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: "Not bot's turn" }),
+    } as any)
+    const reconcileWithServerSnapshot = jest.fn().mockResolvedValue(undefined)
+    const gameEngine = makeBotEngine() as any
+
+    renderHook(() =>
+      useBotTurn({
+        game: botGame,
+        gameEngine,
+        code: 'ABCD12',
+        isGameStarted: true,
+        reconcileWithServerSnapshot,
+      })
+    )
+
+    await advanceAndFlush(0)
+    await act(async () => { await Promise.resolve() })
+
     expect(reconcileWithServerSnapshot).not.toHaveBeenCalled()
   })
 })

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { type APIRequestContext, type BrowserContext, type Browser } from '@playwright/test'
@@ -185,4 +186,18 @@ export async function contextForGuest(browser: Browser, guest: Guest): Promise<B
     window.localStorage.setItem('boardly_guest_name', seed.guestName)
   }, guest)
   return context
+}
+
+/**
+ * Allow spectators on a lobby the tests created.
+ *
+ * The API refuses this to anyone without Premium, so it is set in the database
+ * — see e2e/support/enable-spectators.ts for why that is the honest shortcut
+ * here rather than a hole in the test.
+ */
+export function enableSpectators(code: string): void {
+  execFileSync('npx', ['tsx', path.join(__dirname, 'enable-spectators.ts'), code], {
+    cwd: path.join(__dirname, '..', '..'),
+    stdio: 'inherit',
+  })
 }
