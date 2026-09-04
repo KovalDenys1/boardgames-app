@@ -193,3 +193,57 @@ describe('SpyBotExecutor.drainPendingActions', () => {
     expect(applied).toEqual([])
   })
 })
+
+describe('a lone host plays a full round against two bots', () => {
+  it('reaches results without ever deadlocking on a bot', async () => {
+    const game = new SpyGame('spy-solo-round')
+    game.addPlayer({ id: 'human', name: 'Denys' })
+    game.addPlayer({ id: 'bot-1', name: 'Intel Analyst' })
+    game.addPlayer({ id: 'bot-2', name: 'Spy Cadet' })
+    game.startGame()
+    game.initializeRound(LOCATIONS)
+
+    // Round init: bots confirm their roles, the round waits on the human.
+    await SpyBotExecutor.drainPendingActions(game, BOTS)
+    game.makeMove({ playerId: 'human', type: 'player-ready', data: {}, timestamp: new Date() })
+    await SpyBotExecutor.drainPendingActions(game, BOTS)
+    expect(data(game).phase).not.toBe(SpyGamePhase.ROLE_REVEAL)
+
+    // Play the human's side until the round is decided. Each iteration is one
+    // human action plus whatever it unlocks for the bots; the guard is a
+    // failure condition, not a normal exit.
+    for (let turn = 0; turn < 40; turn += 1) {
+      const d = data(game)
+      if (d.phase === SpyGamePhase.RESULTS) break
+
+      let acted = false
+      if (d.phase === SpyGamePhase.QUESTIONING && d.currentTargetId === 'human') {
+        acted = game.makeMove({
+          playerId: 'human', type: 'answer-question',
+          data: { answer: 'Most days, yes.' }, timestamp: new Date(),
+        })
+      } else if (d.phase === SpyGamePhase.QUESTIONING && d.currentQuestionerId === 'human') {
+        acted = game.makeMove({
+          playerId: 'human', type: 'ask-question',
+          data: { targetId: 'bot-1', question: 'How often are you here?' }, timestamp: new Date(),
+        })
+      } else if (d.phase === SpyGamePhase.VOTING && !('human' in d.votes)) {
+        acted = game.makeMove({
+          playerId: 'human', type: 'vote',
+          data: { targetId: 'bot-1' }, timestamp: new Date(),
+        })
+      }
+
+      // Nothing for the human to do and the round is not over: that is exactly
+      // the stall this ticket is about.
+      expect(acted).toBe(true)
+      await SpyBotExecutor.drainPendingActions(game, BOTS)
+    }
+
+    const final = data(game)
+    expect(final.phase).toBe(SpyGamePhase.RESULTS)
+    expect(Object.keys(final.votes).sort()).toEqual(['bot-1', 'bot-2', 'human'])
+    // Everyone scored something for the round, so the results screen has content.
+    expect(Object.keys(final.scores).sort()).toEqual(['bot-1', 'bot-2', 'human'])
+  })
+})
