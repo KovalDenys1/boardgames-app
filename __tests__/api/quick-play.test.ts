@@ -79,7 +79,7 @@ describe('POST /api/quick-play', () => {
   })
 
   it('rejects forceSolo for a game without bot support', async () => {
-    const res = await POST(makeRequest({ gameType: 'guess_the_spy', forceSolo: true }))
+    const res = await POST(makeRequest({ gameType: 'alias', forceSolo: true }))
     expect(res.status).toBe(400)
     expect(prisma.lobbies.create).not.toHaveBeenCalled()
   })

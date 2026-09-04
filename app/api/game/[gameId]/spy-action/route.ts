@@ -10,6 +10,7 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
+import { runSpyBots } from '@/lib/spy-bot-runner'
 
 const spyActionSchema = z.object({
   action: z.enum([
@@ -117,6 +118,12 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
 
+    // Let the bots take everything they now owe before persisting: readying up,
+    // answering the question that was just asked them, asking the next one,
+    // voting. They run on this same engine instance, so one save covers the
+    // human's action and theirs (#813).
+    const botMoves = await runSpyBots(spyGame, game.players)
+
     // Get updated state
     const updatedState = spyGame.getState()
     const lastMoveAtDate = typeof updatedState.lastMoveAt === 'number' && Number.isFinite(updatedState.lastMoveAt)
@@ -171,6 +178,16 @@ export async function POST(
       state: updatedState,
     })
 
+    for (const botMove of botMoves) {
+      await appendGameReplaySnapshot({
+        gameId,
+        playerId: botMove.playerId,
+        actionType: `spy:bot:${botMove.type}`,
+        actionPayload: botMove.data,
+        state: updatedState,
+      })
+    }
+
     // Log state transitions for debugging
     if (statusChanged) {
       log.info('Game status changed', {
@@ -196,6 +213,20 @@ export async function POST(
       data,
       state: broadcastState,
     })
+    // One event per bot action so the board can announce who did what. They all
+    // carry the same final state — the bots ran in one pass on one engine — so
+    // this is about attribution, not about replaying the steps.
+    for (const botMove of botMoves) {
+      const botPlayer = game.players.find((p) => p.userId === botMove.playerId)
+      void broadcastToLobby(game.lobby.code, 'spy-action', {
+        action: botMove.type,
+        playerId: botMove.playerId,
+        playerName: botPlayer?.user?.username || 'Bot',
+        data: botMove.data,
+        state: broadcastState,
+      })
+    }
+
     void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'spy-action',
       payload: { state: broadcastState },

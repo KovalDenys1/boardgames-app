@@ -159,7 +159,7 @@ describe('Game Registry', () => {
       expect(meta.name).toBe('Guess the Spy')
       expect(meta.minPlayers).toBe(3)
       expect(meta.maxPlayers).toBe(10)
-      expect(meta.supportsBots).toBe(false)
+      expect(meta.supportsBots).toBe(true)
     })
 
     it('should return correct metadata for Tic Tac Toe', () => {
@@ -221,7 +221,11 @@ describe('Game Registry', () => {
     })
 
     it('should return false for games without bot support', () => {
-      expect(hasBotSupport('guess_the_spy')).toBe(false)
+      expect(hasBotSupport('alias')).toBe(false)
+    })
+
+    it('should return true for Spy, which got bots in #813', () => {
+      expect(hasBotSupport('guess_the_spy')).toBe(true)
     })
 
     it('should return false for unknown game types', () => {

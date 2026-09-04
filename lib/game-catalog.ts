@@ -121,7 +121,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     accentColor: 'var(--bd-lav)',
     minPlayers: 3,
     maxPlayers: 10,
-    supportsBots: false,
+    supportsBots: true,
     translationKey: 'spy',
     advanceTurnOnLeave: false,
     engineHandlesLeave: false,
