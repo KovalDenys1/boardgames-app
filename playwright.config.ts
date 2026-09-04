@@ -47,7 +47,9 @@ export default defineConfig({
 
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 
-  webServer: {
+  // Pointed at a deployment (E2E_BASE_URL), there is nothing to start — the
+  // suite then verifies the released app rather than the working copy.
+  webServer: process.env.E2E_BASE_URL ? undefined : {
     // `next dev` rather than a production build: a build takes minutes, and
     // dev mode also skips the origin-based CSRF check for localhost, which the
     // API-driven setup in e2e/support/lobby.ts relies on.
