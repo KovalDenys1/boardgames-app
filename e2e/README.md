@@ -23,9 +23,10 @@ Three tests, each standing in for a check that used to be done by hand:
 |---|---|
 | `realtime-chat.spec.ts` — a message written in one browser arrives in another | opening two windows and typing into both (#801, #845) |
 | `realtime-chat.spec.ts` — every player can resolve the topic, nobody else can | — |
+| `realtime-chat.spec.ts` — a message is still there after a reload | checking chat history survives (#854) |
 | `alias-three-players.spec.ts` — three teams of one, one describer and two guessers | playing a three-handed Alias round (#847) |
 
-The first of these found #852 on its first real run.
+These found #852 and both halves of #854.
 
 ## How they are built
 
@@ -54,3 +55,16 @@ only reason these tests exist. Consequences:
   because `/api/auth/guest-session` allows five requests per fifteen minutes and
   a suite that fails on its fourth run of the afternoon teaches you to stop
   running it.
+- The global setup clears the loopback rate-limit counters. Since #854 those
+  counters are shared in Redis rather than per-process, so restarting the dev
+  server no longer forgives them and two runs would exhaust the lobby-create
+  limit for the rest of the window. Only `::1`, `127.0.0.1` and `unknown` keys
+  are touched — behind Vercel the limiter always keys on a real address, so this
+  cannot reach anybody else's counters.
+
+## If a change to `lib/` seems to have no effect
+
+Playwright reuses a dev server that is already listening on 3100. Next's dev
+server hot-reloads most things but keeps module-level state — the memoised Redis
+client, for one — so a change to how a client is constructed needs the server
+restarted: `lsof -ti:3100 | xargs kill -9`. This cost half an hour once already.

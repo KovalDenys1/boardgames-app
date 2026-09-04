@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getRedisRestCredentials, REDIS_CREDENTIALS_MISSING_MESSAGE } from './redis-credentials'
 import { logger } from './logger'
 
 interface RateLimitConfig {
@@ -38,8 +39,7 @@ function isSafeInteger(value: unknown): value is number {
 }
 
 function resolveRateLimitBackend(): 'shared' | 'memory' {
-  const hasSharedConfig =
-    Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN)
+  const hasSharedConfig = getRedisRestCredentials() !== null
 
   if (!hasSharedConfig) {
     return 'memory'
@@ -53,18 +53,20 @@ async function getUpstashRedisClient(): Promise<SharedRateLimitStoreClient | nul
     return upstashRedisClient
   }
 
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  const credentials = getRedisRestCredentials()
 
-  if (!url || !token) {
+  if (!credentials) {
     logger?.warn(
-      'UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are not set. ' +
-      'Rate limiting falls back to in-memory store which is per-instance and ineffective on Vercel. ' +
-      'Configure Upstash Redis to enable shared rate limiting.'
+      `${REDIS_CREDENTIALS_MISSING_MESSAGE} ` +
+      'Rate limiting falls back to an in-memory store, which is per-instance and ' +
+      'therefore ineffective on Vercel: the real limit becomes the configured one ' +
+      'multiplied by however many instances are warm.'
     )
     upstashRedisClient = null
     return upstashRedisClient
   }
+
+  const { url, token } = credentials
 
   if (!upstashRedisClientPromise) {
     upstashRedisClientPromise = import('@upstash/redis')
