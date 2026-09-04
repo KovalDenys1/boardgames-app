@@ -121,9 +121,19 @@ test('a message is still there after a reload', async ({ browser, request, baseU
     const message = `still here after a reload ${Date.now()}`
     const hostChat = hostPage.getByPlaceholder(/type a message/i)
     await expect(hostChat).toBeVisible()
+
+    // Wait for the server's answer, not for the message appearing on the
+    // sender's screen: that copy is optimistic and shows up before the POST has
+    // been handled, so reloading on it races the write into the store.
+    const persisted = hostPage.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/lobby/${code}/chat`) &&
+        response.request().method() === 'POST' &&
+        response.ok()
+    )
     await hostChat.fill(message)
     await hostChat.press('Enter')
-    await expect(hostPage.getByText(message)).toBeVisible()
+    await persisted
 
     // A reload throws away everything the page held in memory, so whatever
     // comes back was read from the store.

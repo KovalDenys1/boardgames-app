@@ -220,3 +220,83 @@ describe('GuestContext with unusable localStorage (#769)', () => {
     expect(result.current.guestName).toBeNull()
   })
 })
+
+describe('a failed session refresh on page load (#856)', () => {
+  const originalFetch = global.fetch
+  const mockFetch = jest.fn()
+
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <GuestProvider>{children}</GuestProvider>
+  )
+
+  beforeAll(() => {
+    ;(global as any).fetch = mockFetch
+  })
+
+  afterAll(() => {
+    ;(global as any).fetch = originalFetch
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    window.localStorage.clear()
+    mockUseSession.mockReturnValue({ data: null, status: 'unauthenticated', update: jest.fn() } as any)
+    window.localStorage.setItem(GUEST_ID_KEY, 'guest-stored')
+    window.localStorage.setItem(GUEST_NAME_KEY, 'Stored Guest')
+    window.localStorage.setItem(GUEST_TOKEN_KEY, 'stored.jwt.token')
+  })
+
+  const failWith = (status: number, error = 'nope') => {
+    mockFetch.mockResolvedValue({ ok: false, status, json: async () => ({ error }) })
+  }
+
+  it('keeps the identity when the refresh is rate limited', async () => {
+    // /api/auth/guest-session allows five requests per fifteen minutes per IP,
+    // and everyone behind one NAT shares that address. A 429 says nothing about
+    // whether this guest is real.
+    failWith(429, 'Too many requests')
+
+    renderHook(() => useGuest(), { wrapper })
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+    await waitFor(() => {
+      expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBe('stored.jwt.token')
+    })
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBe('guest-stored')
+  })
+
+  it('keeps the identity when the request never arrives', async () => {
+    mockFetch.mockRejectedValue(new Error('network down'))
+
+    renderHook(() => useGuest(), { wrapper })
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+    await waitFor(() => {
+      expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBe('stored.jwt.token')
+    })
+  })
+
+  it('keeps the identity when the server is broken', async () => {
+    failWith(500, 'Internal error')
+
+    renderHook(() => useGuest(), { wrapper })
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+    await waitFor(() => {
+      expect(window.localStorage.getItem(GUEST_ID_KEY)).toBe('guest-stored')
+    })
+  })
+
+  it('drops the identity when the stored name is the problem', async () => {
+    // 409 is "that username is taken" — the stored name genuinely cannot be
+    // used again, so keeping it would loop forever.
+    failWith(409, 'Username is already taken')
+
+    renderHook(() => useGuest(), { wrapper })
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
+    })
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBeNull()
+  })
+})
