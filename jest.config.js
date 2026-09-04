@@ -30,6 +30,9 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
+    // Playwright specs, run by `npm run test:e2e` against a real server and a
+    // real Supabase project. Jest would match them by filename and fail.
+    '<rootDir>/e2e/',
   ],
   modulePathIgnorePatterns: [
     '<rootDir>/.next/standalone/',

@@ -114,17 +114,26 @@ export async function POST(
 
   await persistChatMessage(chatMessage)
 
-  // Announce that there is a new message, never its text. Posting and reading
-  // chat are both gated on lobby membership above, but the realtime topic this
-  // lands on is not private and the lobby code is four digits, so anyone able
-  // to enumerate codes could read every conversation. Clients fetch the body
-  // from GET /api/lobby/[code]/chat, which applies the same membership check
-  // (#801).
-  void broadcastToLobby(code, 'chat-message', {
-    id: chatMessage.id,
-    lobbyCode: code,
-    timestamp: chatMessage.timestamp,
-  })
+  // The message goes out in full.
+  //
+  // #801 replaced this with a bare signal — id and timestamp only — and had
+  // clients fetch the body from GET /api/lobby/[code]/chat, because the topic
+  // was then `lobby:{code}` with a four-digit code and anyone could subscribe
+  // by enumerating names. #845 fixed that at the root: the topic now carries a
+  // per-lobby secret handed out only behind the same membership check this
+  // route applies, so the text reaches exactly the people who could already
+  // read it over HTTP.
+  //
+  // Restoring it is not a preference. getChatHistory() is Redis-backed and
+  // no-ops when Redis is unavailable, which in production it is — so the fetch
+  // the signal relied on returned an empty list every time and nobody but the
+  // sender ever saw a message (#852). A delivery path that depends on a store
+  // which is allowed to not exist is not a delivery path.
+  //
+  // Admitted spectators share the topic and can read this off the wire. They
+  // could before #801 too, they are only admitted when the host enables
+  // spectators, and they already see the whole game state.
+  void broadcastToLobby(code, 'chat-message', chatMessage)
 
   return NextResponse.json({ ok: true })
 }
