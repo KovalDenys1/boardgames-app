@@ -1,4 +1,14 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+import dotenv from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
+
+// The workers re-evaluate this file, so loading the environment here is what
+// lets the fixtures reach Redis without spawning a process per test.
+for (const file of ['.env.local', '.env']) {
+  const path = resolve(process.cwd(), file)
+  if (existsSync(path)) dotenv.config({ path, override: false, quiet: true })
+}
 
 /**
  * End-to-end tests, run on demand rather than in CI.
@@ -26,7 +36,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [['list']],
-  globalSetup: './e2e/support/global-setup.ts',
   globalTeardown: './e2e/support/global-teardown.ts',
 
   timeout: 90_000,
