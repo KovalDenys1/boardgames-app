@@ -559,12 +559,8 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         autoBotMetricTracked = true
       }
 
-      // Fill every empty seat, not just one. Guess the Spy needs three
-      // players, so a lone host adding a single bot would still be turned away
-      // at the minimum-players check below (#813).
-      let botAddAttempts = 0
-      while (supportsBots && playerCount < desiredPlayerCount && botAddAttempts < desiredPlayerCount) {
-        botAddAttempts += 1
+      // Auto-add one bot for bot-supported games when we are below minimum.
+      if (playerCount < desiredPlayerCount && supportsBots) {
         showToast.loading('toast.addingBot', undefined, undefined, { id: 'add-bot' })
         const botResult = await addBotToLobby({ auto: true, difficulty: selectedBotDifficulty })
         showToast.dismiss('add-bot')
@@ -587,8 +583,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
             showToast.error('toast.botAddFailed')
             return
           }
-          // Enough players even without this bot — stop asking for more.
-          break
         } else {
           announceBotJoined(botResult.botName, botResult.botDifficulty)
 
