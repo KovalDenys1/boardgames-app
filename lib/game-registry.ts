@@ -89,7 +89,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
       icon: '🕵️',
       minPlayers: 3,
       maxPlayers: 10,
-      supportsBots: true,
+      supportsBots: false,
       translationKey: 'spy',
     },
     create: (id, _cfg) => new SpyGame(id),

@@ -21,9 +21,6 @@ import { MemoryBotExecutor } from '../memory/memory-bot-executor'
 import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { ConnectFourBot } from '../connect-four/connect-four-bot'
 import { ConnectFourBotExecutor } from '../connect-four/connect-four-bot-executor'
-import { SpyGame } from '@/lib/games/spy-game'
-import { SpyBot } from '../guess-the-spy/spy-bot'
-import { SpyBotExecutor } from '../guess-the-spy/spy-bot-executor'
 import type { RegisteredGameType } from '@/lib/game-registry'
 
 export function createBot(gameType: 'yahtzee', gameEngine: YahtzeeGame, difficulty?: BotDifficulty): YahtzeeBot
@@ -57,12 +54,6 @@ export function createBot(
         case 'connect_four':
             if (!(gameEngine instanceof ConnectFourGame)) throw new Error('Expected ConnectFourGame for connect_four bot')
             return new ConnectFourBot(gameEngine, difficulty)
-
-        // Spy is phase-based, so a bot is bound to a specific player rather than
-        // to whoever the turn index points at. createBot has no bot id to give
-        // it; the Spy routes construct SpyBot directly (see SpyBotExecutor).
-        case 'guess_the_spy':
-            throw new Error('Spy bots are created per player — use SpyBotExecutor')
 
         default:
             throw new Error(`Bot not implemented for game type: ${gameType}`)
@@ -115,20 +106,6 @@ export async function executeBotTurn(
                 throw new Error('Expected RockPaperScissorsGame engine for rock_paper_scissors bot turn')
             }
             await RockPaperScissorsBotExecutor.executeBotTurn(
-                gameEngine,
-                botUserId,
-                difficulty,
-                onMove,
-                onBotAction,
-            )
-            return
-        }
-
-        case 'guess_the_spy': {
-            if (!(gameEngine instanceof SpyGame)) {
-                throw new Error('Expected SpyGame engine for guess_the_spy bot turn')
-            }
-            await SpyBotExecutor.executeBotTurn(
                 gameEngine,
                 botUserId,
                 difficulty,

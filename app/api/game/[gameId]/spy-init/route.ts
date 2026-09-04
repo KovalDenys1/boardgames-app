@@ -8,7 +8,6 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
-import { runSpyBots } from '@/lib/spy-bot-runner'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -38,16 +37,6 @@ export async function POST(
     const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
-        players: {
-          select: {
-            userId: true,
-            user: {
-              // Only what the bot runner needs — the full user row carries the
-              // email address and this route has no use for it.
-              select: { id: true, username: true, bot: true },
-            },
-          },
-        },
         lobby: true,
       },
     })
@@ -134,10 +123,6 @@ export async function POST(
 
     // Initialize round (assigns roles, selects location)
     spyGame.initializeRound(activeLocations.locations)
-
-    // Bots confirm their role straight away, so the round only ever waits on the
-    // humans in it (#813).
-    const botMoves = await runSpyBots(spyGame, game.players)
 
     // Get updated state
     const updatedState = spyGame.getState()
