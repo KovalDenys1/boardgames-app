@@ -16,7 +16,9 @@ export default function HomePage() {
   const catalogGames = getCatalogGames()
   const availableGames = getCatalogAvailableGames()
   const quickPlayGameCount = availableGames.filter((game) => game.gameType && hasBotSupport(game.gameType)).length
-  const inDevelopmentGameCount = catalogGames.filter((game) => game.availability === 'in-development').length
+  // Everything that is not playable yet is "coming soon" — the same rule
+  // /games uses for its badge, so the two pages count the same games (#868).
+  const inDevelopmentGameCount = catalogGames.filter((game) => game.availability !== 'available').length
 
   return (
     <div
@@ -34,10 +36,9 @@ export default function HomePage() {
             availableGameCount: availableGames.length,
             // "Games in catalog" sits directly under the "N ready to play" /
             // "M more coming soon" badges — it must equal ready + coming
-            // soon, not the raw catalog length. catalogGames also includes
-            // 'planned' games that aren't part of either badge's narrative;
-            // counting them here made the three numbers not add up (e.g.
-            // 6 + 5 = 11 shown next to a "15" stat).
+            // soon. Since 'planned' games count as coming soon (see above),
+            // that is the whole catalog again, and the three numbers add up
+            // (6 + 9 = 15).
             catalogGameCount: availableGames.length + inDevelopmentGameCount,
             inDevelopmentGameCount,
             quickPlayGameCount,
