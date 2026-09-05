@@ -54,7 +54,9 @@ only reason these tests exist. Consequences:
 
 - They need `.env.local` and **cannot run in CI**, which has no secrets.
 - Every lobby they create is named `E2E — …` and the global teardown deletes it.
-  Games and players cascade; guest users are left to the existing guest purge.
+  Games and players cascade; the `LobbyParticipations` rows and the `E2E…`
+  guests do not, so the teardown deletes those too (#867). The guests cached
+  in `e2e/.auth` are kept for the next run.
 - Guest identities are cached per role in `e2e/.auth/` (gitignored) and reused,
   because `/api/auth/guest-session` allows five requests per fifteen minutes.
   Tokens last 12h. This matters most against a deployment: there the limiter

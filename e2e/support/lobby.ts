@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { type APIRequestContext, type BrowserContext, type Browser } from '@playwright/test'
-import { E2E_LOBBY_MARKER } from './marker'
+import { E2E_GUEST_PREFIX, E2E_LOBBY_MARKER } from './marker'
 
 /**
  * Setup helpers for the end-to-end tests.
@@ -155,7 +155,7 @@ export async function createGuestLobby(
  * guest-session route the client itself uses.
  */
 export async function createGuest(request: APIRequestContext, baseURL: string): Promise<Guest> {
-  const guestName = uniqueName('E2E')
+  const guestName = uniqueName(E2E_GUEST_PREFIX)
   const res = await request.post(`${baseURL}/api/auth/guest-session`, {
     headers: { Origin: baseURL },
     data: { guestName },
@@ -181,7 +181,7 @@ export async function joinAsGuest(
   code: string,
   baseURL: string
 ): Promise<Guest> {
-  const guestName = uniqueName('E2E')
+  const guestName = uniqueName(E2E_GUEST_PREFIX)
   const res = await request.post(`${baseURL}/api/lobby/${code}/join-guest`, {
     headers: { Origin: baseURL },
     data: { guestName },
