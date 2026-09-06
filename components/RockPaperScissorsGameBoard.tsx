@@ -8,22 +8,24 @@ type TFn = ReturnType<typeof useTranslation>['t']
 /**
  * The Rock Paper Scissors board, composed as a duel (#870, layout DoD):
  *
- *   ┌──────── stage ────────┐   two hands, mine and the opponent's, with
- *   │  ✊  vs  ❔            │   "choosing / locked in", and the reveal of
- *   │  Denys    Pattern R.  │   the latest round shown large;
- *   ├──────── tiles ────────┤   three same-sized choice tiles.
- *   │  🪨    📄    ✂️        │
+ *   ┌──────── stage ────────┐   two hands in the players' colours, with
+ *   │  ✊   1:0   ✊         │   "choosing / locked in", the match score and
+ *   │  Denys  ●○·○○  Pattern│   round pips between them, and the reveal of
+ *   ├──────── tiles ────────┤   the latest round played as a shake-and-flip;
+ *   │  🪨    📄    ✂️        │   three same-sized choice tiles.
  *   └───────────────────────┘
  *
  * Scoreboard, status line, result overlay, history and chat are the shared
  * game-chrome kit, composed by the page. Every size here comes from one
- * scale (`.rps-*` in globals.css) so nothing on the card is a different
- * size for no reason.
+ * scale (`.rps-*` in globals.css). Animations are transform/opacity only.
  */
 
 export interface RPSPlayer {
   id: string
   name: string
+  avatarSrc?: string | null
+  /** CSS colour for this seat (the header uses coral for the left seat, lavender for the right). */
+  accent?: string
 }
 
 interface RockPaperScissorsGameBoardProps {
@@ -75,6 +77,8 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
   )
 }
 
+type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
+
 export default function RockPaperScissorsGameBoard({
   gameData,
   playerId,
@@ -91,6 +95,8 @@ export default function RockPaperScissorsGameBoard({
   const me = players.find((player) => player.id === playerId) ?? null
   const leftPlayer = me ?? players[0] ?? null
   const rightPlayer = players.find((player) => player.id !== leftPlayer?.id) ?? null
+  const leftAccent = leftPlayer?.accent ?? 'var(--bd-coral)'
+  const rightAccent = rightPlayer?.accent ?? 'var(--bd-lav)'
 
   const isGameOver = !!gameData.gameWinner
   const latestRound = gameData.rounds[gameData.rounds.length - 1] ?? null
@@ -102,9 +108,13 @@ export default function RockPaperScissorsGameBoard({
   // Between rounds the stage replays the reveal; once anyone picks again it
   // turns back into two hands choosing.
   const showReveal = !!latestRound && (!roundInProgress || isGameOver)
+  const winsNeeded = gameData.mode === 'best-of-5' ? 3 : 2
+  const leftScore = leftPlayer ? gameData.scores[leftPlayer.id] ?? 0 : 0
+  const rightScore = rightPlayer ? gameData.scores[rightPlayer.id] ?? 0 : 0
+  const roundNumber = gameData.rounds.length + (isGameOver ? 0 : 1)
 
-  const handFor = (player: RPSPlayer | null) => {
-    if (!player) return { emoji: '❔', state: '', tone: 'idle' as const }
+  const handFor = (player: RPSPlayer | null): { emoji: string; state: string; tone: HandTone } => {
+    if (!player) return { emoji: '❔', state: '', tone: 'idle' }
     const isMe = player.id === playerId
     if (showReveal && latestRound) {
       const choice = (latestRound.choices?.[player.id] as RPSChoice | undefined) ?? null
@@ -113,36 +123,46 @@ export default function RockPaperScissorsGameBoard({
       return {
         emoji: getChoiceEmoji(choice),
         state: draw ? t('lobby.game.draw') : won ? t('lobby.game.win') : t('lobby.game.loss'),
-        tone: draw ? ('idle' as const) : won ? ('win' as const) : ('loss' as const),
+        tone: draw ? 'draw' : won ? 'win' : 'loss',
       }
     }
     const locked = readyIds.includes(player.id)
-    if (isMe && locked) return { emoji: getChoiceEmoji(myCurrentChoice), state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' as const }
-    if (locked) return { emoji: '✊', state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' as const }
-    return { emoji: '✊', state: t('games.rock_paper_scissors.choosing'), tone: 'choosing' as const }
+    if (isMe && locked) return { emoji: getChoiceEmoji(myCurrentChoice), state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
+    if (locked) return { emoji: '✊', state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
+    return { emoji: '✊', state: t('games.rock_paper_scissors.choosing'), tone: 'choosing' }
   }
 
-  const stageCenter = showReveal && latestRound
+  const stageResult = showReveal && latestRound
     ? latestRound.winner === 'draw'
       ? t('games.rock_paper_scissors.roundDraw')
       : t('games.rock_paper_scissors.roundWonBy', { player: players.find((p) => p.id === latestRound.winner)?.name ?? t('game.ui.playerFallback') })
-    : t('games.rock_paper_scissors.roundNum', { num: gameData.rounds.length + 1 })
+    : t('games.rock_paper_scissors.roundNum', { num: roundNumber })
 
+  // A new round result remounts the hands, which replays the shake-and-flip.
+  const revealKey = showReveal ? `reveal-${gameData.rounds.length}` : `live-${gameData.rounds.length}-${readyIds.length}`
 
   return (
     <div className="rps-board" data-testid={testId}>
-      <section className="rps-stage" aria-live="polite">
-        <Hand name={leftPlayer?.name ?? '—'} {...handFor(leftPlayer)} side="left" />
+      <section className={`rps-stage${showReveal ? ' rps-stage--reveal' : ''}`} aria-live="polite">
+        <Hand key={`l-${revealKey}`} player={leftPlayer} accent={leftAccent} reveal={showReveal} {...handFor(leftPlayer)} />
         <div className="rps-stage__center">
           <span className="rps-stage__vs">vs</span>
-          <span className={`rps-stage__result${showReveal ? ' rps-stage__result--reveal' : ''}`}>{stageCenter}</span>
+          <span key={`s-${leftScore}-${rightScore}`} className="rps-stage__score">
+            {leftScore}<span className="rps-stage__colon">:</span>{rightScore}
+          </span>
+          <span className="rps-stage__pips" aria-hidden>
+            <WinPips filled={leftScore} total={winsNeeded} color={leftAccent} />
+            <span className="rps-stage__dot">·</span>
+            <WinPips filled={rightScore} total={winsNeeded} color={rightAccent} />
+          </span>
+          <span key={`r-${revealKey}`} className={`rps-stage__result${showReveal ? ' rps-stage__result--reveal' : ''}`}>{stageResult}</span>
         </div>
-        <Hand name={rightPlayer?.name ?? '—'} {...handFor(rightPlayer)} side="right" />
+        <Hand key={`r-${revealKey}`} player={rightPlayer} accent={rightAccent} reveal={showReveal} {...handFor(rightPlayer)} />
       </section>
 
       {!isGameOver && !isSpectator && (
         <section className="rps-tiles" aria-label={t('games.rock_paper_scissors.pickPrompt')}>
-          {CHOICES.map(({ choice, emoji, labelKey, beats, accent }) => {
+          {CHOICES.map(({ choice, emoji, labelKey, beats, accent }, index) => {
             const isSelected = myCurrentChoice === choice && mySubmitted
             const dimmed = mySubmitted && !isSelected
             return (
@@ -154,7 +174,7 @@ export default function RockPaperScissorsGameBoard({
                 aria-pressed={isSelected}
                 aria-label={t(labelKey)}
                 className={`rps-tile${isSelected ? ' rps-tile--selected' : ''}${dimmed ? ' rps-tile--dimmed' : ''}`}
-                style={isSelected ? { borderColor: accent, boxShadow: `0 0 0 3px color-mix(in srgb, ${accent} 30%, transparent)` } : undefined}
+                style={{ '--i': index, '--tile-accent': accent } as React.CSSProperties}
               >
                 <span className="rps-tile__emoji">{emoji}</span>
                 <span className="rps-tile__label">{t(labelKey)}</span>
@@ -164,16 +184,22 @@ export default function RockPaperScissorsGameBoard({
           })}
         </section>
       )}
-
     </div>
   )
 }
 
-function Hand({ name, emoji, state, tone, side }: { name: string; emoji: string; state: string; tone: 'idle' | 'choosing' | 'locked' | 'win' | 'loss'; side: 'left' | 'right' }) {
+function Hand({ player, accent, emoji, state, tone, reveal }: { player: RPSPlayer | null; accent: string; emoji: string; state: string; tone: HandTone; reveal: boolean }) {
+  const initial = (player?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
   return (
-    <div className={`rps-hand rps-hand--${side} rps-hand--${tone}`}>
+    <div className={`rps-hand rps-hand--${tone}${reveal ? ' rps-hand--reveal' : ''}`} style={{ '--hand-accent': accent } as React.CSSProperties}>
       <span className="rps-hand__emoji" aria-hidden>{emoji}</span>
-      <span className="rps-hand__name">{name}</span>
+      <span className="rps-hand__who">
+        {player?.avatarSrc
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={player.avatarSrc} alt="" className="rps-hand__avatar" />
+          : <span className="rps-hand__avatar rps-hand__avatar--initial">{initial}</span>}
+        <span className="rps-hand__name">{player?.name ?? '—'}</span>
+      </span>
       <span className="rps-hand__state">{state}</span>
     </div>
   )

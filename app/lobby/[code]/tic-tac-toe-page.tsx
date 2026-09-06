@@ -861,9 +861,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     </>
                 }
                 rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
-                trailing={isSpectator
-                    ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
-                    : <GameLeaveButton label={t('games.tictactoe.game.leaveLobby')} onClick={() => setShowLeaveConfirmModal(true)} />}
             />
         </div>
     )
@@ -1114,6 +1111,17 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
+    // Leave (or the spectator's way back) sits to the right of the scoreboard,
+    // outside it, so the two player cards share the header symmetrically
+    // (layout DoD, scheme A, 2026-09-06).
+    const leaveSection = (
+        <div className="ttt-side-actions">
+            {isSpectator
+                ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
+                : <GameLeaveButton label={t('games.tictactoe.game.leaveLobby')} onClick={() => setShowLeaveConfirmModal(true)} />}
+        </div>
+    )
+
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
 
@@ -1128,6 +1136,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         {actionsSection}
                     </div>
                     <div className="ttt-right-col">
+                        {leaveSection}
                         {historySection}
                         {chatSection}
                     </div>
@@ -1140,7 +1149,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     {renderBoardSection('ttt-board-landscape')}
                 </div>
                 <div className="ttt-landscape-side">
-                    {headerSection}
+                    <div className="ttt-top-row">{headerSection}{leaveSection}</div>
                     {statusSection}
                     {requestSection}
                     {chatSection}
@@ -1150,7 +1159,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                {headerSection}
+                <div className="ttt-top-row">{headerSection}{leaveSection}</div>
                 {statusSection}
                 {requestSection}
                 <GameTabs

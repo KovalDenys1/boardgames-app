@@ -681,9 +681,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     </>
                 }
                 rightCard={<GamePlayerCard name={rightName} isActive={!isFinished && !!rightId && !isLockedIn(rightId)} isMe={currentUserId === rightId} isWinner={winnerId === rightId} side="right" avatarSrc={rightId ? getAvatar(rightId) : null} isPremium={rightId ? getIsPremium(rightId) : false} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={rightScore} total={winsNeeded} color="var(--bd-lav)" />} cornerBadge={rightId ? cornerBadgeFor(rightId) : undefined} />}
-                trailing={isSpectator
-                    ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
-                    : <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />}
             />
         </div>
     )
@@ -708,7 +705,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             <RockPaperScissorsGameBoard
                 gameData={rpsData}
                 playerId={isSpectator ? '' : currentUserId ?? ''}
-                players={statePlayers.map((p) => ({ id: p.id, name: getDisplayName(p.id) }))}
+                players={statePlayers.map((p, index) => ({ id: p.id, name: getDisplayName(p.id), avatarSrc: getAvatar(p.id), accent: index === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)' }))}
                 onSubmitChoice={async (choice) => { await submitChoice(choice) }}
                 disabled={isSpectator || isFinished}
                 isSubmitting={isSubmitting}
@@ -765,8 +762,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             <div className="ttt-history-list">
                 {rpsData.rounds.length === 0
                     ? (
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, textAlign: 'center', color: 'var(--bd-ink-muted)', fontSize: 12, padding: '12px 4px' }}>
-                            <span style={{ fontSize: 28, lineHeight: 1 }} aria-hidden>🪨📄✂️</span>
+                        <div className="rps-rounds-empty">
+                            <span className="rps-rounds-empty__arena" aria-hidden><span>✊</span><span className="rps-rounds-empty__vs">vs</span><span>✊</span></span>
                             <span>{t('games.rock_paper_scissors.noRoundsYet')}</span>
                         </div>
                     )
@@ -774,18 +771,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         const number = rpsData.rounds.length - index
                         const leftChoice = round.choices?.[leftId] as RPSChoice | undefined
                         const rightChoice = round.choices?.[rightId] as RPSChoice | undefined
-                        const outcome = round.winner === 'draw'
-                            ? t('games.rock_paper_scissors.roundDraw')
-                            : t('games.rock_paper_scissors.roundWonBy', { player: getDisplayName(round.winner ?? '') })
+                        const isDrawRound = round.winner === 'draw'
+                        const accent = isDrawRound ? undefined : round.winner === leftId ? 'var(--bd-coral)' : 'var(--bd-lav)'
+                        const who = isDrawRound ? t('lobby.game.draw') : getDisplayName(round.winner ?? '')
                         return (
-                            <div key={`round-${number}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
-                                <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                    #{String(number).padStart(2, '0')}
+                            <div key={`round-${number}`} className={`rps-round-row${isDrawRound ? ' rps-round-row--draw' : ''}`} style={{ '--row-accent': accent } as React.CSSProperties}>
+                                <span className="rps-round-row__num">#{String(number).padStart(2, '0')}</span>
+                                <span className="rps-round-row__pair">
+                                    <span aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}>{getChoiceEmoji(leftChoice)}</span>
+                                    <span className="rps-round-row__vs">vs</span>
+                                    <span aria-label={rightChoice ? t(CHOICE_LABEL_KEY[rightChoice]) : undefined}>{getChoiceEmoji(rightChoice)}</span>
                                 </span>
-                                <span style={{ fontSize: 14, flexShrink: 0 }} aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}>{getChoiceEmoji(leftChoice)}</span>
-                                <span style={{ fontSize: 10, color: 'var(--bd-ink-muted)' }}>vs</span>
-                                <span style={{ fontSize: 14, flexShrink: 0 }} aria-label={rightChoice ? t(CHOICE_LABEL_KEY[rightChoice]) : undefined}>{getChoiceEmoji(rightChoice)}</span>
-                                <span style={{ marginLeft: 'auto', color: round.winner === 'draw' ? 'var(--bd-ink-muted)' : 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{outcome}</span>
+                                <span className="rps-round-row__who">{who}</span>
                             </div>
                         )
                     })
@@ -811,6 +808,17 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         </section>
     ) : null
 
+    // Leave (or the spectator's way back) sits to the right of the scoreboard,
+    // outside it, so the two player cards share the header symmetrically
+    // (layout DoD, scheme A, 2026-09-06).
+    const leaveSection = (
+        <div className="ttt-side-actions">
+            {isSpectator
+                ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
+                : <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />}
+        </div>
+    )
+
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
 
@@ -823,6 +831,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         {renderBoardSection('rps-board')}
                     </div>
                     <div className="ttt-right-col">
+                        {leaveSection}
                         {historySection}
                         {chatSection}
                     </div>
@@ -835,7 +844,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     {renderBoardSection('rps-board-landscape')}
                 </div>
                 <div className="ttt-landscape-side">
-                    {headerSection}
+                    <div className="ttt-top-row">{headerSection}{leaveSection}</div>
                     {statusSection}
                     {chatSection}
                 </div>
@@ -843,7 +852,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                {headerSection}
+                <div className="ttt-top-row">{headerSection}{leaveSection}</div>
                 {statusSection}
                 <GameTabs
                     tabs={[
