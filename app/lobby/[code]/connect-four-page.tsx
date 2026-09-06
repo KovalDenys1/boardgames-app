@@ -38,7 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
+import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -1061,31 +1061,34 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
-    // Leave (or the spectator's way back) sits to the right of the scoreboard,
-    // outside it, so the two player cards share the header symmetrically
-    // (layout DoD, scheme A, 2026-09-06).
-    const leaveSection = (
-        <div className="ttt-side-actions">
-            {isSpectator
-                ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
-                : <GameLeaveButton label={t('games.connect_four.game.leave')} onClick={() => setShowLeaveConfirmModal(true)} />}
-        </div>
-    )
+    // The room card sits to the right of the scoreboard, in the same grid row
+    // and at the same height (layout DoD, scheme A): game, room code, invite
+    // link, and Leave. Phones get the compact form beside the scoreboard.
+    const roomCardProps = {
+        emoji: '🔴',
+        title: t('games.connect_four.name'),
+        code,
+        isSpectator,
+        leaveLabel: t('game.ui.leave'),
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
+    const roomSection = <GameRoomCard {...roomCardProps} />
+    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
+                    {headerSection}
+                    {roomSection}
                     <div className="ttt-center-col">
-                        {headerSection}
                         {statusSection}
                         {requestSection}
                         {renderBoardSection()}
                         {actionsSection}
                     </div>
                     <div className="ttt-right-col">
-                        {leaveSection}
                         {historySection}
                         {chatSection}
                     </div>
@@ -1098,7 +1101,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     {renderBoardSection()}
                 </div>
                 <div className="ttt-landscape-side">
-                    <div className="ttt-top-row">{headerSection}{leaveSection}</div>
+                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
                     {chatSection}
@@ -1108,7 +1111,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                <div className="ttt-top-row">{headerSection}{leaveSection}</div>
+                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                 {statusSection}
                 {requestSection}
                 <GameTabs

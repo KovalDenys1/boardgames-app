@@ -39,7 +39,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
+import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -1111,16 +1111,19 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
-    // Leave (or the spectator's way back) sits to the right of the scoreboard,
-    // outside it, so the two player cards share the header symmetrically
-    // (layout DoD, scheme A, 2026-09-06).
-    const leaveSection = (
-        <div className="ttt-side-actions">
-            {isSpectator
-                ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
-                : <GameLeaveButton label={t('games.tictactoe.game.leaveLobby')} onClick={() => setShowLeaveConfirmModal(true)} />}
-        </div>
-    )
+    // The room card sits to the right of the scoreboard, in the same grid row
+    // and at the same height (layout DoD, scheme A): game, room code, invite
+    // link, and Leave. Phones get the compact form beside the scoreboard.
+    const roomCardProps = {
+        emoji: '❌',
+        title: t('games.tictactoe.name'),
+        code,
+        isSpectator,
+        leaveLabel: t('game.ui.leave'),
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
+    const roomSection = <GameRoomCard {...roomCardProps} />
+    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
@@ -1128,15 +1131,15 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
+                    {headerSection}
+                    {roomSection}
                     <div className="ttt-center-col">
-                        {headerSection}
                         {statusSection}
                         {requestSection}
                         {renderBoardSection('ttt-board')}
                         {actionsSection}
                     </div>
                     <div className="ttt-right-col">
-                        {leaveSection}
                         {historySection}
                         {chatSection}
                     </div>
@@ -1149,7 +1152,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     {renderBoardSection('ttt-board-landscape')}
                 </div>
                 <div className="ttt-landscape-side">
-                    <div className="ttt-top-row">{headerSection}{leaveSection}</div>
+                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
                     {chatSection}
@@ -1159,7 +1162,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                <div className="ttt-top-row">{headerSection}{leaveSection}</div>
+                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                 {statusSection}
                 {requestSection}
                 <GameTabs
