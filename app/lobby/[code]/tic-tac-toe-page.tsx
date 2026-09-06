@@ -39,6 +39,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
+import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -860,6 +861,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     </>
                 }
                 rightCard={<GamePlayerCard name={oName} isActive={!isFinished && gameData.currentSymbol === 'O'} isMe={mySymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline="O" cornerBadge={<TttCornerMark mark="O" />} />}
+                trailing={isSpectator
+                    ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
+                    : <GameLeaveButton label={t('games.tictactoe.game.leaveLobby')} onClick={() => setShowLeaveConfirmModal(true)} />}
             />
         </div>
     )
@@ -1001,13 +1005,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    const actionsSection = isSpectator ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                {t('game.ui.backToLobby')}
-            </a>
-        </div>
-    ) : (
+    // Leave and the spectator's way back live in the header (layout DoD); this
+    // row keeps only the move requests.
+    const actionsSection = isSpectator ? null : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
                 onClick={() => void handleRequestUndo()}
@@ -1044,9 +1044,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 }}
             >
                 🤝 {t('games.tictactoe.game.drawBtn')}
-            </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {t('games.tictactoe.game.leaveLobby')}
             </button>
         </div>
     )

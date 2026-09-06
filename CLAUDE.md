@@ -109,6 +109,25 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
    viewports do not reproduce iOS Safari address-bar dvh behavior. If you cannot
    verify on a real device, say so explicitly instead of claiming the fix works.
 
+## In-game layout — Definition of Done (rule from 2026-09-06)
+
+Every in-game screen must look **finished at every viewport** (320 / 390 / 768 / 1280,
+plus 844×390 landscape). Check before calling it done:
+
+1. **No empty regions.** No card with small content floating in it, no column with a
+   gap under its last card, no button row with a single button. Boards size to their
+   card with container units (`.ttt-board-card` is `container-type: size`); when a
+   panel is hidden (chat in bot games) its space is taken by something useful – the
+   history card stretched (`.ttt-history-card--fill`), a rules strip.
+2. **Shared controls in the same place in every game**, current and future:
+   - Leave: top-right, in the `trailing` slot of `GameScoreboardHeader`, via
+     `components/game-chrome/GameLeaveButton`; spectators get "Back to lobby" there.
+   - Whose turn / status: `GameStatusBanner` directly under the header.
+   - Chat: right column on desktop, `GameTabs` tab on mobile.
+   - Result: `GameResultOverlay` over the board.
+   Exceptions only where a game genuinely needs a different UI, and they are
+   written down in the game's ticket.
+
 ## Adding a new game — checklist
 
 ### Code
@@ -133,6 +152,7 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
 - [ ] Run `npx prisma generate` then `npm run db:migrate`
 
 ### Pages & UI
+- [ ] **Layout DoD above: Leave in the header trailing slot, no empty regions at 320 / 390 / 768 / 1280.**
 - [ ] **In-game chrome comes from the shared kit — never re-implement it.**
       Compose `components/game-chrome/` (`GameResultOverlay`, `GamePlayerCard`,
       `GameScoreboardHeader`, `GameStatusBanner`, `GameTabs`) plus

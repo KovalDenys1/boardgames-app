@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -886,6 +887,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     </>
                 }
                 rightCard={<GamePlayerCard name={p2Name} isActive={!isFinished && gameData.currentDisc === 2} isMe={myDisc === 2} isWinner={!isDraw && winnerDisc === 2} side="right" avatarSrc={p2Avatar} isPremium={p2IsPremium} accentColor={DISC_YELLOW} subline={`${p2Wins}W`} cornerBadge={<C4DiscBadge disc={2} />} />}
+                trailing={isSpectator
+                    ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
+                    : <GameLeaveButton label={t('games.connect_four.game.leave')} onClick={() => setShowLeaveConfirmModal(true)} />}
             />
         </div>
     )
@@ -1010,13 +1014,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         </div>
     )
 
-    const actionsSection = isSpectator ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                {t('game.ui.backToLobby')}
-            </a>
-        </div>
-    ) : (
+    // Leave and the spectator's way back live in the header (layout DoD).
+    const actionsSection = isSpectator ? null : (
         <div className="flex flex-col md:flex-row gap-2">
             <button
                 onClick={() => void handleRequestUndo()}
@@ -1025,9 +1024,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
-            </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} className="w-full md:w-auto" style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {t('games.connect_four.game.leave')}
             </button>
         </div>
     )

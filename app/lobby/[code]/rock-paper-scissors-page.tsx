@@ -12,6 +12,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
+import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceEmoji, WinPips } from '@/components/RockPaperScissorsGameBoard'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
@@ -485,7 +486,25 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             // engine has no forfeit move, so the client picks at random for
             // them. Only the player themselves does this — never a spectator,
             // never for the opponent — so two clients cannot race.
-            if (!iAmChoosing) return true
+            if (!iAmChoosing) {
+                // I have picked and the clock still ran out: a bot opponent that
+                // never answered (the server-side trigger can fail without an
+                // identity in dev). Poke it from here, the way TTT's watchdog
+                // does; the route is idempotent for a bot that already picked.
+                if (game && mySubmitted && !isFinished) {
+                    const pendingBot = game.players.find((p) => (p.user?.bot || p.bot) && !rpsData.playersReady.includes(p.userId))
+                    if (pendingBot) {
+                        clientLogger.warn('⏰ RPS bot has not picked in time, triggering it from the client', { code, gameId: game.id, botUserId: pendingBot.userId })
+                        void fetchWithGuest(`/api/game/${game.id}/bot-turn`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ botUserId: pendingBot.userId, lobbyCode: code, triggerSource: 'client-timeout' }),
+                        }).then(() => loadLobby()).catch(() => loadLobby())
+                        return false
+                    }
+                }
+                return true
+            }
             const randomChoice = RPS_CHOICES[Math.floor(Math.random() * RPS_CHOICES.length)]
             clientLogger.warn('⏰ RPS round timer expired, submitting a random choice', { code, gameId: game?.id })
             return submitChoice(randomChoice, { isAutoAction: true })
@@ -662,6 +681,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     </>
                 }
                 rightCard={<GamePlayerCard name={rightName} isActive={!isFinished && !!rightId && !isLockedIn(rightId)} isMe={currentUserId === rightId} isWinner={winnerId === rightId} side="right" avatarSrc={rightId ? getAvatar(rightId) : null} isPremium={rightId ? getIsPremium(rightId) : false} accentColor="var(--bd-lav)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={rightScore} total={winsNeeded} color="var(--bd-lav)" />} cornerBadge={rightId ? cornerBadgeFor(rightId) : undefined} />}
+                trailing={isSpectator
+                    ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
+                    : <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />}
             />
         </div>
     )
@@ -721,22 +743,19 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         </div>
     )
 
-    const actionsSection = isSpectator ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                {t('game.ui.backToLobby')}
-            </a>
-        </div>
-    ) : (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {t('game.ui.leave')}
-            </button>
-        </div>
-    )
+    // Leave lives in the header (layout DoD); nothing else needs a row under the board.
+
+    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
+    // spectators get a read-only feed.
+    const hasMultipleHumans = lobbyPlayers.filter((p) => !p.user?.bot && !p.bot).length >= 2
+    const showChat = hasMultipleHumans || isSpectator
+    const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+    for (const p of lobbyPlayers) {
+        if (p.userId) chatPlayerProfiles.set(p.userId, { avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null, isPremium: !!p.user?.isPremium })
+    }
 
     const historySection = (
-        <div className="ttt-history-card">
+        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('games.rock_paper_scissors.roundsTitle')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -767,17 +786,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     })
                 }
             </div>
+            {!showChat && (
+                <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px solid var(--bd-line)', fontSize: 12, color: 'var(--bd-ink-soft)', display: 'grid', gap: 4 }}>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', color: 'var(--bd-ink-muted)' }}>
+                        {t('games.rock_paper_scissors.howItWorksTitle')}
+                    </div>
+                    <div>1. {t('games.rock_paper_scissors.howItWorks1')}</div>
+                    <div>2. {t('games.rock_paper_scissors.howItWorks2')}</div>
+                    <div>3. {t('games.rock_paper_scissors.howItWorks3')}</div>
+                </div>
+            )}
         </div>
     )
-
-    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
-    // spectators get a read-only feed.
-    const hasMultipleHumans = lobbyPlayers.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-    const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
-    for (const p of lobbyPlayers) {
-        if (p.userId) chatPlayerProfiles.set(p.userId, { avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null, isPremium: !!p.user?.isPremium })
-    }
 
     const chatSection = showChat ? (
         <section className="game-chat-panel">
@@ -806,7 +826,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         {headerSection}
                         {statusSection}
                         {renderBoardSection('rps-board')}
-                        {actionsSection}
                     </div>
                     <div className="ttt-right-col">
                         {historySection}
@@ -824,7 +843,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     {headerSection}
                     {statusSection}
                     {chatSection}
-                    {actionsSection}
                 </div>
             </div>
 
@@ -848,8 +866,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     {mobileTab === 'board' && (
                         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
                             {renderBoardSection()}
-                            {actionsSection}
-                        </div>
+                            </div>
                     )}
                     {mobileTab === 'history' && historySection}
                     {mobileTab === 'chat' && chatSection}
