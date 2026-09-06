@@ -7,18 +7,19 @@ jest.mock('@/lib/i18n-toast', () => ({ showToast: { success: jest.fn(), error: j
 jest.mock('@/components/LeaveIcon', () => ({ __esModule: true, default: () => <span data-testid="leave-icon" /> }))
 
 describe('GameRoomCard', () => {
-  it('shows the game, the room code, copies the invite link and offers Leave', async () => {
+  it('shows the game and room, copies the spectate link when spectators are allowed, and offers Leave', async () => {
     const writeText = jest.fn().mockResolvedValue(undefined)
     Object.assign(navigator, { clipboard: { writeText } })
     const onLeave = jest.fn()
 
-    render(<GameRoomCard emoji="✊" title="Rock Paper Scissors" code="1311" leaveLabel="Leave" onLeave={onLeave} />)
+    render(<GameRoomCard emoji="✊" title="Rock Paper Scissors" code="1311" leaveLabel="Leave" onLeave={onLeave} allowSpectators />)
 
     expect(screen.getByText('Rock Paper Scissors')).toBeTruthy()
     expect(screen.getByText('#1311')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'game.ui.copyInvite' }))
-    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/lobby\/1311$/))
+    // A running game cannot be joined; the link worth sharing is the spectate one.
+    fireEvent.click(screen.getByRole('button', { name: 'game.ui.inviteSpectators' }))
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/lobby\/1311\/spectate$/))
     await Promise.resolve()
     expect(showToast.success).toHaveBeenCalledWith('toast.linkCopied')
 
@@ -32,10 +33,16 @@ describe('GameRoomCard', () => {
     expect(screen.queryByRole('button', { name: 'Leave' })).toBeNull()
   })
 
-  it('compact form keeps only the two icon controls', () => {
-    render(<GameRoomCard emoji="✊" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} compact />)
+  it('says spectators are off instead of offering a link that dead-ends', () => {
+    render(<GameRoomCard emoji="✊" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} />)
+    expect(screen.getByText('game.ui.spectatorsOff')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'game.ui.inviteSpectators' })).toBeNull()
+  })
+
+  it('compact form keeps only the icon controls', () => {
+    render(<GameRoomCard emoji="✊" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} allowSpectators compact />)
     expect(screen.queryByText('RPS')).toBeNull()
-    expect(screen.getByRole('button', { name: 'game.ui.copyInvite' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'game.ui.inviteSpectators' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Leave' })).toBeTruthy()
   })
 })

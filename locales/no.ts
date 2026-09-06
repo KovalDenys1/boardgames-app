@@ -1143,6 +1143,8 @@ const no = {
       gameTypeLabel: 'Spill',
       spectatorsLabel: 'Tilskuere',
       spectatorsDisabled: 'Deaktivert',
+      inviteSpectators: 'Inviter tilskuere',
+      spectatorsOff: 'Uten tilskuere',
       availableSlots: 'Ledige plasser',
       waitingForPlayer: 'Venter på spiller...',
       openSlot: 'Ledig plass',

@@ -152,6 +152,7 @@ interface Lobby {
     isActive?: boolean
     turnTimer?: number
     theme?: string
+    allowSpectators?: boolean
 }
 
 interface TicTacToeLobbyPageProps {
@@ -1120,6 +1121,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         code,
         isSpectator,
         leaveLabel: t('game.ui.leave'),
+        allowSpectators: !!lobby.allowSpectators,
         onLeave: () => setShowLeaveConfirmModal(true),
     }
     const roomSection = <GameRoomCard {...roomCardProps} />

@@ -1143,6 +1143,8 @@ const ru = {
       gameTypeLabel: 'Игра',
       spectatorsLabel: 'Зрители',
       spectatorsDisabled: 'Отключено',
+      inviteSpectators: 'Пригласить зрителей',
+      spectatorsOff: 'Без зрителей',
       availableSlots: 'Свободные места',
       waitingForPlayer: 'Ожидание игрока...',
       openSlot: 'Свободное место',

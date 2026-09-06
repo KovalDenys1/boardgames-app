@@ -1145,6 +1145,8 @@ const uk: Translation = {
       gameTypeLabel: 'Гра',
       spectatorsLabel: 'Глядачі',
       spectatorsDisabled: 'Вимкнено',
+      inviteSpectators: 'Запросити глядачів',
+      spectatorsOff: 'Без глядачів',
       availableSlots: 'Вільні місця',
       waitingForPlayer: 'Очікування гравця...',
       openSlot: 'Вільне місце',

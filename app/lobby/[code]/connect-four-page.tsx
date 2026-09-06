@@ -260,6 +260,7 @@ interface Lobby {
     isActive?: boolean
     turnTimer?: number
     theme?: string
+    allowSpectators?: boolean
 }
 
 interface ConnectFourLobbyPageProps {
@@ -1070,6 +1071,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         code,
         isSpectator,
         leaveLabel: t('game.ui.leave'),
+        allowSpectators: !!lobby.allowSpectators,
         onLeave: () => setShowLeaveConfirmModal(true),
     }
     const roomSection = <GameRoomCard {...roomCardProps} />

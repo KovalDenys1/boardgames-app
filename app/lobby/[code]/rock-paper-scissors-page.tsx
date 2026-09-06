@@ -47,6 +47,7 @@ interface Lobby {
     isActive?: boolean
     turnTimer?: number
     theme?: string
+    allowSpectators?: boolean
 }
 
 /** The engine state as the API returns it, narrowed to what this page reads. */
@@ -817,6 +818,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         code,
         isSpectator,
         leaveLabel: t('game.ui.leave'),
+        allowSpectators: !!lobby.allowSpectators,
         onLeave: () => setShowLeaveConfirmModal(true),
     }
     const roomSection = <GameRoomCard {...roomCardProps} />

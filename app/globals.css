@@ -1573,6 +1573,17 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .game-room-card__copy:hover { background: var(--bd-ink); color: var(--bd-bg); border-color: var(--bd-ink); }
 .game-room-card__copy:active { transform: translateY(1px); }
+.game-room-card__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--bd-line);
+  color: var(--bd-ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .game-room-card--compact {
   padding: 0;
   border: none;
