@@ -29,6 +29,7 @@ Three tests, each standing in for a check that used to be done by hand:
 | `spectator.spec.ts` — a spectator sees the game start without reloading | watching a lobby you are not playing in (#845, #862) |
 | `spectator.spec.ts` — a lobby with spectators disabled gives out no topic | — |
 | `alias-three-players.spec.ts` — three teams of one, one describer and two guessers | playing a three-handed Alias round (#847) |
+| `rps.spec.ts` — two players pick, both see the reveal, the host holds the rematch | a Rock Paper Scissors match between two humans (#870) |
 
 These found #852, both halves of #854, and #862 — where the test written to guard #845 showed that #845 had broken spectating an hour after shipping.
 
@@ -91,6 +92,6 @@ released app — which is the release check, rather than curling for a 200.
 The rate limits are real there and cannot be cleared: the limiter keys on the
 runner's public IP, and the per-test clearing only ever touches loopback. Lobby
 creation allows ten per hour against a bucket that resets on the hour, and the
-suite makes six. **So: one production run per hour.** Guest identities are
+suite makes seven. **So: one production run per hour.** Guest identities are
 cached, so repeat runs no longer spend the tighter five-per-fifteen-minutes
 auth budget.

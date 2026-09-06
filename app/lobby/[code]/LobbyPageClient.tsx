@@ -2569,7 +2569,7 @@ export default function LobbyPage() {
   }
 
   if (dedicatedGameType === 'rock_paper_scissors') {
-    return <RockPaperScissorsLobbyPage code={code} />
+    return <RockPaperScissorsLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'alias') {

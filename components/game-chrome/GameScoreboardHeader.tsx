@@ -24,7 +24,10 @@ export default function GameScoreboardHeader({
       {leftCard}
       <div style={{ textAlign: 'center' }}>{center}</div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, minWidth: 0 }}>
-        {rightCard}
+        {/* The left card fills its grid cell; in this flex cell the right card
+            would shrink to its text, so it is told to fill too – two cards of
+            the same kind must be the same size (layout DoD). */}
+        <div style={{ flex: '1 1 auto', minWidth: 0 }}>{rightCard}</div>
         {trailing}
       </div>
     </div>

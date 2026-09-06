@@ -71,7 +71,11 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
     })
 
   const handleGameClick = (game: Game) => {
-    if (game.status === 'available') router.push(`/games/${game.id}`)
+    if (game.status !== 'available') return
+    // The catalog id is not always the detail path ('rps' lives at
+    // /games/rock-paper-scissors), so the path comes from the lobbies route.
+    const detailHref = game.route ? game.route.replace(/\/lobbies$/, '') : `/games/${game.id}`
+    router.push(detailHref)
   }
 
   return (

@@ -47,7 +47,7 @@ jest.mock('@/contexts/GuestContext', () => ({
   }),
 }))
 
-jest.mock('react-i18next', () => ({
+jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -59,6 +59,7 @@ jest.mock('@/lib/i18n-toast', () => ({
     errorFrom: jest.fn(),
     success: jest.fn(),
     info: jest.fn(),
+    infoText: jest.fn(),
   },
 }))
 
@@ -79,17 +80,26 @@ jest.mock('@/lib/lobby-create-metrics', () => ({
 }))
 
 jest.mock('@/lib/analytics', () => ({
+  trackLobbyLeaveRedirect: jest.fn(),
   trackMoveSubmitApplied: jest.fn(),
 }))
 
 jest.mock('@/components/RockPaperScissorsGameBoard', () => ({
   __esModule: true,
   default: () => <div data-testid="rps-board" />,
+  WinPips: () => null,
+  getChoiceEmoji: () => '❔',
+  CHOICE_LABEL_KEY: { rock: 'lobby.choice.rock', paper: 'lobby.choice.paper', scissors: 'lobby.choice.scissors' },
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
   __esModule: true,
   default: () => <div data-testid="loading-spinner" />,
+}))
+
+jest.mock('@/components/ConfirmModal', () => ({
+  __esModule: true,
+  default: () => null,
 }))
 
 // The realtime topic carries a per-lobby secret and is fetched from the server
@@ -121,6 +131,12 @@ function buildLobbyResponse() {
       status: 'playing',
       currentPlayerIndex: 0,
       state: {
+        status: 'playing',
+        currentPlayerIndex: 0,
+        players: [
+          { id: 'user-1', name: 'Alice' },
+          { id: 'user-2', name: 'Bob' },
+        ],
         data: {
           mode: 'best-of-3',
           rounds: [],
@@ -168,7 +184,7 @@ describe('RockPaperScissorsLobbyPage', () => {
   it('redirects away when a game-abandoned broadcast is received', async () => {
     render(<RockPaperScissorsLobbyPage code="ABCD" />)
 
-    await waitFor(() => expect(screen.getByTestId('rps-board')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
 
     act(() => {
       broadcastHandlers['game-abandoned']?.({
@@ -193,7 +209,7 @@ describe('RockPaperScissorsLobbyPage', () => {
   it('redirects away when a player-left broadcast drops below the minimum player count', async () => {
     render(<RockPaperScissorsLobbyPage code="ABCD" />)
 
-    await waitFor(() => expect(screen.getByTestId('rps-board')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
 
     act(() => {
       broadcastHandlers['player-left']?.({

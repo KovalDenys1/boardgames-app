@@ -82,6 +82,23 @@ describe('GET /api/lobby/[code]/realtime-topic', () => {
     expect(await res.json()).toEqual({ topic: `lobby:1234:${SECRET}` })
   })
 
+  it('still counts a player whose last game is finished (#877)', async () => {
+    // The result screen is where the host presses Play Again; the other player
+    // only learns about the new game over realtime, so a finished roster must
+    // still open the topic. Cancelled and abandoned games stay out.
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'player-1', isGuest: false })
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      realtimeSecret: SECRET,
+      games: [{ players: [{ id: 'p1' }] }],
+    })
+
+    const res = await GET(request(), { params })
+
+    expect(res.status).toBe(200)
+    const query = mockPrisma.lobbies.findUnique.mock.calls[0][0]
+    expect(query.select.games.where.status.in).toEqual(['waiting', 'playing', 'finished'])
+  })
+
   it('404s on a lobby that does not exist, rather than leaking that it might', async () => {
     mockGetRequestAuthUser.mockResolvedValue({ id: 'player-1', isGuest: false })
     mockPrisma.lobbies.findUnique.mockResolvedValue(null)

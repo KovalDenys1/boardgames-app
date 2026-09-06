@@ -746,6 +746,62 @@ describe('POST /api/game/[gameId]/state', () => {
     )
   })
 
+  it("forwards the player's session cookie to the bot-turn trigger when there is no internal secret (#870)", async () => {
+    // A registered user's session is a cookie; local dev has no
+    // BOARDLY_INTERNAL_SECRET. Without the cookie the internal call had no
+    // identity at all and the bot never moved.
+    process.env.BOARDLY_INTERNAL_SECRET = ''
+    const rpsState = {
+      ...persistedState,
+      status: 'playing',
+      currentPlayerIndex: 0,
+      lastMoveAt: Date.now(),
+      data: {
+        mode: 'best-of-3',
+        rounds: [],
+        playerChoices: { 'player-1': 'rock', 'bot-1': null },
+        playersReady: ['player-1'],
+        scores: { 'player-1': 0, 'bot-1': 0 },
+        gameWinner: null,
+      },
+    }
+    const rpsDbGame = {
+      ...dbGame,
+      lobby: { ...dbGame.lobby, gameType: 'rock_paper_scissors' },
+      players: [
+        { id: 'db-player-1', userId: 'player-1', user: { id: 'player-1', bot: null } },
+        { id: 'db-player-bot', userId: 'bot-1', user: { id: 'bot-1', bot: { id: 'bot-meta-1' } } },
+      ],
+    }
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => rpsState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0 },
+        { id: 'bot-1', score: 0 },
+      ]),
+    }
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(rpsDbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
+      method: 'POST',
+      headers: { origin: 'http://localhost:3000', cookie: 'next-auth.session-token=abc' },
+      body: JSON.stringify({ move: { type: 'submit-choice', data: { choice: 'rock' } } }),
+    })
+    const response = await POST(request, { params: Promise.resolve({ gameId: 'game-123' }) })
+
+    expect(response.status).toBe(200)
+    const [, requestInit] = mockFetch.mock.calls[0]
+    expect(requestInit.headers).toEqual(expect.objectContaining({ cookie: 'next-auth.session-token=abc' }))
+    expect(requestInit.headers).not.toHaveProperty('X-Internal-Secret')
+    process.env.BOARDLY_INTERNAL_SECRET = 'test-internal-secret'
+  })
+
   it('auto-accepts Tic-Tac-Toe draw offers from a bot when the position is a theoretical draw', async () => {
     const ticTacToeState = {
       id: 'game-123',

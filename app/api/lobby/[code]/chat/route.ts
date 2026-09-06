@@ -31,7 +31,7 @@ export async function GET(
     select: {
       id: true,
       games: {
-        where: { status: { in: ['waiting', 'playing'] } },
+        where: { status: { in: ['waiting', 'playing', 'finished'] } },
         select: {
           players: { where: { userId: user.id }, select: { id: true } },
         },
@@ -85,7 +85,7 @@ export async function POST(
     select: {
       id: true,
       games: {
-        where: { status: { in: ['waiting', 'playing'] } },
+        where: { status: { in: ['waiting', 'playing', 'finished'] } },
         select: { players: { where: { userId: user.id }, select: { id: true } } },
         orderBy: { createdAt: 'desc' },
         take: 1,

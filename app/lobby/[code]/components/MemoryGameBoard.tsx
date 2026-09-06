@@ -14,6 +14,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
@@ -563,12 +564,7 @@ export default function MemoryGameBoard({
               subline={t('games.memory.game.pairsLabel', { count: scoreByPlayerId[player1.id] ?? 0 })}
             />
           }
-          trailing={onLeave ? (
-            <button type="button" onClick={onLeave} aria-label={t('game.ui.leave')} className="memory-leave-button">
-              <LeaveIcon />
-              <span>{t('game.ui.leave')}</span>
-            </button>
-          ) : undefined}
+          trailing={onLeave ? <GameLeaveButton label={t('game.ui.leave')} onClick={onLeave} /> : undefined}
         />
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -605,10 +601,7 @@ export default function MemoryGameBoard({
             )
           })}
           {onLeave && (
-            <button type="button" onClick={onLeave} aria-label={t('game.ui.leave')} className="memory-leave-button" style={{ flexShrink: 0 }}>
-              <LeaveIcon />
-              <span>{t('game.ui.leave')}</span>
-            </button>
+            <GameLeaveButton label={t('game.ui.leave')} onClick={onLeave} />
           )}
         </div>
       )}
@@ -652,17 +645,7 @@ export default function MemoryGameBoard({
           )
         })}
       </div>
-      {onLeave && (
-        <button
-          type="button"
-          onClick={onLeave}
-          aria-label={t('game.ui.leave')}
-          className="memory-leave-button"
-          style={{ minHeight: 36, padding: '6px 10px', fontSize: 12, flexShrink: 0 }}
-        >
-          <LeaveIcon />
-        </button>
-      )}
+      {onLeave && <GameLeaveButton label={t('game.ui.leave')} onClick={onLeave} />}
     </div>
   )
 

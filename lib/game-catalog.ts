@@ -399,7 +399,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '1-2',
     difficultyKey: 'games.rock_paper_scissors.difficulty',
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
     lobbyCreateConfig: {
