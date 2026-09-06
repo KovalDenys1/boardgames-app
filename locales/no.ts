@@ -927,6 +927,8 @@ const no = {
       timeUp: 'Tiden er ute – et tilfeldig valg ble gjort for deg',
       seriesTarget: 'Først til {{count}} · best av {{rounds}}',
       winsCount: '{{count}} seire',
+      choosing: 'Velger…',
+      yourPicks: 'Dine valg',
     },
     alias: {
       name: 'Alias-spill',

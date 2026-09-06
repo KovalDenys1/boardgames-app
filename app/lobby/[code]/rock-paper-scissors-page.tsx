@@ -764,7 +764,12 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             </div>
             <div className="ttt-history-list">
                 {rpsData.rounds.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.rock_paper_scissors.noRoundsYet')}</div>
+                    ? (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, textAlign: 'center', color: 'var(--bd-ink-muted)', fontSize: 12, padding: '12px 4px' }}>
+                            <span style={{ fontSize: 28, lineHeight: 1 }} aria-hidden>🪨📄✂️</span>
+                            <span>{t('games.rock_paper_scissors.noRoundsYet')}</span>
+                        </div>
+                    )
                     : reversedRounds.map((round, index) => {
                         const number = rpsData.rounds.length - index
                         const leftChoice = round.choices?.[leftId] as RPSChoice | undefined
@@ -786,16 +791,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     })
                 }
             </div>
-            {!showChat && (
-                <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px solid var(--bd-line)', fontSize: 12, color: 'var(--bd-ink-soft)', display: 'grid', gap: 4 }}>
-                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', color: 'var(--bd-ink-muted)' }}>
-                        {t('games.rock_paper_scissors.howItWorksTitle')}
-                    </div>
-                    <div>1. {t('games.rock_paper_scissors.howItWorks1')}</div>
-                    <div>2. {t('games.rock_paper_scissors.howItWorks2')}</div>
-                    <div>3. {t('games.rock_paper_scissors.howItWorks3')}</div>
-                </div>
-            )}
         </div>
     )
 

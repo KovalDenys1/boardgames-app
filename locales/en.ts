@@ -927,6 +927,8 @@ const en = {
       timeUp: 'Time is up – a random pick was made for you',
       seriesTarget: 'First to {{count}} · best of {{rounds}}',
       winsCount: '{{count}} wins',
+      choosing: 'Choosing…',
+      yourPicks: 'Your picks',
     },
     alias: {
       name: 'Alias',

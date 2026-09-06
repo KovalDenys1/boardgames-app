@@ -1,19 +1,25 @@
 'use client'
 
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
-import { RockPaperScissorsGameData, RPSChoice, RPSRound } from '@/lib/games/rock-paper-scissors-game'
+import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 
 type TFn = ReturnType<typeof useTranslation>['t']
 
 /**
- * The Rock Paper Scissors board: three choice tiles and the reveal of the
- * latest round. Scoreboard, status line, result overlay, history and chat
- * are the shared game-chrome kit, composed by the page (#870) — this file
- * only knows how to pick and how to show a reveal.
+ * The Rock Paper Scissors board, composed as a duel (#870, layout DoD):
  *
- * It fills the board card: every size comes from the card's container units
- * (`.rps-*` in globals.css), and on a wide card the tiles sit beside the
- * reveal instead of above it — layout DoD, no empty regions.
+ *   ┌──────── stage ────────┐   two hands, mine and the opponent's, with
+ *   │  ✊  vs  ❔            │   "choosing / locked in", and the reveal of
+ *   │  Denys    Pattern R.  │   the latest round shown large;
+ *   ├──────── tiles ────────┤   three same-sized choice tiles;
+ *   │  🪨    📄    ✂️        │
+ *   ├──────── foot ─────────┤   one line of rules and my pick counts.
+ *   └───────────────────────┘
+ *
+ * Scoreboard, status line, result overlay, history and chat are the shared
+ * game-chrome kit, composed by the page. Every size here comes from one
+ * scale (`.rps-*` in globals.css) so nothing on the card is a different
+ * size for no reason.
  */
 
 export interface RPSPlayer {
@@ -70,14 +76,6 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
   )
 }
 
-function roundOutcomeLabel(round: RPSRound, viewerId: string, players: RPSPlayer[], t: TFn): string {
-  if (round.winner === 'draw') return t('games.rock_paper_scissors.roundDraw')
-  if (round.winner === viewerId) return t('lobby.game.round_won')
-  if (viewerId && players.some((player) => player.id === viewerId)) return t('lobby.game.round_lost')
-  const winnerName = players.find((player) => player.id === round.winner)?.name ?? t('game.ui.playerFallback')
-  return t('games.rock_paper_scissors.roundWonBy', { player: winnerName })
-}
-
 export default function RockPaperScissorsGameBoard({
   gameData,
   playerId,
@@ -90,26 +88,72 @@ export default function RockPaperScissorsGameBoard({
 }: RockPaperScissorsGameBoardProps) {
   const { t } = useTranslation()
 
-  const leftPlayer = players[0] ?? null
-  const rightPlayer = players[1] ?? null
-  const isGameOver = !!gameData.gameWinner
-  const mySubmitted = !!playerId && gameData.playersReady.includes(playerId)
-  const myCurrentChoice = playerId ? ((gameData.playerChoices[playerId] as RPSChoice | null | undefined) ?? null) : null
-  const latestRound = gameData.rounds[gameData.rounds.length - 1] ?? null
-  const canChoose = !isSpectator && !disabled && !isSubmitting && !mySubmitted && !isGameOver && players.length >= 2
-  const showTiles = !isGameOver && !isSpectator
+  // Seat the viewer on the left; a spectator sees the roster order.
+  const me = players.find((player) => player.id === playerId) ?? null
+  const leftPlayer = me ?? players[0] ?? null
+  const rightPlayer = players.find((player) => player.id !== leftPlayer?.id) ?? null
 
-  const revealFor = (player: RPSPlayer | null): RPSChoice | null => {
-    if (!player || !latestRound?.choices) return null
-    return (latestRound.choices[player.id] as RPSChoice | undefined) ?? null
+  const isGameOver = !!gameData.gameWinner
+  const latestRound = gameData.rounds[gameData.rounds.length - 1] ?? null
+  const readyIds = gameData.playersReady
+  const roundInProgress = readyIds.length > 0
+  const mySubmitted = !!playerId && readyIds.includes(playerId)
+  const myCurrentChoice = playerId ? ((gameData.playerChoices[playerId] as RPSChoice | null | undefined) ?? null) : null
+  const canChoose = !isSpectator && !disabled && !isSubmitting && !mySubmitted && !isGameOver && players.length >= 2
+  // Between rounds the stage replays the reveal; once anyone picks again it
+  // turns back into two hands choosing.
+  const showReveal = !!latestRound && (!roundInProgress || isGameOver)
+
+  const handFor = (player: RPSPlayer | null) => {
+    if (!player) return { emoji: '❔', state: '', tone: 'idle' as const }
+    const isMe = player.id === playerId
+    if (showReveal && latestRound) {
+      const choice = (latestRound.choices?.[player.id] as RPSChoice | undefined) ?? null
+      const won = latestRound.winner === player.id
+      const draw = latestRound.winner === 'draw'
+      return {
+        emoji: getChoiceEmoji(choice),
+        state: draw ? t('lobby.game.draw') : won ? t('lobby.game.win') : t('lobby.game.loss'),
+        tone: draw ? ('idle' as const) : won ? ('win' as const) : ('loss' as const),
+      }
+    }
+    const locked = readyIds.includes(player.id)
+    if (isMe && locked) return { emoji: getChoiceEmoji(myCurrentChoice), state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' as const }
+    if (locked) return { emoji: '✊', state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' as const }
+    return { emoji: '✊', state: t('games.rock_paper_scissors.choosing'), tone: 'choosing' as const }
   }
+
+  const stageCenter = showReveal && latestRound
+    ? latestRound.winner === 'draw'
+      ? t('games.rock_paper_scissors.roundDraw')
+      : t('games.rock_paper_scissors.roundWonBy', { player: players.find((p) => p.id === latestRound.winner)?.name ?? t('game.ui.playerFallback') })
+    : t('games.rock_paper_scissors.roundNum', { num: gameData.rounds.length + 1 })
+
+  const myPickCounts = (() => {
+    const counts: Record<RPSChoice, number> = { rock: 0, paper: 0, scissors: 0 }
+    if (!playerId) return counts
+    for (const round of gameData.rounds) {
+      const choice = round.choices?.[playerId] as RPSChoice | undefined
+      if (choice && choice in counts) counts[choice] += 1
+    }
+    return counts
+  })()
 
   return (
     <div className="rps-board" data-testid={testId}>
-      {showTiles && (
-        <div className="rps-tiles">
+      <section className="rps-stage" aria-live="polite">
+        <Hand name={leftPlayer?.name ?? '—'} {...handFor(leftPlayer)} side="left" />
+        <div className="rps-stage__center">
+          <span className="rps-stage__vs">vs</span>
+          <span className={`rps-stage__result${showReveal ? ' rps-stage__result--reveal' : ''}`}>{stageCenter}</span>
+        </div>
+        <Hand name={rightPlayer?.name ?? '—'} {...handFor(rightPlayer)} side="right" />
+      </section>
+
+      {!isGameOver && !isSpectator && (
+        <section className="rps-tiles" aria-label={t('games.rock_paper_scissors.pickPrompt')}>
           {CHOICES.map(({ choice, emoji, labelKey, beats, accent }) => {
-            const isSelected = myCurrentChoice === choice
+            const isSelected = myCurrentChoice === choice && mySubmitted
             const dimmed = mySubmitted && !isSelected
             return (
               <button
@@ -125,71 +169,41 @@ export default function RockPaperScissorsGameBoard({
                 <span className="rps-tile__emoji">{emoji}</span>
                 <span className="rps-tile__label">{t(labelKey)}</span>
                 <span className="rps-tile__beats">{t('games.rock_paper_scissors.beats', { target: beats })}</span>
-                {isSelected && isSubmitting && <span className="rps-tile__beats">…</span>}
               </button>
             )
           })}
-        </div>
+        </section>
       )}
 
-      <div className="rps-reveal">
-        {latestRound ? (
-          <>
-            <div
-              style={{
-                fontSize: 10,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                fontFamily: 'ui-monospace,monospace',
-                color: 'var(--bd-ink-muted)',
-              }}
-            >
-              {t('games.rock_paper_scissors.roundNum', { num: gameData.rounds.length })}
-            </div>
-            <div className="rps-reveal__grid">
-              <RevealTile name={leftPlayer?.name ?? '—'} choice={revealFor(leftPlayer)} winner={latestRound.winner === leftPlayer?.id} t={t} />
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--bd-ink-muted)' }}>vs</span>
-              <RevealTile name={rightPlayer?.name ?? '—'} choice={revealFor(rightPlayer)} winner={latestRound.winner === rightPlayer?.id} t={t} />
-            </div>
-            <div
-              style={{
-                textAlign: 'center',
-                fontSize: 'clamp(13px, 2.4cqh, 16px)',
-                fontWeight: 700,
-                color: latestRound.winner === 'draw' ? 'var(--bd-ink-soft)' : latestRound.winner === playerId ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)',
-              }}
-            >
-              {roundOutcomeLabel(latestRound, playerId, players, t)}
-            </div>
-          </>
-        ) : (
-          // First screen of a match: the space that will hold reveals explains
-          // the game instead of standing empty.
-          <div className="rps-rules">
-            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', color: 'var(--bd-ink-muted)' }}>
-              {t('games.rock_paper_scissors.rulesTitle')}
-            </div>
-            <div>{t('games.rock_paper_scissors.rockBeatsScissors')}</div>
-            <div>{t('games.rock_paper_scissors.scissorsBeatsPaper')}</div>
-            <div>{t('games.rock_paper_scissors.paperBeatsRock')}</div>
-            <div style={{ color: 'var(--bd-ink-muted)', fontSize: 'clamp(11px, 2cqh, 13px)' }}>
-              {isSpectator ? t('games.rock_paper_scissors.bothChoosing') : t('games.rock_paper_scissors.noRoundsYet')}
-            </div>
+      <section className="rps-foot">
+        <div className="rps-foot__rules">
+          <span>{t('games.rock_paper_scissors.rockBeatsScissors')}</span>
+          <span className="rps-foot__dot">·</span>
+          <span>{t('games.rock_paper_scissors.scissorsBeatsPaper')}</span>
+          <span className="rps-foot__dot">·</span>
+          <span>{t('games.rock_paper_scissors.paperBeatsRock')}</span>
+        </div>
+        {!isSpectator && gameData.rounds.length > 0 && (
+          <div className="rps-foot__stats">
+            {t('games.rock_paper_scissors.yourPicks')}
+            {CHOICES.map(({ choice, emoji }) => (
+              <span key={choice} className="rps-foot__stat">
+                {emoji} {myPickCounts[choice]}
+              </span>
+            ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   )
 }
 
-function RevealTile({ name, choice, winner, t }: { name: string; choice: RPSChoice | null; winner: boolean; t: TFn }) {
+function Hand({ name, emoji, state, tone, side }: { name: string; emoji: string; state: string; tone: 'idle' | 'choosing' | 'locked' | 'win' | 'loss'; side: 'left' | 'right' }) {
   return (
-    <div className={`rps-reveal__tile${winner ? ' rps-reveal__tile--winner' : ''}`}>
-      <div style={{ fontSize: 'clamp(10px, 1.8cqh, 12px)', fontWeight: 700, color: 'var(--bd-ink-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {name}
-      </div>
-      <div className="rps-reveal__emoji">{getChoiceEmoji(choice)}</div>
-      <div style={{ fontSize: 'clamp(11px, 2cqh, 13px)', fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{choice ? t(CHOICE_LABEL_KEY[choice]) : '—'}</div>
+    <div className={`rps-hand rps-hand--${side} rps-hand--${tone}`}>
+      <span className="rps-hand__emoji" aria-hidden>{emoji}</span>
+      <span className="rps-hand__name">{name}</span>
+      <span className="rps-hand__state">{state}</span>
     </div>
   )
 }

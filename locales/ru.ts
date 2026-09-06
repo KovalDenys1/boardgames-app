@@ -927,6 +927,8 @@ const ru = {
       timeUp: 'Время вышло – ход сделан случайно',
       seriesTarget: 'До {{count}} побед · из {{rounds}}',
       winsCount: 'Побед: {{count}}',
+      choosing: 'Выбирает…',
+      yourPicks: 'Твои ходы',
     },
     alias: {
       name: 'Алиас',

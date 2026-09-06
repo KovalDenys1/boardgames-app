@@ -50,8 +50,9 @@ test('two players pick, both see the reveal, and the host holds the rematch', as
       for (const page of [hostPage, guestPage]) {
         await expect(page.getByText(reveal).first()).toBeVisible({ timeout: 15_000 })
       }
-      await expect(hostPage.getByText(/you won this round/i).first()).toBeVisible()
-      await expect(guestPage.getByText(/you lost this round/i).first()).toBeVisible()
+      // The stage marks each hand with its outcome for the round.
+      await expect(hostPage.getByText(/^win$/i).first()).toBeVisible()
+      await expect(guestPage.getByText(/^loss$/i).first()).toBeVisible()
     }
 
     // Best of three, first to two: rock beat scissors twice, the match is over.
