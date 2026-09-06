@@ -44,5 +44,10 @@ describe('proxy CSP policy', () => {
     expect(scriptSrcDirective).not.toContain("'strict-dynamic'")
     expect(scriptSrcDirective).not.toMatch(/'nonce-[^']+'/)
     expect(scriptSrcDirective).not.toContain("'unsafe-eval'")
+    // The AdSense loader and the consent message must be allowed to run (#876).
+    expect(scriptSrcDirective).toContain('https://pagead2.googlesyndication.com')
+    expect(scriptSrcDirective).toContain('https://fundingchoicesmessages.google.com')
+    const frameSrcDirective = csp?.split(';').map((part) => part.trim()).find((part) => part.startsWith('frame-src'))
+    expect(frameSrcDirective).toContain('https://googleads.g.doubleclick.net')
   })
 })
