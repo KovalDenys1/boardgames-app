@@ -108,7 +108,7 @@ interface StartAloneAutoBotResultEvent {
 interface LobbyLeaveRedirectEvent {
   durationMs: number
   isGuest: boolean
-  source: 'lobby_page' | 'tic_tac_toe_page' | 'connect_four_page' | 'sketch_and_guess_page'
+  source: 'lobby_page' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'connect_four_page' | 'sketch_and_guess_page'
   navigation: 'router_replace' | 'window_assign_fallback'
   apiOutcome: 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
   statusCode?: number

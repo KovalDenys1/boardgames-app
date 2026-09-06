@@ -181,13 +181,13 @@ describe('Guest mode API endpoints', () => {
     expect(createArgs.data.name).toBe('Lobby TEST123')
   })
 
-  it('rejects lobby creation for temporarily in-development games (rps, liars_party)', async () => {
+  it('rejects lobby creation for temporarily in-development games (liars_party)', async () => {
     const req = new NextRequest('http://localhost:3000/api/lobby', {
       method: 'POST',
       body: JSON.stringify({
         name: 'Guest Lobby',
         maxPlayers: 2,
-        gameType: 'rock_paper_scissors',
+        gameType: 'liars_party',
       }),
     })
 
