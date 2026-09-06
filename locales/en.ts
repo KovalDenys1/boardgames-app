@@ -928,7 +928,6 @@ const en = {
       seriesTarget: 'First to {{count}} · best of {{rounds}}',
       winsCount: '{{count}} wins',
       choosing: 'Choosing…',
-      yourPicks: 'Your picks',
     },
     alias: {
       name: 'Alias',

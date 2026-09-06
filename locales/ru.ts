@@ -928,7 +928,6 @@ const ru = {
       seriesTarget: 'До {{count}} побед · из {{rounds}}',
       winsCount: 'Побед: {{count}}',
       choosing: 'Выбирает…',
-      yourPicks: 'Твои ходы',
     },
     alias: {
       name: 'Алиас',

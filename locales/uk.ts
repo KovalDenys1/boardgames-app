@@ -930,7 +930,6 @@ const uk: Translation = {
       seriesTarget: 'До {{count}} перемог · з {{rounds}}',
       winsCount: 'Перемог: {{count}}',
       choosing: 'Обирає…',
-      yourPicks: 'Твої ходи',
     },
     alias: {
       name: 'Аліас',

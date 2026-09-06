@@ -11,9 +11,8 @@ type TFn = ReturnType<typeof useTranslation>['t']
  *   ┌──────── stage ────────┐   two hands, mine and the opponent's, with
  *   │  ✊  vs  ❔            │   "choosing / locked in", and the reveal of
  *   │  Denys    Pattern R.  │   the latest round shown large;
- *   ├──────── tiles ────────┤   three same-sized choice tiles;
+ *   ├──────── tiles ────────┤   three same-sized choice tiles.
  *   │  🪨    📄    ✂️        │
- *   ├──────── foot ─────────┤   one line of rules and my pick counts.
  *   └───────────────────────┘
  *
  * Scoreboard, status line, result overlay, history and chat are the shared
@@ -129,15 +128,6 @@ export default function RockPaperScissorsGameBoard({
       : t('games.rock_paper_scissors.roundWonBy', { player: players.find((p) => p.id === latestRound.winner)?.name ?? t('game.ui.playerFallback') })
     : t('games.rock_paper_scissors.roundNum', { num: gameData.rounds.length + 1 })
 
-  const myPickCounts = (() => {
-    const counts: Record<RPSChoice, number> = { rock: 0, paper: 0, scissors: 0 }
-    if (!playerId) return counts
-    for (const round of gameData.rounds) {
-      const choice = round.choices?.[playerId] as RPSChoice | undefined
-      if (choice && choice in counts) counts[choice] += 1
-    }
-    return counts
-  })()
 
   return (
     <div className="rps-board" data-testid={testId}>
@@ -175,25 +165,6 @@ export default function RockPaperScissorsGameBoard({
         </section>
       )}
 
-      <section className="rps-foot">
-        <div className="rps-foot__rules">
-          <span>{t('games.rock_paper_scissors.rockBeatsScissors')}</span>
-          <span className="rps-foot__dot">·</span>
-          <span>{t('games.rock_paper_scissors.scissorsBeatsPaper')}</span>
-          <span className="rps-foot__dot">·</span>
-          <span>{t('games.rock_paper_scissors.paperBeatsRock')}</span>
-        </div>
-        {!isSpectator && gameData.rounds.length > 0 && (
-          <div className="rps-foot__stats">
-            {t('games.rock_paper_scissors.yourPicks')}
-            {CHOICES.map(({ choice, emoji }) => (
-              <span key={choice} className="rps-foot__stat">
-                {emoji} {myPickCounts[choice]}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   )
 }
