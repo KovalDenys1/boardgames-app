@@ -1,15 +1,88 @@
 import type { CSSProperties } from 'react'
-import { GLYPHS } from './glyphs'
+import {
+  ArrowLeft, ArrowRight, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
+  Diamond, DiceFive, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm,
+  Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock, MagnifyingGlass,
+  MapTrifold, MaskHappy, Medal, Minus, PencilSimple, Play, Plus, Question, Robot, RocketLaunch, Scissors,
+  ShieldCheck, Smiley, SmileyAngry, SmileyMeh, Sparkle, SpeakerHigh, SpeakerSlash, Star, Tag, Target,
+  Trophy, User, Users, Warning, X,
+} from '@phosphor-icons/react/dist/ssr'
+import type { Icon as PhosphorIcon, IconWeight } from '@phosphor-icons/react'
 import type { IconName } from './names'
 
 /**
- * Boardly's chrome icon. One filled glyph on a 24×24 grid, coloured only
- * through `currentColor` (or a token via `tone`), so it survives dark mode
- * and the premium lobby themes without any per-icon work.
+ * Boardly's chrome icon – a Phosphor icon (MIT) behind a stable, Boardly-owned
+ * name, in the `fill` weight by default so it matches the filled, rounded,
+ * slightly chunky game icons and the B-tile. Coloured only through
+ * `currentColor` or a token (`tone`), so dark mode and the premium lobby
+ * themes need no per-icon work.
  *
  * Decorative by default (aria-hidden). Pass `label` when the icon is the
  * only thing conveying meaning (an icon-only button, a status without text).
+ *
+ * The `dist/ssr` entry renders in Server and Client Components alike.
  */
+const GLYPHS: Record<IconName, PhosphorIcon> = {
+  check: Check,
+  close: X,
+  plus: Plus,
+  minus: Minus,
+  'arrow-left': ArrowLeft,
+  'arrow-right': ArrowRight,
+  play: Play,
+  info: Info,
+  warning: Warning,
+  question: Question,
+  search: MagnifyingGlass,
+  copy: Copy,
+  clipboard: ClipboardText,
+  link: Link,
+  mail: EnvelopeSimple,
+  eye: Eye,
+  'eye-off': EyeSlash,
+  'sound-on': SpeakerHigh,
+  'sound-off': SpeakerSlash,
+  user: User,
+  users: Users,
+  crown: Crown,
+  star: Star,
+  sparkle: Sparkle,
+  heart: Heart,
+  lock: Lock,
+  shield: ShieldCheck,
+  trophy: Trophy,
+  medal: Medal,
+  flame: Fire,
+  bolt: Lightning,
+  gem: Diamond,
+  gamepad: GameController,
+  dice: DiceFive,
+  cards: Cards,
+  mask: MaskHappy,
+  target: Target,
+  hourglass: Hourglass,
+  clock: Clock,
+  rock: HandFist,
+  paper: HandPalm,
+  scissors: Scissors,
+  robot: Robot,
+  'bot-easy': Smiley,
+  'bot-medium': SmileyMeh,
+  'bot-hard': SmileyAngry,
+  home: House,
+  map: MapTrifold,
+  globe: Globe,
+  laptop: Laptop,
+  rocket: RocketLaunch,
+  bulb: Lightbulb,
+  pencil: PencilSimple,
+  chart: ChartBar,
+  tag: Tag,
+  party: Confetti,
+  butterfly: Butterfly,
+  handshake: Handshake,
+}
+
 export type IconTone =
   | 'current'
   | 'ink'
@@ -41,30 +114,27 @@ export interface IconProps {
   /** Rendered width and height in px. 16 for chips, 20 for inline text, 24 for buttons. */
   size?: number
   tone?: IconTone
+  /** Phosphor weight. `fill` is the house style; `bold` for line icons next to text; `duotone` for large empty states. */
+  weight?: IconWeight
   /** Accessible name. Omit for decorative icons next to visible text. */
   label?: string
   className?: string
   style?: CSSProperties
 }
 
-export default function Icon({ name, size = 20, tone = 'current', label, className, style }: IconProps) {
-  const color = tone === 'current' ? undefined : TONE_VAR[tone]
+export default function Icon({ name, size = 20, tone = 'current', weight = 'fill', label, className, style }: IconProps) {
+  const Glyph = GLYPHS[name]
+  const color = tone === 'current' ? 'currentColor' : TONE_VAR[tone]
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="currentColor"
-      data-icon={name}
-      role={label ? 'img' : undefined}
-      aria-label={label}
+    <Glyph
+      size={size}
+      weight={weight}
+      color={color}
+      alt={label}
       aria-hidden={label ? undefined : true}
-      focusable="false"
+      data-icon={name}
       className={className}
-      style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle', color, ...style }}
-    >
-      {GLYPHS[name]}
-    </svg>
+      style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle', ...style }}
+    />
   )
 }

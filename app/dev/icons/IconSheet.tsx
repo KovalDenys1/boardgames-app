@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import GameIcon, { GAME_ICON_IDS } from '@/components/GameIcon'
+import GameIcon, { GAME_ICON_IDS, GameGlyph } from '@/components/GameIcon'
 import { Icon, ICON_NAMES } from '@/components/icons'
 import { getGameMetadata, getCatalogGames } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
@@ -138,6 +138,32 @@ export default function IconSheet() {
           </Section>
           <Section title="Chrome glyphs — 16 / 20 / 24 / 40 in ink, then every tone">
             <GlyphGrid />
+          </Section>
+          <Section title="Game glyphs at 128 — the review size (grid lines = 48-grid centre and 4px safe margin)">
+            <div data-measure-sheet className="flex flex-wrap gap-4">
+              {GAME_ICON_IDS.map((gameId) => (
+                <div key={gameId} className="flex flex-col items-center gap-1">
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: 128,
+                      height: 128,
+                      background: 'var(--bd-bg2)',
+                      borderRadius: 12,
+                      backgroundImage:
+                        'linear-gradient(var(--bd-line) 1px, transparent 1px), linear-gradient(90deg, var(--bd-line) 1px, transparent 1px)',
+                      backgroundSize: '64px 64px',
+                      backgroundPosition: '-1px -1px',
+                      outline: '1px dashed var(--bd-ink-muted)',
+                      outlineOffset: -10.67,
+                    }}
+                  >
+                    <GameGlyph gameId={gameId} size={128} color={accentFor(gameId)} detailColor="var(--bd-ink)" />
+                  </div>
+                  <code className="text-[11px]" style={{ color: 'var(--bd-ink-muted)' }}>{gameId}</code>
+                </div>
+              ))}
+            </div>
           </Section>
         </div>
       </div>

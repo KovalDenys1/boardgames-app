@@ -15,6 +15,10 @@ import type { CSSProperties, ReactNode, SVGProps } from 'react'
 
 const D: CSSProperties = { fill: 'var(--gi-detail)' }
 const DS: CSSProperties = { stroke: 'var(--gi-detail)', fill: 'none' }
+/** Ink outline around the main shapes – what makes the glyph read as drawn, not generated. */
+const O: CSSProperties = { stroke: 'var(--gi-outline)', strokeWidth: 2, strokeLinejoin: 'round' }
+/** Soft highlight on the main shape. */
+const SH: CSSProperties = { fill: 'var(--gi-shine)' }
 
 function Line(props: SVGProps<SVGPathElement>) {
   return <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" {...props} />
@@ -22,149 +26,223 @@ function Line(props: SVGProps<SVGPathElement>) {
 
 export const GAME_GLYPHS: Record<string, ReactNode> = {
   yahtzee: (
+    <g transform="translate(1 0)">
     <>
-      <rect x={5} y={7} width={20} height={20} rx={6} transform="rotate(-14 15 17)" opacity={0.45} />
-      <rect x={15} y={13} width={27} height={27} rx={7.5} />
-      <circle cx={22} cy={20} r={2.7} style={D} />
-      <circle cx={35} cy={20} r={2.7} style={D} />
-      <circle cx={28.5} cy={26.5} r={2.7} style={D} />
-      <circle cx={22} cy={33} r={2.7} style={D} />
-      <circle cx={35} cy={33} r={2.7} style={D} />
+      <g transform="rotate(-14 16 18)" opacity={0.6}>
+        <rect x={5} y={7} width={22} height={22} rx={6} style={O} />
+        <circle cx={16} cy={18} r={2.4} style={D} />
+      </g>
+      <g transform="rotate(8 29 29)">
+        <rect x={16} y={16} width={26} height={26} rx={7} style={O} />
+        <rect x={19.5} y={19.5} width={7} height={3} rx={1.5} style={SH} />
+        <circle cx={23} cy={23} r={2.6} style={D} />
+        <circle cx={35} cy={23} r={2.6} style={D} />
+        <circle cx={29} cy={29} r={2.6} style={D} />
+        <circle cx={23} cy={35} r={2.6} style={D} />
+        <circle cx={35} cy={35} r={2.6} style={D} />
+      </g>
     </>
+    </g>
   ),
   spy: (
+    <g transform="translate(0 -1)">
     <>
-      <circle cx={24} cy={31} r={11.5} />
-      <rect x={13} y={7} width={22} height={13} rx={4.5} />
-      <rect x={6} y={18} width={36} height={5.5} rx={2.75} />
-      <rect x={14} y={27.5} width={20} height={5} rx={2.5} style={D} />
-      <rect x={22} y={27.5} width={4} height={5} />
+      <circle cx={24} cy={32} r={11} style={O} />
+      <rect x={13} y={7} width={22} height={14} rx={5} style={O} />
+      <rect x={13} y={15.5} width={22} height={4} style={D} />
+      <rect x={5} y={18.5} width={38} height={6} rx={3} style={O} />
+      <rect x={16} y={9.5} width={6} height={2.5} rx={1.25} style={SH} />
+      <rect x={12.5} y={28} width={9.5} height={6} rx={3} style={D} />
+      <rect x={26} y={28} width={9.5} height={6} rx={3} style={D} />
+      <rect x={21.5} y={29.5} width={5} height={2.4} rx={1.2} style={D} />
     </>
+    </g>
   ),
   'tic-tac-toe': (
     <>
-      <rect x={17.5} y={5} width={4.5} height={38} rx={2.25} />
-      <rect x={26} y={5} width={4.5} height={38} rx={2.25} />
-      <rect x={5} y={17.5} width={38} height={4.5} rx={2.25} />
-      <rect x={5} y={26} width={38} height={4.5} rx={2.25} />
-      <path d="M8.5 8.5l6 6M14.5 8.5l-6 6" strokeWidth={3} strokeLinecap="round" style={DS} />
-      <circle cx={24} cy={24} r={3.6} strokeWidth={3} style={DS} />
-      <path d="M33.5 33.5l6 6M39.5 33.5l-6 6" strokeWidth={3} strokeLinecap="round" style={DS} />
+      <rect x={5} y={5} width={38} height={38} rx={8} style={O} />
+      <rect x={17} y={8} width={2.6} height={32} rx={1.3} style={D} />
+      <rect x={28.4} y={8} width={2.6} height={32} rx={1.3} style={D} />
+      <rect x={8} y={17} width={32} height={2.6} rx={1.3} style={D} />
+      <rect x={8} y={28.4} width={32} height={2.6} rx={1.3} style={D} />
+      <path d="M9.8 9.8l5 5M14.8 9.8l-5 5" strokeWidth={2.8} strokeLinecap="round" style={DS} />
+      <circle cx={24} cy={24} r={3.4} strokeWidth={2.6} style={DS} />
+      <path d="M33.2 33.2l5 5M38.2 33.2l-5 5" strokeWidth={2.8} strokeLinecap="round" style={DS} />
     </>
   ),
   memory: (
     <>
-      <rect x={7} y={6} width={22} height={30} rx={5} transform="rotate(-12 18 21)" opacity={0.45} />
-      <rect x={18} y={12} width={23} height={30} rx={5} />
-      <rect x={25.5} y={23} width={8} height={8} rx={1.6} transform="rotate(45 29.5 27)" style={D} />
+      <g transform="rotate(-12 17.5 21.5)">
+        <rect x={7} y={7} width={21} height={29} rx={4.5} style={O} />
+        <path d="M14 15.5a3.5 3.5 0 1 1 5 3.2c-1.2.7-1.8 1.5-1.8 2.9" strokeWidth={2.4} strokeLinecap="round" style={DS} />
+        <circle cx={17.2} cy={25.6} r={1.6} style={D} />
+      </g>
+      <g transform="rotate(10 30.5 26.5)">
+        <rect x={20} y={12} width={21} height={29} rx={4.5} style={O} />
+        <rect x={23} y={15} width={6} height={2.6} rx={1.3} style={SH} />
+        <path d="M30.5 31c-1-1-5.5-3.7-5.5-7a3 3 0 0 1 5.5-1.7A3 3 0 0 1 36 24c0 3.3-4.5 6-5.5 7z" style={D} />
+      </g>
     </>
   ),
   rps: (
+    <g transform="translate(0 1.3)">
     <>
-      <circle cx={14} cy={34} r={6} fill="none" stroke="currentColor" strokeWidth={4.5} />
-      <circle cx={34} cy={34} r={6} fill="none" stroke="currentColor" strokeWidth={4.5} />
-      <Line d="M17.5 29.5L32 7M30.5 29.5L16 7" strokeWidth={5.5} />
-      <circle cx={24} cy={19.5} r={2.6} style={D} />
+      <g transform="rotate(-32 24 22)">
+        <rect x={21} y={2} width={6} height={27} rx={3} style={O} />
+      </g>
+      <g transform="rotate(32 24 22)">
+        <rect x={21} y={2} width={6} height={27} rx={3} style={O} />
+      </g>
+      <circle cx={14.5} cy={36} r={6} fill="none" strokeWidth={8} style={{ stroke: 'var(--gi-outline)' }} />
+      <circle cx={33.5} cy={36} r={6} fill="none" strokeWidth={8} style={{ stroke: 'var(--gi-outline)' }} />
+      <circle cx={14.5} cy={36} r={6} fill="none" stroke="currentColor" strokeWidth={4.5} />
+      <circle cx={33.5} cy={36} r={6} fill="none" stroke="currentColor" strokeWidth={4.5} />
+      <circle cx={24} cy={22} r={2.6} style={D} />
     </>
+    </g>
   ),
   'connect-four': (
+    <g transform="translate(0 -2.5)">
     <>
-      <circle cx={24} cy={7} r={4.5} />
-      <rect x={6} y={12} width={36} height={28} rx={6} />
-      <rect x={9} y={39} width={7} height={4} rx={1.5} />
-      <rect x={32} y={39} width={7} height={4} rx={1.5} />
-      {[14, 24, 34].map((cx) =>
-        [19.5, 27, 34.5].map((cy) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={3.3} style={D} />)
+      <rect x={9} y={38} width={7} height={6} rx={2} style={O} />
+      <rect x={32} y={38} width={7} height={6} rx={2} style={O} />
+      <rect x={5} y={9} width={38} height={31} rx={7} style={O} />
+      <rect x={9} y={12} width={7} height={2.6} rx={1.3} style={SH} />
+      {[14.5, 24, 33.5].map((cx) =>
+        [17.5, 24.5, 31.5].map((cy) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={3.4} style={D} />)
       )}
+      <circle cx={14.5} cy={31.5} r={1.9} />
+      <circle cx={24} cy={24.5} r={1.9} />
+      <circle cx={33.5} cy={17.5} r={1.9} />
     </>
+    </g>
   ),
   'guess-my-drawing': (
-    <g transform="rotate(45 24 24)">
-      <rect x={19.5} y={4} width={9} height={5} rx={2} />
-      <rect x={19.5} y={10} width={9} height={22} />
-      <rect x={19.5} y={13} width={9} height={3} style={D} />
-      <path d="M19.5 32h9l-4.5 10z" />
-      <path d="M22.4 38.4h3.2L24 42z" style={D} />
+    <g transform="translate(-0.9 0.9) rotate(45 24 24)">
+      <rect x={19.5} y={2} width={9} height={6} rx={2.2} style={O} />
+      <rect x={19.5} y={9} width={9} height={24} style={O} />
+      <rect x={19.5} y={12} width={9} height={3.2} style={D} />
+      <rect x={21} y={17} width={2.4} height={12} rx={1.2} style={SH} />
+      <path d="M19.5 33h9L24 43.5z" style={O} />
+      <path d="M22.3 39.6h3.4L24 43.5z" style={D} />
     </g>
   ),
   'fake-artist': (
+    <g transform="translate(0 0.8)">
     <>
-      <path d="M24 8c11 0 19 7 19 15.5 0 3.5-2.5 6.5-6 6.5h-3.5c-2 0-3 1.5-2.3 3.3.8 2.2-.2 4.7-2.7 5.3-1.5.3-3 .4-4.5.4C13 39 5 32 5 23.5S13 8 24 8z" />
-      <circle cx={14.5} cy={22} r={3.3} style={D} />
-      <circle cx={21} cy={15.5} r={3.3} style={D} />
-      <circle cx={30.5} cy={15.5} r={3.3} style={D} />
-      <circle cx={36} cy={22} r={3.3} style={D} />
+      <path d="M24 7c11.5 0 20 7.4 20 16.2 0 3.7-2.6 6.8-6.3 6.8h-3.6c-2 0-3.1 1.6-2.4 3.4.9 2.3-.2 4.9-2.8 5.5-1.6.3-3.2.5-4.9.5C12.5 39.4 4 32.2 4 23.2S12.5 7 24 7z" style={O} />
+      <rect x={9} y={19} width={7} height={3} rx={1.5} style={SH} />
+      <circle cx={13.5} cy={24} r={3.4} style={D} />
+      <circle cx={20} cy={16.5} r={3.4} style={D} />
+      <circle cx={29.5} cy={15.5} r={3.4} style={D} />
+      <circle cx={36} cy={22} r={3.4} style={D} />
+      <circle cx={27} cy={27} r={2.2} style={D} />
     </>
+    </g>
   ),
   'telephone-doodle': (
     <>
-      <rect x={6} y={7} width={12} height={15} rx={5.5} />
-      <rect x={30} y={26} width={12} height={15} rx={5.5} />
-      <Line d="M12 20Q12 33.5 30 33.5" strokeWidth={6} />
+      <path d="M12 21Q12 34.5 28 34.5" fill="none" strokeWidth={10} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
+      <path d="M12 21Q12 34.5 28 34.5" fill="none" stroke="currentColor" strokeWidth={6} strokeLinecap="round" />
+      <rect x={6} y={6} width={12} height={16} rx={6} style={O} />
+      <rect x={28} y={26} width={13} height={16} rx={6.5} style={O} />
+      <rect x={8.5} y={8.5} width={4} height={2.4} rx={1.2} style={SH} />
       <circle cx={12} cy={13} r={2.4} style={D} />
-      <circle cx={36} cy={35} r={2.4} style={D} />
+      <circle cx={34.5} cy={35} r={2.4} style={D} />
+      <circle cx={36} cy={12} r={7} style={O} />
+      <circle cx={33} cy={12} r={1.3} style={D} />
+      <circle cx={36} cy={12} r={1.3} style={D} />
+      <circle cx={39} cy={12} r={1.3} style={D} />
     </>
   ),
   'words-mines': (
+    <g transform="translate(-2.6 1.2)">
     <>
-      <circle cx={21} cy={29} r={14} />
-      <rect x={26} y={12} width={8} height={6} rx={2} transform="rotate(-40 30 15)" />
-      <Line d="M33 13.5c1.5-3.5 4.5-5 8-4" strokeWidth={3.5} />
-      <path d="M41.5 4.5l1 3.2 3.2 1-3.2 1-1 3.2-1-3.2-3.2-1 3.2-1z" />
-      <circle cx={15.5} cy={24} r={3} style={D} />
+      <circle cx={21} cy={29} r={14} style={O} />
+      <rect x={13.5} y={20.5} width={5} height={2.8} rx={1.4} transform="rotate(-35 16 22)" style={SH} />
+      <rect x={25.5} y={11.5} width={9} height={6.5} rx={2} transform="rotate(-40 30 14.75)" style={O} />
+      <path d="M33.5 13c1.5-3.8 4.6-5.4 8.2-4.4" fill="none" strokeWidth={7.5} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
+      <path d="M33.5 13c1.5-3.8 4.6-5.4 8.2-4.4" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" />
+      <path d="M41.5 3.5l1.2 3.5 3.5 1.2-3.5 1.2-1.2 3.5-1.2-3.5-3.5-1.2 3.5-1.2z" style={O} />
+      <rect x={10} y={30} width={8} height={8} rx={2} style={D} />
+      <rect x={20} y={30} width={8} height={8} rx={2} style={D} />
+      <rect x={15} y={21} width={8} height={8} rx={2} style={D} />
     </>
+    </g>
   ),
   anagrams: (
+    <g transform="translate(0 3.5)">
     <>
-      <rect x={4} y={22} width={12.5} height={12.5} rx={3} />
-      <rect x={17.75} y={13} width={12.5} height={12.5} rx={3} />
-      <rect x={31.5} y={22} width={12.5} height={12.5} rx={3} />
-      <rect x={17.75} y={27} width={12.5} height={12.5} rx={3} opacity={0.45} />
+      <rect x={4} y={22} width={12.5} height={12.5} rx={3} style={O} />
+      <rect x={17.75} y={13} width={12.5} height={12.5} rx={3} style={O} />
+      <rect x={31.5} y={22} width={12.5} height={12.5} rx={3} style={O} />
+      <rect x={17.75} y={27} width={12.5} height={12.5} rx={3} style={O} />
+      <rect x={20} y={15.2} width={4.5} height={2.2} rx={1.1} style={SH} />
       <circle cx={10.25} cy={28.25} r={2.6} style={D} />
       <rect x={21.5} y={16.75} width={5} height={5} rx={1} style={D} />
       <path d="M37.75 25l3.2 5.5h-6.4z" style={D} />
-      <Line d="M14 10.5c3-4 7-5.5 12-4.5" strokeWidth={3} />
-      <path d="M27.5 3.5l3 3.8-4.8.6z" />
+      <rect x={21.5} y={31} width={5} height={5} rx={2.5} style={D} />
+      <path d="M13 9.5c3-4.5 7.5-6 12.5-5" fill="none" strokeWidth={7} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
+      <path d="M13 9.5c3-4.5 7.5-6 12.5-5" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />
+      <path d="M26.5 1.5l4 4.5-6 1.2z" style={O} />
     </>
+    </g>
   ),
   crocodile: (
+    <g transform="translate(0 1.5)">
     <>
-      <rect x={4} y={14} width={40} height={11} rx={5.5} />
-      <circle cx={13} cy={12.5} r={5.5} />
-      <circle cx={13.5} cy={12} r={2.2} style={D} />
-      <rect x={9} y={30} width={35} height={8} rx={4} />
+      <rect x={4} y={14} width={40} height={11} rx={5.5} style={O} />
+      <rect x={9} y={30} width={35} height={8} rx={4} style={O} />
+      <circle cx={13} cy={12.5} r={5.5} style={O} />
+      <circle cx={13.8} cy={12} r={2} style={D} />
+      <rect x={8} y={16.5} width={6} height={2.4} rx={1.2} style={SH} />
+      <circle cx={39} cy={19} r={1.5} style={D} />
       {[19, 25, 31, 37].map((x) => (
         <path key={x} d={`M${x} 25h5l-2.5 4.5z`} style={D} />
       ))}
     </>
+    </g>
   ),
   alias: (
     <>
-      <path d="M12 6h24a7 7 0 0 1 7 7v15a7 7 0 0 1-7 7H23l-9 8v-8h-2a7 7 0 0 1-7-7V13a7 7 0 0 1 7-7z" />
-      <rect x={13} y={15} width={22} height={4} rx={2} style={D} />
-      <rect x={13} y={22} width={15} height={4} rx={2} style={D} />
+      <g opacity={0.6}>
+        <rect x={4} y={5} width={24} height={17} rx={7} style={O} />
+        <circle cx={12} cy={13.5} r={2} style={D} />
+        <circle cx={19.5} cy={13.5} r={2} style={D} />
+      </g>
+      <path d="M21 15h16a7 7 0 0 1 7 7v7a7 7 0 0 1-7 7H25l-6.5 6.5V36H21a7 7 0 0 1-7-7v-7a7 7 0 0 1 7-7z" style={O} />
+      <rect x={18} y={18.5} width={7} height={2.6} rx={1.3} style={SH} />
+      <rect x={19.5} y={23} width={18} height={3} rx={1.5} style={D} />
+      <rect x={19.5} y={29} width={11} height={3} rx={1.5} style={D} />
     </>
   ),
   'liars-party': (
     <>
-      <rect x={9} y={9} width={20} height={28} rx={4} transform="rotate(-14 19 23)" opacity={0.45} />
-      <rect x={19} y={11} width={20} height={28} rx={4} transform="rotate(10 29 25)" />
-      <path
-        d="M29 18c2.6 0 4.4 2 4.4 4.3 0 3.3-4.4 6.5-4.4 6.5s-4.4-3.2-4.4-6.5C24.6 20 26.4 18 29 18z"
-        transform="rotate(10 29 25)"
-        style={D}
-      />
-      <circle cx={23} cy={16} r={1.8} transform="rotate(10 29 25)" style={D} />
-      <circle cx={35} cy={34} r={1.8} transform="rotate(10 29 25)" style={D} />
+      <g transform="rotate(-14 19 23)" opacity={0.6}>
+        <rect x={9} y={9} width={20} height={28} rx={4} style={O} />
+        <circle cx={19} cy={23} r={3} style={D} />
+      </g>
+      <g transform="rotate(10 29 25)">
+        <rect x={19} y={11} width={20} height={28} rx={4} style={O} />
+        <rect x={22} y={14} width={6} height={2.6} rx={1.3} style={SH} />
+        <path d="M29 17.5c-2.5 3.5-6.5 6.5-6.5 10a3.8 3.8 0 0 0 6 3c-.3 1.6-1 2.8-2 3.5h5c-1-.7-1.7-1.9-2-3.5a3.8 3.8 0 0 0 6-3c0-3.5-4-6.5-6.5-10z" style={D} />
+        <circle cx={22.8} cy={15.5} r={1.5} style={D} />
+        <circle cx={35.2} cy={34.5} r={1.5} style={D} />
+      </g>
     </>
   ),
   'alibi-night': (
+    <g transform="translate(-1 2)">
     <>
+      <path d="M29 29l11.5 11.5" fill="none" strokeWidth={10.5} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
+      <path d="M29 29l11.5 11.5" fill="none" stroke="currentColor" strokeWidth={6.5} strokeLinecap="round" />
+      <circle cx={20} cy={20} r={12} fill="none" strokeWidth={9.5} style={{ stroke: 'var(--gi-outline)' }} />
       <circle cx={20} cy={20} r={12} fill="none" stroke="currentColor" strokeWidth={5.5} />
-      <Line d="M29 29l11.5 11.5" strokeWidth={6.5} />
-      <circle cx={20} cy={20} r={3.2} style={D} />
-      <path d="M38 5.5c-.8 3.3.9 6.3 4 7.3-3 1.4-4.9 4-4.8 7-2.1-2.3-5.3-3-8.1-1.7 1.5-2.7 1.1-6.1-1.1-8.4 3.4.6 6.8-1 8-4.2 0 0 2 0 2 0z" />
+      <path d="M13.5 15.5a7.5 7.5 0 0 1 5-3.2" fill="none" strokeWidth={2.2} strokeLinecap="round" style={{ stroke: 'var(--gi-shine)' }} />
+      <path d="M20 14.5a5.5 5.5 0 0 1 5.5 5.5M20 17.5a2.5 2.5 0 0 1 2.5 2.5M17 20a3 3 0 0 1 3-3" fill="none" strokeWidth={1.8} strokeLinecap="round" style={{ stroke: 'var(--gi-detail)' }} />
+      <path d="M38 3.5c-.8 3.3.9 6.3 4 7.3-3 1.4-4.9 4-4.8 7-2.1-2.3-5.3-3-8.1-1.7 1.5-2.7 1.1-6.1-1.1-8.4 3.4.6 6.8-1 8-4.2z" style={O} />
     </>
+    </g>
   ),
 }
 
@@ -177,13 +255,26 @@ interface GameGlyphProps {
   size: number
   color: string
   detailColor: string
+  /** Colour of the ink outline around the main shapes; 'transparent' inside a sticker. */
+  outlineColor?: string
+  shineColor?: string
   label?: string
   className?: string
   style?: CSSProperties
 }
 
 /** The bare svg – use through GameIcon unless you are building a new frame. */
-export function GameGlyph({ gameId, size, color, detailColor, label, className, style }: GameGlyphProps) {
+export function GameGlyph({
+  gameId,
+  size,
+  color,
+  detailColor,
+  outlineColor = detailColor,
+  shineColor = 'rgba(255,255,255,0.55)',
+  label,
+  className,
+  style,
+}: GameGlyphProps) {
   const glyph = GAME_GLYPHS[gameId] ?? GAME_GLYPHS.yahtzee
   return (
     <svg
@@ -198,7 +289,17 @@ export function GameGlyph({ gameId, size, color, detailColor, label, className, 
       aria-hidden={label ? undefined : true}
       focusable="false"
       className={className}
-      style={{ display: 'block', flexShrink: 0, color, ['--gi-detail' as string]: detailColor, ...style } as CSSProperties}
+      style={
+        {
+          display: 'block',
+          flexShrink: 0,
+          color,
+          ['--gi-detail' as string]: detailColor,
+          ['--gi-outline' as string]: outlineColor,
+          ['--gi-shine' as string]: shineColor,
+          ...style,
+        } as CSSProperties
+      }
     >
       {glyph}
     </svg>
@@ -265,6 +366,8 @@ export default function GameIcon({
           size={size}
           color="var(--bd-ink)"
           detailColor={detailColor ?? accentColor}
+          outlineColor="transparent"
+          shineColor="rgba(255,255,255,0.28)"
           label={label}
         />
       </div>
