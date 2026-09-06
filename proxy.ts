@@ -90,15 +90,24 @@ function buildCspHeaderValue() {
     'https://vercel.live',
     'https://*.ingest.sentry.io',
     'https://*.ingest.de.sentry.io',
+    // AdSense and the Google consent message (#876) talk back to these.
+    'https://pagead2.googlesyndication.com',
+    'https://fundingchoicesmessages.google.com',
+    'https://csi.gstatic.com',
   ])
 
   const connectSrcValue = Array.from(connectSrcCandidates).join(' ')
   // Next.js 15 app-router output includes inline bootstrap scripts without nonce
   // across statically rendered routes. Keep production CSP compatible with that
   // output to avoid blocking core Next.js chunk/bootstrap execution.
+  // The AdSense loader, the ad-serving hosts it pulls in, and the Google
+  // consent message (#784 put the tag in the HTML; #876 found that the policy
+  // had never let it run).
+  const adsScriptHosts =
+    'https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://tpc.googlesyndication.com https://googleads.g.doubleclick.net https://www.googletagservices.com'
   const scriptSrcValue = IS_DEVELOPMENT
-    ? "'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
-    : "'self' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
+    ? `'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com ${adsScriptHosts}`
+    : `'self' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com ${adsScriptHosts}`
 
   return `
     default-src 'self';
@@ -108,7 +117,7 @@ function buildCspHeaderValue() {
     font-src 'self' data:;
     connect-src ${connectSrcValue};
     worker-src 'self' blob:;
-    frame-src 'self' https://accounts.google.com https://vercel.live;
+    frame-src 'self' https://accounts.google.com https://vercel.live https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://fundingchoicesmessages.google.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
