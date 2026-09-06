@@ -38,7 +38,7 @@ export async function GET(
     select: {
       realtimeSecret: true,
       games: {
-        where: { status: { in: ['waiting', 'playing'] } },
+        where: { status: { in: ['waiting', 'playing', 'finished'] } },
         select: {
           players: { where: { userId: user.id }, select: { id: true } },
         },
