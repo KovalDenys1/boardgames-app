@@ -1337,13 +1337,19 @@ input[type="range"].slider-thumb::-moz-range-track {
 .bd-screen { animation: bd-screen-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
 
 /* Warm page background with radial accents */
-.bd-page {
-  min-height: 100%;
-  background:
-    radial-gradient(circle at 12% 8%,  rgba(255,196,77,0.18),  transparent 35%),
-    radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%),
-    radial-gradient(circle at 50% 100%,rgba(79,201,166,0.14),  transparent 50%),
-    var(--bd-bg);
+/* In the components layer on purpose: this file comes after @tailwind
+   utilities, so an unlayered .bd-page { min-height } beat every
+   min-h-[var(--game-h)] utility on the same element and the lobby's loading
+   and error states collapsed to the spinner's height. */
+@layer components {
+  .bd-page {
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 12% 8%,  rgba(255,196,77,0.18),  transparent 35%),
+      radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%),
+      radial-gradient(circle at 50% 100%,rgba(79,201,166,0.14),  transparent 50%),
+      var(--bd-bg);
+  }
 }
 
 /* Card */
