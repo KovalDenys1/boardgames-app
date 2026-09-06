@@ -128,17 +128,15 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
     </g>
   ),
   'fake-artist': (
-    <g transform="translate(0 0.8)">
     <>
-      <path d="M24 7c11.5 0 20 7.4 20 16.2 0 3.7-2.6 6.8-6.3 6.8h-3.6c-2 0-3.1 1.6-2.4 3.4.9 2.3-.2 4.9-2.8 5.5-1.6.3-3.2.5-4.9.5C12.5 39.4 4 32.2 4 23.2S12.5 7 24 7z" style={O} />
-      <rect x={9} y={19} width={7} height={3} rx={1.5} style={SH} />
-      <circle cx={13.5} cy={24} r={3.4} style={D} />
-      <circle cx={20} cy={16.5} r={3.4} style={D} />
-      <circle cx={29.5} cy={15.5} r={3.4} style={D} />
-      <circle cx={36} cy={22} r={3.4} style={D} />
-      <circle cx={27} cy={27} r={2.2} style={D} />
+      <path d="M24 8c11 0 20 7.2 20 16 0 3.6-2.7 6.4-6.2 6.4h-2.6c-1.9 0-3.1 1.7-2.5 3.5.8 2.3-.6 4.6-3 5.1-1.8.4-3.7.6-5.7.6C13 39.6 4 32.8 4 24S13 8 24 8z" style={O} />
+      <rect x={9} y={20} width={6.5} height={3} rx={1.5} transform="rotate(-30 12 21.5)" style={SH} />
+      <circle cx={12.5} cy={25} r={3.4} style={D} />
+      <circle cx={17} cy={17} r={3.4} style={D} />
+      <circle cx={26} cy={14.5} r={3.4} style={D} />
+      <circle cx={34.5} cy={19} r={3.4} style={D} />
+      <circle cx={24} cy={26.5} r={2.4} style={D} />
     </>
-    </g>
   ),
   'telephone-doodle': (
     <>
@@ -156,17 +154,14 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
     </>
   ),
   'words-mines': (
-    <g transform="translate(-2.6 1.2)">
+    <g transform="translate(-3 2)">
     <>
-      <circle cx={21} cy={29} r={14} style={O} />
-      <rect x={13.5} y={20.5} width={5} height={2.8} rx={1.4} transform="rotate(-35 16 22)" style={SH} />
-      <rect x={25.5} y={11.5} width={9} height={6.5} rx={2} transform="rotate(-40 30 14.75)" style={O} />
-      <path d="M33.5 13c1.5-3.8 4.6-5.4 8.2-4.4" fill="none" strokeWidth={7.5} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
-      <path d="M33.5 13c1.5-3.8 4.6-5.4 8.2-4.4" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" />
-      <path d="M41.5 3.5l1.2 3.5 3.5 1.2-3.5 1.2-1.2 3.5-1.2-3.5-3.5-1.2 3.5-1.2z" style={O} />
-      <rect x={10} y={30} width={8} height={8} rx={2} style={D} />
-      <rect x={20} y={30} width={8} height={8} rx={2} style={D} />
-      <rect x={15} y={21} width={8} height={8} rx={2} style={D} />
+      <circle cx={21} cy={28} r={14.5} style={O} />
+      <rect x={12} y={19.5} width={6} height={3} rx={1.5} transform="rotate(-40 15 21)" style={SH} />
+      <rect x={28} y={11.5} width={9} height={6} rx={2} transform="rotate(-45 32.5 14.5)" style={O} />
+      <path d="M35 12c1-3.5 3.5-5.5 7-5.5" fill="none" strokeWidth={7.5} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
+      <path d="M35 12c1-3.5 3.5-5.5 7-5.5" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" />
+      <path d="M42.5 1.5l1.3 3.7 3.7 1.3-3.7 1.3-1.3 3.7-1.3-3.7-3.7-1.3 3.7-1.3z" style={O} />
     </>
     </g>
   ),
@@ -232,16 +227,14 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
     </>
   ),
   'alibi-night': (
-    <g transform="translate(-1 2)">
-    <>
-      <path d="M29 29l11.5 11.5" fill="none" strokeWidth={10.5} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
-      <path d="M29 29l11.5 11.5" fill="none" stroke="currentColor" strokeWidth={6.5} strokeLinecap="round" />
-      <circle cx={20} cy={20} r={12} fill="none" strokeWidth={9.5} style={{ stroke: 'var(--gi-outline)' }} />
-      <circle cx={20} cy={20} r={12} fill="none" stroke="currentColor" strokeWidth={5.5} />
-      <path d="M13.5 15.5a7.5 7.5 0 0 1 5-3.2" fill="none" strokeWidth={2.2} strokeLinecap="round" style={{ stroke: 'var(--gi-shine)' }} />
-      <path d="M20 14.5a5.5 5.5 0 0 1 5.5 5.5M20 17.5a2.5 2.5 0 0 1 2.5 2.5M17 20a3 3 0 0 1 3-3" fill="none" strokeWidth={1.8} strokeLinecap="round" style={{ stroke: 'var(--gi-detail)' }} />
-      <path d="M38 3.5c-.8 3.3.9 6.3 4 7.3-3 1.4-4.9 4-4.8 7-2.1-2.3-5.3-3-8.1-1.7 1.5-2.7 1.1-6.1-1.1-8.4 3.4.6 6.8-1 8-4.2z" style={O} />
-    </>
+    <g transform="translate(0.5 0.5)">
+      <path d="M29.5 29.5l10 10" fill="none" strokeWidth={11} strokeLinecap="round" style={{ stroke: 'var(--gi-outline)' }} />
+      <path d="M29.5 29.5l10 10" fill="none" stroke="currentColor" strokeWidth={7} strokeLinecap="round" />
+      <circle cx={20.5} cy={20.5} r={12.5} fill="none" strokeWidth={9.5} style={{ stroke: 'var(--gi-outline)' }} />
+      <circle cx={20.5} cy={20.5} r={12.5} fill="none" stroke="currentColor" strokeWidth={5.5} />
+      <path d="M12.5 17a9 9 0 0 1 4.5-5.2" fill="none" strokeWidth={2.4} strokeLinecap="round" style={{ stroke: 'var(--gi-shine)' }} />
+      <path d="M23.5 13.5a7 7 0 1 0 4.2 12.6 5.2 5.2 0 0 1-4.2-12.6z" transform="rotate(-25 20.5 20.5)" style={D} />
+      <circle cx={25.5} cy={14} r={1.5} style={D} />
     </g>
   ),
 }
