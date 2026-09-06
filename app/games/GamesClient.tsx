@@ -13,7 +13,6 @@ import GameIcon from '@/components/GameIcon'
 interface Game {
   id: string
   nameKey: TranslationKeys
-  emoji: string
   descriptionKey: TranslationKeys
   players: string
   difficultyKey: TranslationKeys

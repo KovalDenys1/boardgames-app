@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import GameIcon from '@/components/GameIcon'
 import { getGameMetadata } from '@/lib/game-catalog'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import AdminWatchModal from '@/components/AdminWatchModal'
@@ -116,14 +116,7 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
     >
       {/* Game icon */}
       <div style={{ width: 48, height: 48, borderRadius: 14, background: `${game.accent}22`, border: `1.5px solid ${game.accent}44`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-          width={24}
-          height={24}
-          style={{ color: game.accent }}
-          dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
-        />
+        <GameIcon gameId={game.svgId} accentColor={game.accent} size={26} variant="bare" />
       </div>
 
       {/* Main info */}

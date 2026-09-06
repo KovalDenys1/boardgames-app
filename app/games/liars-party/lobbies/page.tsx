@@ -5,7 +5,6 @@ export default function LiarsPartyLobbiesPage() {
     <GameLobbiesPage
       gameType="liars_party"
       pagePath="/games/liars-party/lobbies"
-      titleEmoji="🎭"
       gameNameKey="games.liars_party.name"
       lobbiesNamespace="games.liars_party.lobbies"
     />

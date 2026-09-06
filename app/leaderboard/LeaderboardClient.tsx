@@ -4,30 +4,21 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
-import { GAME_FILTERS, getCompactGameIcon, useLeaderboard, type LeaderboardEntry } from './use-leaderboard'
+import { GAME_FILTERS, useLeaderboard, type GameFilter, type LeaderboardEntry } from './use-leaderboard'
 import { getGameMetadata } from '@/lib/game-catalog'
-import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 
-const GAME_ICON_MAP: Record<string, { gameId: string; color: string }> = {
-  yahtzee:            { gameId: 'yahtzee',    color: 'var(--bd-sky)' },
-  guess_the_spy:      { gameId: 'spy',        color: 'var(--bd-coral)' },
-  tic_tac_toe:        { gameId: 'tic-tac-toe',color: 'var(--bd-coral)' },
-  rock_paper_scissors:{ gameId: 'rps',        color: 'var(--bd-lav)' },
-  memory:             { gameId: 'memory',     color: 'var(--bd-mint)' },
-}
-
-function FilterGameIcon({ gameType, selected }: { gameType: string; selected: boolean }) {
-  const entry = GAME_ICON_MAP[gameType]
-  if (!entry || !GAME_SVG_PATHS[entry.gameId]) return null
+function FilterGameIcon({ filter, selected }: { filter: GameFilter; selected: boolean }) {
+  if (!filter.svgId) return <Icon name="gamepad" size={20} tone={selected ? 'bg' : 'ink'} />
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 512 512"
-      width={20}
-      height={20}
-      style={{ color: selected ? 'white' : entry.color, flexShrink: 0 }}
-      dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[entry.gameId] }}
+    <GameIcon
+      gameId={filter.svgId}
+      accentColor={selected ? 'var(--bd-bg)' : filter.accentColor}
+      detailColor={selected ? 'var(--bd-lav)' : 'var(--bd-ink)'}
+      size={22}
+      variant="bare"
     />
   )
 }
@@ -213,9 +204,7 @@ function LeaderboardPageContent() {
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-bd-bg2 text-lg leading-none">
-                        {selectedFilter.value && GAME_ICON_MAP[selectedFilter.value]
-                          ? <FilterGameIcon gameType={selectedFilter.value} selected={false} />
-                          : selectedFilter.displayIcon}
+                        <FilterGameIcon filter={selectedFilter} selected={false} />
                       </span>
                       <span className="min-w-0">
                         <span className="bd-kicker block text-[10px]">{t('leaderboard.gameFilter')}</span>
@@ -246,7 +235,6 @@ function LeaderboardPageContent() {
                       <div className="max-h-80 overflow-y-auto p-2">
                         {GAME_FILTERS.map((f) => {
                           const meta = f.value ? getGameMetadata(f.value) : null
-                          const icon = f.value ? getCompactGameIcon(f.value, meta?.icon ?? f.icon) : f.displayIcon
                           const label = f.value ? (meta?.name ?? f.label) : t('leaderboard.allGames', 'All Games')
                           const selected = selectedFilter.value === f.value
                           return (
@@ -262,9 +250,7 @@ function LeaderboardPageContent() {
                             >
                               <span className="flex min-w-0 items-center gap-3">
                                 <span className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-lg leading-none ${selected ? 'bg-white/20' : 'bg-bd-bg2'}`}>
-                                  {f.value && GAME_ICON_MAP[f.value]
-                                    ? <FilterGameIcon gameType={f.value} selected={selected} />
-                                    : icon}
+                                  <FilterGameIcon filter={f} selected={selected} />
                                 </span>
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>

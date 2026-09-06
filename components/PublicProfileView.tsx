@@ -7,6 +7,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 import { getGameMetadata } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { ACHIEVEMENTS } from '@/lib/achievements'
 
@@ -520,7 +521,7 @@ export default function PublicProfileView({
                     const gameName = t(`games.${meta.translationKey}.name` as TranslationKeys, meta.name)
                     return (
                       <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${tc.badge}`}>
-                        <span>{meta.icon}</span>
+                        <GameIcon gameId={meta.svgId} accentColor="currentColor" detailColor="var(--bd-bg)" size={14} variant="bare" />
                         <span>{t('profile.publicProfile.lovesGame', { game: gameName })}</span>
                       </div>
                     )

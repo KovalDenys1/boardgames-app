@@ -13,7 +13,6 @@ export default function YahtzeeLobbiesPage() {
       gameId="yahtzee"
       accentColor="var(--bd-sky)"
       pagePath="/games/yahtzee/lobbies"
-      titleEmoji="🎲"
       gameNameKey="games.yahtzee.name"
       lobbiesNamespace="games.yahtzee.lobbies"
     />

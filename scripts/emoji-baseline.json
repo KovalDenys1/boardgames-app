@@ -1,0 +1,442 @@
+[
+  {
+    "file": "app/auth/delete-account/page.tsx",
+    "count": 3
+  },
+  {
+    "file": "app/auth/error-oauth/page.tsx",
+    "count": 7
+  },
+  {
+    "file": "app/auth/forgot-password/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/auth/link/page.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/auth/login/LoginForm.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/auth/register/RegisterForm.tsx",
+    "count": 3
+  },
+  {
+    "file": "app/auth/reset-password/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/auth/verify-email/VerifyEmailContent.tsx",
+    "count": 3
+  },
+  {
+    "file": "app/games/alias/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/components/GameDetailPage.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/components/GameLobbiesPage.tsx",
+    "count": 7
+  },
+  {
+    "file": "app/games/components/PlayVsBotButton.tsx",
+    "count": 4
+  },
+  {
+    "file": "app/games/connect-four/ConnectFourDetailContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/GamesClient.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/games/liars-party/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/memory/MemoryDetailContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/rock-paper-scissors/page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/spy/SpyDetailContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/games/yahtzee/YahtzeeDetailContent.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/guides/best-2-player-games-online/page.tsx",
+    "count": 9
+  },
+  {
+    "file": "app/guides/best-3-player-games-online/page.tsx",
+    "count": 8
+  },
+  {
+    "file": "app/guides/best-free-multiplayer-browser-games/page.tsx",
+    "count": 10
+  },
+  {
+    "file": "app/guides/best-games-to-play-on-zoom/page.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/guides/best-online-games-for-game-night/page.tsx",
+    "count": 15
+  },
+  {
+    "file": "app/guides/best-party-games-online/page.tsx",
+    "count": 13
+  },
+  {
+    "file": "app/guides/connect-four-strategy-guide/page.tsx",
+    "count": 14
+  },
+  {
+    "file": "app/guides/how-to-play-alias-online/page.tsx",
+    "count": 13
+  },
+  {
+    "file": "app/guides/how-to-play-connect-four-online/page.tsx",
+    "count": 12
+  },
+  {
+    "file": "app/guides/how-to-play-memory-card-game-online/page.tsx",
+    "count": 10
+  },
+  {
+    "file": "app/guides/how-to-play-spy-game-online/page.tsx",
+    "count": 13
+  },
+  {
+    "file": "app/guides/how-to-play-tic-tac-toe-online/page.tsx",
+    "count": 10
+  },
+  {
+    "file": "app/guides/how-to-play-yahtzee-online/page.tsx",
+    "count": 10
+  },
+  {
+    "file": "app/guides/yahtzee-strategy-guide/page.tsx",
+    "count": 14
+  },
+  {
+    "file": "app/leaderboard/LeaderboardClient.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/lobby/[code]/alias-page.tsx",
+    "count": 13
+  },
+  {
+    "file": "app/lobby/[code]/components/JoinPrompt.tsx",
+    "count": 4
+  },
+  {
+    "file": "app/lobby/[code]/components/LobbyInfo.tsx",
+    "count": 4
+  },
+  {
+    "file": "app/lobby/[code]/components/LobbySettingsPanel.tsx",
+    "count": 12
+  },
+  {
+    "file": "app/lobby/[code]/components/SpyGameBoard.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/components/WaitingRoom.tsx",
+    "count": 9
+  },
+  {
+    "file": "app/lobby/[code]/components/WaitingRoomActions.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/components/YahtzeeGameBoard.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/lobby/[code]/connect-four-page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/hooks/useGameActions.ts",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/hooks/useLobbyActions.ts",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/[code]/liars-party-page.tsx",
+    "count": 5
+  },
+  {
+    "file": "app/lobby/[code]/LobbyPageClient.tsx",
+    "count": 17
+  },
+  {
+    "file": "app/lobby/[code]/rock-paper-scissors-page.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/lobby/[code]/sketch-and-guess-page.tsx",
+    "count": 1
+  },
+  {
+    "file": "app/lobby/[code]/spectate/page.tsx",
+    "count": 4
+  },
+  {
+    "file": "app/lobby/[code]/tic-tac-toe-page.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/lobby/create/page.tsx",
+    "count": 28
+  },
+  {
+    "file": "app/lobby/page.tsx",
+    "count": 6
+  },
+  {
+    "file": "app/maintenance/MaintenanceContent.tsx",
+    "count": 2
+  },
+  {
+    "file": "app/profile/page.tsx",
+    "count": 42
+  },
+  {
+    "file": "app/suspended/page.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/AchievementsGrid.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/AdminWatchModal.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/AuthGateModal.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/AvatarPicker.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/BotMoveOverlay.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/ConfirmModal.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/ConnectionStatus.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/DiceGroup.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/Friends.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/FriendsListModal.tsx",
+    "count": 5
+  },
+  {
+    "file": "components/game-chrome/GamePlayerCard.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/game-chrome/GameResultOverlay.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/game-chrome/GameRoomCard.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/game-chrome/GameStatusBanner.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/GameHistory.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/GameResultsModal.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/GuestConversionNudge.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/Header.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/HomePage/GameRibbon.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/HomePage/HeroBoard.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/HomePage/HeroSectionRedesign.tsx",
+    "count": 5
+  },
+  {
+    "file": "components/HomePage/MarqueeStrip.tsx",
+    "count": 10
+  },
+  {
+    "file": "components/HomePage/QuickPlayButton.tsx",
+    "count": 9
+  },
+  {
+    "file": "components/LobbyCard.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/LobbyStats.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/LobbyThemeBanner.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/Onboarding/OnboardingModal.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/PlayerList.tsx",
+    "count": 11
+  },
+  {
+    "file": "components/PlayerProfileCard.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/PremiumProfileCard.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/PublicProfileView.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/replay/TTTReplayRenderer.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/replay/YahtzeeReplayRenderer.tsx",
+    "count": 6
+  },
+  {
+    "file": "components/ReplayViewerModal.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/RockPaperScissorsGameBoard.tsx",
+    "count": 10
+  },
+  {
+    "file": "components/RollHistory.tsx",
+    "count": 3
+  },
+  {
+    "file": "components/Scorecard.tsx",
+    "count": 21
+  },
+  {
+    "file": "components/SketchAndGuessGameBoard.tsx",
+    "count": 7
+  },
+  {
+    "file": "components/SpyResults.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/SpyVoting.tsx",
+    "count": 1
+  },
+  {
+    "file": "components/Toast.tsx",
+    "count": 4
+  },
+  {
+    "file": "components/UsernameInput.tsx",
+    "count": 2
+  },
+  {
+    "file": "components/YahtzeeResults.tsx",
+    "count": 8
+  },
+  {
+    "file": "lib/achievements.ts",
+    "count": 7
+  },
+  {
+    "file": "lib/bots/connect-four/connect-four-bot.ts",
+    "count": 2
+  },
+  {
+    "file": "lib/env.ts",
+    "count": 1
+  },
+  {
+    "file": "lib/games/connect-four-game.ts",
+    "count": 2
+  },
+  {
+    "file": "lib/i18n-helpers.ts",
+    "count": 2
+  },
+  {
+    "file": "lib/yahtzee-notifications.tsx",
+    "count": 2
+  },
+  {
+    "file": "lib/yahtzee-results.ts",
+    "count": 6
+  },
+  {
+    "file": "locales/en.ts",
+    "count": 73
+  },
+  {
+    "file": "locales/no.ts",
+    "count": 73
+  },
+  {
+    "file": "locales/ru.ts",
+    "count": 73
+  },
+  {
+    "file": "locales/uk.ts",
+    "count": 73
+  }
+]

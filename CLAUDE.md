@@ -144,7 +144,7 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `lib/game-catalog.ts` — add entry to `FEATURED_GAME_CATALOG` with `availability`, `lobbyCreateConfig` (auto-covers create page)
 - [ ] `lib/public-game-access.ts` — add to `GAME_LOBBIES_ROUTES`
 - [ ] `lib/lobby-page-routing.ts` — add to `DedicatedLobbyPageGameType` + `DEDICATED_LOBBY_PAGE_GAME_TYPES`
-- [ ] `components/GameIcon.tsx` — add SVG case for the game
+- [ ] `components/GameIcon.tsx` — add the game's glyph to `GAME_GLYPHS` under its catalog `id` (48-grid, `currentColor` + `--gi-detail`, see DESIGN.md "Icons"); check it on `/dev/icons`. Never an emoji — `npm run audit:emoji` blocks it
 
 ### Database
 - [ ] `prisma/schema.prisma` — add value to `GameType` enum

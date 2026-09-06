@@ -145,7 +145,7 @@ function fallbackName(id: string) {
     .join(' ')
 }
 
-function getIllustration(gameId: string, emoji: string) {
+function getIllustration(gameId: string, accentColor: string) {
   switch (gameId) {
     case 'yahtzee':
       return (
@@ -178,7 +178,11 @@ function getIllustration(gameId: string, emoji: string) {
         </div>
       )
     default:
-      return <div className="bd-float" style={{ fontSize: 64 }}>{emoji}</div>
+      return (
+        <div className="bd-float" style={{ animationDelay: '0.2s' }}>
+          <GameIcon gameId={gameId} accentColor={accentColor} size={72} />
+        </div>
+      )
   }
 }
 
@@ -263,7 +267,7 @@ export default function GameRibbon() {
       detailHref,
       accentBg,
       status: game.availability,
-      illustration: getIllustration(game.id, game.emoji),
+      illustration: getIllustration(game.id, meta?.accentColor ?? 'var(--bd-coral)'),
     }
   })
 

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
-import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, STRATEGY_GUIDES } from '@/lib/guides-catalog'
+import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, STRATEGY_GUIDES, type GuideIcon } from '@/lib/guides-catalog'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 
 const howToPlayGuides = HOW_TO_PLAY_GUIDES
 const strategyGuides = STRATEGY_GUIDES
@@ -51,8 +53,8 @@ const collectionJsonLd = {
   })),
 }
 
-function GuideCard({ slug, title, description, emoji, readTime, accent }: {
-  slug: string; title: string; description: string; emoji: string; readTime: string; accent: string
+function GuideCard({ slug, title, description, icon, readTime, accent }: {
+  slug: string; title: string; description: string; icon: GuideIcon; readTime: string; accent: string
 }) {
   return (
     <Link
@@ -67,7 +69,11 @@ function GuideCard({ slug, title, description, emoji, readTime, accent }: {
             background: `color-mix(in srgb, ${accent} 18%, var(--bd-bg2))`,
           }}
         >
-          {emoji}
+          {'game' in icon ? (
+            <GameIcon gameId={icon.game} accentColor={accent} size={26} variant="bare" />
+          ) : (
+            <Icon name={icon.glyph} size={26} style={{ color: accent }} />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <h2
@@ -127,13 +133,13 @@ export default function GuidesPage() {
                 </p>
               </div>
               <div className="hidden shrink-0 sm:flex sm:gap-2">
-                {['🎲', '🕵️', '🧠', '⭕'].map((e) => (
+                {['yahtzee', 'spy', 'memory', 'tic-tac-toe'].map((gameId) => (
                   <span
-                    key={e}
-                    className="grid h-10 w-10 place-items-center rounded-xl border-2 text-lg shadow-[2px_2px_0_var(--bd-ink)]"
+                    key={gameId}
+                    className="grid h-10 w-10 place-items-center rounded-xl border-2 shadow-[2px_2px_0_var(--bd-ink)]"
                     style={{ borderColor: 'var(--bd-ink)', background: 'var(--bd-sun)' }}
                   >
-                    {e}
+                    <GameIcon gameId={gameId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={24} variant="bare" />
                   </span>
                 ))}
               </div>
