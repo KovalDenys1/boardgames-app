@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 
 export interface RollHistoryEntry {
@@ -34,7 +35,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
         style={{ background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)' }}
       >
         <div className="mb-3 flex items-center gap-2">
-          <span className="text-xl">🧾</span>
+          <Icon name="clipboard" size={20} />
           <div>
             <div className="bd-kicker">Recent Activity</div>
             <h3 className="text-base font-bold text-bd-ink">Recent Rolls</h3>
@@ -55,7 +56,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
       style={{ background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)' }}
     >
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-xl">🧾</span>
+        <Icon name="clipboard" size={20} />
         <div className="min-w-0 flex-1">
           <div className="bd-kicker">Recent Activity</div>
           <h3 className="truncate text-base font-bold text-bd-ink">Recent Rolls</h3>
@@ -100,7 +101,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm">{entryType === 'score' ? '🏁' : isBotEntry ? '🤖' : '🎲'}</span>
+                    <Icon name={entryType === 'score' ? 'flag' : isBotEntry ? 'robot' : 'dice'} size={14} />
                     <span className="truncate text-sm font-bold text-bd-ink">
                       {entry.playerName}
                     </span>

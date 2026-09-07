@@ -13,7 +13,7 @@ import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
-import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceEmoji, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, WinPips } from '@/components/RockPaperScissorsGameBoard'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
@@ -22,6 +22,7 @@ import { useGameTimer } from './hooks/useGameTimer'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { clientLogger } from '@/lib/client-logger'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -636,7 +637,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const cornerBadgeFor = (playerId: string) => {
         const revealed = latestRound?.choices?.[playerId] as RPSChoice | undefined
         const pending = !isFinished && isLockedIn(playerId)
-        const symbol = pending ? '✓' : revealed ? getChoiceEmoji(revealed) : null
+        const symbol = pending
+            ? <Icon name="check" size={14} />
+            : revealed ? <Icon name={getChoiceIcon(revealed)} size={14} /> : null
         if (!symbol) return undefined
         return (
             <div style={{
@@ -665,7 +668,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.10) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-            <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, fontSize: 96, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>✊</div>
+            <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}><Icon name="rock" size={96} /></div>
             <GameScoreboardHeader
                 leftCard={<GamePlayerCard name={leftName} isActive={!isFinished && !!leftId && !isLockedIn(leftId)} isMe={currentUserId === leftId} isWinner={winnerId === leftId} side="left" avatarSrc={leftId ? getAvatar(leftId) : null} isPremium={leftId ? getIsPremium(leftId) : false} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={leftScore} total={winsNeeded} color="var(--bd-coral)" />} cornerBadge={leftId ? cornerBadgeFor(leftId) : undefined} />}
                 center={
@@ -696,7 +699,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             turnTimerLimit={turnTimerLimit}
             isYourTurn={iAmChoosing}
             barColor={mySubmitted ? 'var(--bd-lav)' : 'var(--bd-coral)'}
-            leadingIcon={<span style={{ fontSize: 20, lineHeight: 1 }}>✊</span>}
+            leadingIcon={<Icon name="rock" size={20} />}
             isSpectator={isSpectator}
         />
     )
@@ -717,7 +720,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 <GameResultOverlay
                     title={finishedMessage}
                     kicker={t('lobby.game.gameOver')}
-                    icon={<div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', fontSize: 28, boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}>{iWon ? '🏆' : '✊'}</div>}
+                    icon={<div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 3px rgba(255,255,255,0.15)' }}><Icon name={iWon ? 'trophy' : 'rock'} size={28} tone="bg" /></div>}
                     accentColor="var(--bd-coral)"
                     accentShadowColor="var(--bd-coral-deep)"
                     onInspect={() => setOverlayInspecting(true)}
@@ -764,7 +767,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 {rpsData.rounds.length === 0
                     ? (
                         <div className="rps-rounds-empty">
-                            <span className="rps-rounds-empty__arena" aria-hidden><span>✊</span><span className="rps-rounds-empty__vs">vs</span><span>✊</span></span>
+                            <span className="rps-rounds-empty__arena" aria-hidden><Icon name="rock" size={22} /><span className="rps-rounds-empty__vs">vs</span><Icon name="rock" size={22} /></span>
                             <span>{t('games.rock_paper_scissors.noRoundsYet')}</span>
                         </div>
                     )
@@ -779,9 +782,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                             <div key={`round-${number}`} className={`rps-round-row${isDrawRound ? ' rps-round-row--draw' : ''}`} style={{ '--row-accent': accent } as React.CSSProperties}>
                                 <span className="rps-round-row__num">#{String(number).padStart(2, '0')}</span>
                                 <span className="rps-round-row__pair">
-                                    <span aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}>{getChoiceEmoji(leftChoice)}</span>
+                                    <span aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}><Icon name={getChoiceIcon(leftChoice)} size={18} /></span>
                                     <span className="rps-round-row__vs">vs</span>
-                                    <span aria-label={rightChoice ? t(CHOICE_LABEL_KEY[rightChoice]) : undefined}>{getChoiceEmoji(rightChoice)}</span>
+                                    <span aria-label={rightChoice ? t(CHOICE_LABEL_KEY[rightChoice]) : undefined}><Icon name={getChoiceIcon(rightChoice)} size={18} /></span>
                                 </span>
                                 <span className="rps-round-row__who">{who}</span>
                             </div>

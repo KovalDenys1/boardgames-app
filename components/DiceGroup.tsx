@@ -3,6 +3,7 @@
 import React from 'react'
 import Dice from './Dice'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { sounds } from '@/lib/sounds'
 
 interface DiceGroupProps {
@@ -57,7 +58,7 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
       <div className="text-center px-2">
         {!isMyTurn ? (
           <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
-            <span className="text-sm sm:text-base">⏳</span>
+            <Icon name="hourglass" size={16} />
             <span className="break-words">{t('yahtzee.ui.waitTurnHint')}</span>
           </p>
         ) : disabled && canRoll && onRollDice ? (
@@ -69,17 +70,17 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
             }}
             className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center w-full cursor-pointer transition-transform active:scale-[0.98]"
           >
-            <span className="text-sm sm:text-base">🎲</span>
+            <Icon name="dice" size={16} />
             <span className="break-words">{t('yahtzee.ui.rollFirstHint')}</span>
           </button>
         ) : disabled ? (
           <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
-            <span className="text-sm sm:text-base">🎲</span>
+            <Icon name="dice" size={16} />
             <span className="break-words">{t('yahtzee.ui.rollFirstHint')}</span>
           </p>
         ) : (
           <p className="bd-chip bd-chip-lav px-3 py-2 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 justify-center">
-            <span className="text-sm sm:text-base">👆</span>
+            <Icon name="point" size={16} />
             <span className="break-words">{t('yahtzee.ui.holdHint')}</span>
           </p>
         )}

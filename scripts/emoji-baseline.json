@@ -172,10 +172,6 @@
     "count": 5
   },
   {
-    "file": "app/lobby/[code]/rock-paper-scissors-page.tsx",
-    "count": 5
-  },
-  {
     "file": "app/lobby/[code]/sketch-and-guess-page.tsx",
     "count": 1
   },
@@ -212,20 +208,12 @@
     "count": 1
   },
   {
-    "file": "components/BotMoveOverlay.tsx",
-    "count": 4
-  },
-  {
     "file": "components/ConfirmModal.tsx",
     "count": 3
   },
   {
     "file": "components/ConnectionStatus.tsx",
     "count": 1
-  },
-  {
-    "file": "components/DiceGroup.tsx",
-    "count": 4
   },
   {
     "file": "components/Friends.tsx",
@@ -238,10 +226,6 @@
   {
     "file": "components/GameHistory.tsx",
     "count": 1
-  },
-  {
-    "file": "components/GameResultsModal.tsx",
-    "count": 4
   },
   {
     "file": "components/GuestConversionNudge.tsx",
@@ -278,18 +262,6 @@
   {
     "file": "components/ReplayViewerModal.tsx",
     "count": 3
-  },
-  {
-    "file": "components/RockPaperScissorsGameBoard.tsx",
-    "count": 10
-  },
-  {
-    "file": "components/RollHistory.tsx",
-    "count": 3
-  },
-  {
-    "file": "components/SketchAndGuessGameBoard.tsx",
-    "count": 7
   },
   {
     "file": "components/SpyResults.tsx",

@@ -1,12 +1,12 @@
 import type { CSSProperties } from 'react'
 import {
   ArrowLeft, ArrowRight, ArrowsClockwise, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
-  Diamond, DiceFive, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm,
+  Diamond, DiceFive, Eraser, Flag, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm, HandPointing,
   Camera, ChatCircle, Drop, GearSix, Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock,
   MagnifyingGlass, Megaphone, Palette,
   MapTrifold, MaskHappy, Medal, Minus, PencilSimple, Play, Plus, Question, Robot, RocketLaunch, Scissors,
   ShieldCheck, Smiley, SmileyAngry, SmileyMeh, Sparkle, SpeakerHigh, SpeakerSlash, Star, Tag, Target,
-  Trophy, User, Users, Warning, X,
+  Trash, Trophy, User, Users, Warning, X,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon, IconWeight } from '@phosphor-icons/react'
 import type { IconName } from './names'
@@ -80,6 +80,10 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
   rocket: RocketLaunch,
   bulb: Lightbulb,
   pencil: PencilSimple,
+  eraser: Eraser,
+  trash: Trash,
+  flag: Flag,
+  point: HandPointing,
   chart: ChartBar,
   gear: GearSix,
   palette: Palette,

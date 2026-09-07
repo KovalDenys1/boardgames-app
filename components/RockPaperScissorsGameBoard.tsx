@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon, type IconName } from '@/components/icons'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 
 type TFn = ReturnType<typeof useTranslation>['t']
@@ -9,10 +10,10 @@ type TFn = ReturnType<typeof useTranslation>['t']
  * The Rock Paper Scissors board, composed as a duel (#870, layout DoD):
  *
  *   ┌──────── stage ────────┐   two hands in the players' colours, with
- *   │  ✊   1:0   ✊         │   "choosing / locked in", the match score and
+ *   │  hand  1:0  hand      │   "choosing / locked in", the match score and
  *   │  Denys  ●○·○○  Pattern│   round pips between them, and the reveal of
  *   ├──────── tiles ────────┤   the latest round played as a shake-and-flip;
- *   │  🪨    📄    ✂️        │   three same-sized choice tiles.
+ *   │  rock  paper  sciss.  │   three same-sized choice tiles.
  *   └───────────────────────┘
  *
  * Scoreboard, status line, result overlay, history and chat are the shared
@@ -40,10 +41,10 @@ interface RockPaperScissorsGameBoardProps {
   testId?: string
 }
 
-const CHOICES: { choice: RPSChoice; emoji: string; labelKey: TranslationKeys; beats: string; accent: string }[] = [
-  { choice: 'rock', emoji: '🪨', labelKey: 'lobby.choice.rock', beats: '✂️', accent: 'var(--bd-lav)' },
-  { choice: 'paper', emoji: '📄', labelKey: 'lobby.choice.paper', beats: '🪨', accent: 'var(--bd-sky)' },
-  { choice: 'scissors', emoji: '✂️', labelKey: 'lobby.choice.scissors', beats: '📄', accent: 'var(--bd-coral)' },
+const CHOICES: { choice: RPSChoice; icon: IconName; labelKey: TranslationKeys; beats: RPSChoice; accent: string }[] = [
+  { choice: 'rock', icon: 'rock', labelKey: 'lobby.choice.rock', beats: 'scissors', accent: 'var(--bd-lav)' },
+  { choice: 'paper', icon: 'paper', labelKey: 'lobby.choice.paper', beats: 'rock', accent: 'var(--bd-sky)' },
+  { choice: 'scissors', icon: 'scissors', labelKey: 'lobby.choice.scissors', beats: 'paper', accent: 'var(--bd-coral)' },
 ]
 
 export const CHOICE_LABEL_KEY: Record<RPSChoice, TranslationKeys> = {
@@ -52,9 +53,9 @@ export const CHOICE_LABEL_KEY: Record<RPSChoice, TranslationKeys> = {
   scissors: 'lobby.choice.scissors',
 }
 
-export function getChoiceEmoji(choice: RPSChoice | null | undefined): string {
-  if (!choice) return '❔'
-  return CHOICES.find((entry) => entry.choice === choice)?.emoji ?? '❔'
+export function getChoiceIcon(choice: RPSChoice | null | undefined): IconName {
+  if (!choice) return 'question'
+  return CHOICES.find((entry) => entry.choice === choice)?.icon ?? 'question'
 }
 
 export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { filled: number; total: number; color?: string }) {
@@ -113,23 +114,23 @@ export default function RockPaperScissorsGameBoard({
   const rightScore = rightPlayer ? gameData.scores[rightPlayer.id] ?? 0 : 0
   const roundNumber = gameData.rounds.length + (isGameOver ? 0 : 1)
 
-  const handFor = (player: RPSPlayer | null): { emoji: string; state: string; tone: HandTone } => {
-    if (!player) return { emoji: '❔', state: '', tone: 'idle' }
+  const handFor = (player: RPSPlayer | null): { icon: IconName; state: string; tone: HandTone } => {
+    if (!player) return { icon: 'question', state: '', tone: 'idle' }
     const isMe = player.id === playerId
     if (showReveal && latestRound) {
       const choice = (latestRound.choices?.[player.id] as RPSChoice | undefined) ?? null
       const won = latestRound.winner === player.id
       const draw = latestRound.winner === 'draw'
       return {
-        emoji: getChoiceEmoji(choice),
+        icon: getChoiceIcon(choice),
         state: draw ? t('lobby.game.draw') : won ? t('lobby.game.win') : t('lobby.game.loss'),
         tone: draw ? 'draw' : won ? 'win' : 'loss',
       }
     }
     const locked = readyIds.includes(player.id)
-    if (isMe && locked) return { emoji: getChoiceEmoji(myCurrentChoice), state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
-    if (locked) return { emoji: '✊', state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
-    return { emoji: '✊', state: t('games.rock_paper_scissors.choosing'), tone: 'choosing' }
+    if (isMe && locked) return { icon: getChoiceIcon(myCurrentChoice), state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
+    if (locked) return { icon: 'rock', state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
+    return { icon: 'rock', state: t('games.rock_paper_scissors.choosing'), tone: 'choosing' }
   }
 
   const stageResult = showReveal && latestRound
@@ -162,7 +163,7 @@ export default function RockPaperScissorsGameBoard({
 
       {!isGameOver && !isSpectator && (
         <section className="rps-tiles" aria-label={t('games.rock_paper_scissors.pickPrompt')}>
-          {CHOICES.map(({ choice, emoji, labelKey, beats, accent }, index) => {
+          {CHOICES.map(({ choice, icon, labelKey, beats, accent }, index) => {
             const isSelected = myCurrentChoice === choice && mySubmitted
             const dimmed = mySubmitted && !isSelected
             return (
@@ -176,9 +177,9 @@ export default function RockPaperScissorsGameBoard({
                 className={`rps-tile${isSelected ? ' rps-tile--selected' : ''}${dimmed ? ' rps-tile--dimmed' : ''}`}
                 style={{ '--i': index, '--tile-accent': accent } as React.CSSProperties}
               >
-                <span className="rps-tile__emoji">{emoji}</span>
+                <span className="rps-tile__emoji"><Icon name={icon} size={40} /></span>
                 <span className="rps-tile__label">{t(labelKey)}</span>
-                <span className="rps-tile__beats">{t('games.rock_paper_scissors.beats', { target: beats })}</span>
+                <span className="rps-tile__beats">{t('games.rock_paper_scissors.beats', { target: t(CHOICE_LABEL_KEY[beats]) })}</span>
               </button>
             )
           })}
@@ -188,11 +189,11 @@ export default function RockPaperScissorsGameBoard({
   )
 }
 
-function Hand({ player, accent, emoji, state, tone, reveal }: { player: RPSPlayer | null; accent: string; emoji: string; state: string; tone: HandTone; reveal: boolean }) {
+function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
   const initial = (player?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
   return (
     <div className={`rps-hand rps-hand--${tone}${reveal ? ' rps-hand--reveal' : ''}`} style={{ '--hand-accent': accent } as React.CSSProperties}>
-      <span className="rps-hand__emoji" aria-hidden>{emoji}</span>
+      <span className="rps-hand__emoji" aria-hidden><Icon name={icon} size={44} /></span>
       <span className="rps-hand__who">
         {player?.avatarSrc
           // eslint-disable-next-line @next/next/no-img-element
