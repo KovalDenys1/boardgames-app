@@ -428,7 +428,7 @@ export default function GameLobbiesPage({
                               className="bd-btn bd-btn-soft text-xs px-3 py-1.5 whitespace-nowrap"
                               style={{ background: 'rgba(124,58,237,0.12)', color: 'var(--bd-ink)' }}
                             >
-                              {t('admin.watchButton')}
+                              <Icon name="shield" size={13} /> {t('admin.watchButton')}
                             </button>
                           )}
                           {!canSpectate && (

@@ -90,6 +90,7 @@ function SpectatorTopBar({
         color: 'white', fontSize: 13, fontWeight: 600,
         display: 'flex', alignItems: 'center', gap: 6,
       }}>
+        <Icon name={isAdminView ? 'shield' : 'eye'} size={14} />
         {isAdminView ? t('spectate.adminViewBanner') : t('spectate.watchingCount', { count: spectatorCount })}
       </span>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -748,7 +749,8 @@ export default function SpectatorLobbyPage() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {isAdminView && (
-          <div className="mb-4 rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: 'rgba(124,58,237,0.92)' }}>
+          <div className="mb-4 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: 'rgba(124,58,237,0.92)' }}>
+            <Icon name="shield" size={15} />
             {t('spectate.adminViewBanner')}
           </div>
         )}

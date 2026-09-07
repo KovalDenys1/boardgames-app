@@ -550,7 +550,8 @@ function FinishedView({
   return (
     <div className="space-y-4 text-center">
       {winnerName && (
-        <p className="text-xl font-extrabold text-bd-ink">
+        <p className="flex items-center justify-center gap-2 text-xl font-extrabold text-bd-ink">
+          <Icon name="trophy" size={20} />
           {t('games.guess_my_drawing.game.winnerBanner', { name: winnerName })}
         </p>
       )}

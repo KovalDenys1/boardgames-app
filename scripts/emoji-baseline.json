@@ -134,21 +134,5 @@
   {
     "file": "lib/env.ts",
     "count": 1
-  },
-  {
-    "file": "locales/en.ts",
-    "count": 73
-  },
-  {
-    "file": "locales/no.ts",
-    "count": 73
-  },
-  {
-    "file": "locales/ru.ts",
-    "count": 73
-  },
-  {
-    "file": "locales/uk.ts",
-    "count": 73
   }
 ]
