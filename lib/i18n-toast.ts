@@ -1,4 +1,4 @@
-import toast, { ToastOptions } from 'react-hot-toast'
+import toast, { ToastOptions, Renderable } from 'react-hot-toast'
 import i18n from '@/i18n'
 
 type ToastKind = 'success' | 'error' | 'info' | 'loading'
@@ -214,12 +214,12 @@ export const showToast = {
   /**
    * Show message with custom icon
    * @param key - translation key
-   * @param icon - emoji or icon component
+   * @param icon - an <Icon> (or any node); never an emoji, see DESIGN.md "Icons"
    * @param fallback - fallback text if key not found
    * @param params - parameters for interpolation
    * @param opts - react-hot-toast options
    */
-  custom: (key: string, icon: string, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
+  custom: (key: string, icon: Renderable, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
     const message = resolveMessage('info', key, fallback, params)
     toast(message, { icon, ...opts })
   },
