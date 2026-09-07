@@ -31,6 +31,13 @@
 - **Size decides whether there is a branch at all.** XS/S fixes and small features commit
   straight to `develop`; a branch adds friction and buys nothing for a quick fix. M/L work,
   or anything spanning more than one session, gets a `feature/*` or `fix/*` branch and a PR.
+- **GitHub agrees with that now.** `develop` used to require a pull request with
+  `enforce_admins` off, so every direct commit went through and printed
+  `Bypassed rule violations` — a rule obeyed by nobody, training the eye to skim past a
+  warning that will one day be a real one. The requirement was removed on 2026-09-07; force
+  pushes and branch deletion are still blocked. **`main` is untouched and is the real
+  barrier**: pull request required, `enforce_admins: true` so it binds the owner too,
+  required status checks, no force pushes, no deletions.
 - `develop` — integration branch, all feature PRs merge here first
 - `main` — production, only merges from `develop` via PR
 - `release/vX.Y.Z` — release branch (develop → main PR)
