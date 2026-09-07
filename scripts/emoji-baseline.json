@@ -224,10 +224,6 @@
     "count": 2
   },
   {
-    "file": "components/AchievementsGrid.tsx",
-    "count": 2
-  },
-  {
     "file": "components/AdminWatchModal.tsx",
     "count": 2
   },
@@ -264,22 +260,6 @@
     "count": 5
   },
   {
-    "file": "components/game-chrome/GamePlayerCard.tsx",
-    "count": 1
-  },
-  {
-    "file": "components/game-chrome/GameResultOverlay.tsx",
-    "count": 3
-  },
-  {
-    "file": "components/game-chrome/GameRoomCard.tsx",
-    "count": 2
-  },
-  {
-    "file": "components/game-chrome/GameStatusBanner.tsx",
-    "count": 1
-  },
-  {
     "file": "components/GameHistory.tsx",
     "count": 1
   },
@@ -304,26 +284,6 @@
     "count": 1
   },
   {
-    "file": "components/HomePage/HeroSectionRedesign.tsx",
-    "count": 5
-  },
-  {
-    "file": "components/HomePage/MarqueeStrip.tsx",
-    "count": 10
-  },
-  {
-    "file": "components/HomePage/QuickPlayButton.tsx",
-    "count": 9
-  },
-  {
-    "file": "components/LobbyCard.tsx",
-    "count": 1
-  },
-  {
-    "file": "components/LobbyStats.tsx",
-    "count": 4
-  },
-  {
     "file": "components/LobbyThemeBanner.tsx",
     "count": 2
   },
@@ -334,18 +294,6 @@
   {
     "file": "components/PlayerList.tsx",
     "count": 11
-  },
-  {
-    "file": "components/PlayerProfileCard.tsx",
-    "count": 4
-  },
-  {
-    "file": "components/PremiumProfileCard.tsx",
-    "count": 2
-  },
-  {
-    "file": "components/PublicProfileView.tsx",
-    "count": 4
   },
   {
     "file": "components/replay/TTTReplayRenderer.tsx",
@@ -384,20 +332,12 @@
     "count": 1
   },
   {
-    "file": "components/Toast.tsx",
-    "count": 4
-  },
-  {
     "file": "components/UsernameInput.tsx",
     "count": 2
   },
   {
     "file": "components/YahtzeeResults.tsx",
     "count": 8
-  },
-  {
-    "file": "lib/achievements.ts",
-    "count": 7
   },
   {
     "file": "lib/bots/connect-four/connect-four-bot.ts",
