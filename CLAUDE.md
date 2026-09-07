@@ -329,3 +329,27 @@ need data this app is not yet writing. Check both.
 Advanced DNS. Checked 2026-08-03: registration active to 14 Nov 2027 and WhoisGuard privacy
 to 14 Nov 2026, both on auto-renew; PremiumDNS not purchased and not needed. Nothing to do
 until ~Nov 2026 beyond confirming the card on file is still valid.
+
+## Two traps that cost a wrong-database connection
+
+**`prisma.config.ts` overrides your shell.** It calls `dotenv.config({ override: true })` on `.env`
+if that file exists, and only otherwise on `.env.local`. So exporting `DATABASE_URL` /
+`DIRECT_URL` in the shell does **not** point Prisma anywhere — `.env.local` wins, and the CLI
+connects to production. On 2026-09-07 a `prisma migrate deploy` aimed at `boardly-dev` reported
+"No pending migrations" against a database with zero tables, which is the impossible answer that
+gave it away.
+
+To run a Prisma command against another database, use the config's own precedence rather than
+fighting it: write the target values into a temporary `.env`, run, and delete it — with a `trap`,
+so an interrupted run does not leave the repo pointing somewhere else.
+
+**`vercel` CLI 53.1.1 cannot add a Preview variable for all branches.** `vercel env add NAME
+preview` answers `git_branch_required` even when given the exact command it prints in its own
+`next[]`. With a branch (`vercel env add NAME preview develop --value "$V" --yes`) it works. For
+all Preview branches, use the dashboard.
+
+Two more Vercel facts from the same session: a variable set for several environments is **one
+entry**, so pointing Preview somewhere else means deleting it and recreating it per environment —
+capture `vercel env pull --environment=production` first, and chain the removal and the production
+restore in one command so production is never without it for longer than a call. And Vercel rejects
+type `Secret` for a `NEXT_PUBLIC_*` key, correctly: those values are inlined into the client bundle.
