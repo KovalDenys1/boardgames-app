@@ -65,9 +65,9 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
       <rect x={28.4} y={8} width={2.6} height={32} rx={1.3} style={D} />
       <rect x={8} y={17} width={32} height={2.6} rx={1.3} style={D} />
       <rect x={8} y={28.4} width={32} height={2.6} rx={1.3} style={D} />
-      <path d="M9.8 9.8l5 5M14.8 9.8l-5 5" strokeWidth={2.8} strokeLinecap="round" style={DS} />
-      <circle cx={24} cy={24} r={3.4} strokeWidth={2.6} style={DS} />
-      <path d="M33.2 33.2l5 5M38.2 33.2l-5 5" strokeWidth={2.8} strokeLinecap="round" style={DS} />
+      <path d="M8.5 8.5l6 6M14.5 8.5l-6 6" strokeWidth={2.4} strokeLinecap="round" style={DS} />
+      <circle cx={24} cy={24} r={2.5} strokeWidth={2.2} style={DS} />
+      <path d="M33.5 33.5l6 6M39.5 33.5l-6 6" strokeWidth={2.4} strokeLinecap="round" style={DS} />
     </>
   ),
   memory: (
@@ -130,7 +130,7 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
   'fake-artist': (
     <>
       <path d="M24 8c11 0 20 7.2 20 16 0 3.6-2.7 6.4-6.2 6.4h-2.6c-1.9 0-3.1 1.7-2.5 3.5.8 2.3-.6 4.6-3 5.1-1.8.4-3.7.6-5.7.6C13 39.6 4 32.8 4 24S13 8 24 8z" style={O} />
-      <rect x={9} y={20} width={6.5} height={3} rx={1.5} transform="rotate(-30 12 21.5)" style={SH} />
+      <rect x={6.5} y={16.5} width={6} height={2.8} rx={1.4} transform="rotate(-42 9.5 17.9)" style={SH} />
       <circle cx={12.5} cy={25} r={3.4} style={D} />
       <circle cx={17} cy={17} r={3.4} style={D} />
       <circle cx={26} cy={14.5} r={3.4} style={D} />
@@ -233,8 +233,8 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
       <circle cx={20.5} cy={20.5} r={12.5} fill="none" strokeWidth={9.5} style={{ stroke: 'var(--gi-outline)' }} />
       <circle cx={20.5} cy={20.5} r={12.5} fill="none" stroke="currentColor" strokeWidth={5.5} />
       <path d="M12.5 17a9 9 0 0 1 4.5-5.2" fill="none" strokeWidth={2.4} strokeLinecap="round" style={{ stroke: 'var(--gi-shine)' }} />
-      <path d="M23.5 13.5a7 7 0 1 0 4.2 12.6 5.2 5.2 0 0 1-4.2-12.6z" transform="rotate(-25 20.5 20.5)" style={D} />
-      <circle cx={25.5} cy={14} r={1.5} style={D} />
+      <path d="M21.5 15.5a5 5 0 1 0 3 9 3.7 3.7 0 0 1-3-9z" transform="rotate(-25 20.5 20.5)" style={D} />
+      <circle cx={25} cy={16} r={1.3} style={D} />
     </g>
   ),
 }
