@@ -30,6 +30,17 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
 
 export const ACHIEVEMENT_KEYS: readonly string[] = ACHIEVEMENTS.map((a) => a.key)
 
+/**
+ * Tile fill per category. These are accent tokens, so they do not flip in dark
+ * mode — anything drawn on them must use --bd-ink-on-accent.
+ */
+export const ACHIEVEMENT_CATEGORY_ACCENT: Record<AchievementCategory, string> = {
+  progression: 'var(--bd-sun)',
+  skill: 'var(--bd-coral)',
+  social: 'var(--bd-mint)',
+  special: 'var(--bd-lav)',
+}
+
 export function getAchievementByKey(key: string): AchievementDefinition | undefined {
   return ACHIEVEMENTS.find((a) => a.key === key)
 }

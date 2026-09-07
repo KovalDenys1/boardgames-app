@@ -1751,7 +1751,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <div className="bd-page page-shell flex items-center justify-center px-4">
         <div className="bd-card w-full max-w-md p-8 text-center">
           <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
-            <Icon name="search" size={30} tone="ink" />
+            <Icon name="search" size={30} tone="on-accent" />
           </div>
           <h1
             className="mb-3 text-2xl font-extrabold text-bd-ink"
@@ -1868,7 +1868,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             <div className="max-w-xl mx-auto w-full animate-scale-in">
               <div className="bd-card p-6 text-center sm:p-8">
                 <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
-                  <Icon name="gamepad" size={30} tone="ink" />
+                  <Icon name="gamepad" size={30} tone="on-accent" />
                 </div>
                 <h2
                   className="mb-2 text-2xl font-extrabold text-bd-ink sm:text-3xl"

@@ -101,7 +101,7 @@ export default function GameResultOverlay({
         boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
       }}
     >
-      <Icon name="trophy" size={30} tone="ink" />
+      <Icon name="trophy" size={30} tone="on-accent" />
     </div>
   )
 

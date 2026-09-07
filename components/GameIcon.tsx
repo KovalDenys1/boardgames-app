@@ -234,7 +234,6 @@ export const GAME_GLYPHS: Record<string, ReactNode> = {
       <circle cx={20.5} cy={20.5} r={12.5} fill="none" stroke="currentColor" strokeWidth={5.5} />
       <path d="M12.5 17a9 9 0 0 1 4.5-5.2" fill="none" strokeWidth={2.4} strokeLinecap="round" style={{ stroke: 'var(--gi-shine)' }} />
       <path d="M21.5 15.5a5 5 0 1 0 3 9 3.7 3.7 0 0 1-3-9z" transform="rotate(-25 20.5 20.5)" style={D} />
-      <circle cx={25} cy={16} r={1.3} style={D} />
     </g>
   ),
 }

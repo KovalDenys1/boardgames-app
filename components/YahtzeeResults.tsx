@@ -112,7 +112,7 @@ export default function YahtzeeResults({
                 <div className="bd-kicker">{t('yahtzee.results.matchComplete')}</div>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4 sm:h-20 sm:w-20">
-                    <Icon name="trophy" size={44} tone="ink" />
+                    <Icon name="trophy" size={44} tone="on-accent" />
                   </div>
                   <div className="min-w-0">
                     <h2

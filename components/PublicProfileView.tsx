@@ -10,7 +10,7 @@ import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumP
 import { getGameMetadata } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
-import { ACHIEVEMENTS } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -181,6 +181,7 @@ export default function PublicProfileView({
     return {
       id: achievement.key,
       icon: achievement.icon,
+      accent: ACHIEVEMENT_CATEGORY_ACCENT[achievement.category],
       label: t(`achievements.${achievement.key}.name` as TranslationKeys),
       tooltip: unlockedAt
         ? `${description} — ${t('profile.achievements.unlockedOn' as TranslationKeys, { date: new Date(unlockedAt).toLocaleDateString(i18n.language || undefined) })}`
@@ -572,7 +573,9 @@ export default function PublicProfileView({
                             : `${tc.statCard} opacity-40 grayscale`
                         }`}
                       >
-                        <Icon name={badge.earned ? badge.icon : 'lock'} size={20} />
+                        <span style={badge.earned ? { color: badge.accent } : undefined}>
+                          <Icon name={badge.earned ? badge.icon : 'lock'} size={20} />
+                        </span>
                         <span className={`text-[10px] font-bold leading-tight ${tc.statLabel}`}>{badge.label}</span>
                       </div>
                     ))}

@@ -116,9 +116,9 @@ export default function LobbyInfo({
             aria-hidden="true"
           >
             {gameMeta ? (
-              <GameIcon gameId={gameMeta.svgId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={28} variant="bare" />
+              <GameIcon gameId={gameMeta.svgId} accentColor="var(--bd-ink-on-accent)" detailColor="var(--bd-sun)" size={28} variant="bare" />
             ) : (
-              <Icon name="gamepad" size={28} tone="ink" />
+              <Icon name="gamepad" size={28} tone="on-accent" />
             )}
           </div>
 

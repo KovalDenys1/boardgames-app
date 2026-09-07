@@ -7,6 +7,8 @@ import { Icon, type IconName } from '@/components/icons'
 export type AchievementGridItem = {
   id: string
   icon: IconName
+  /** Tile fill, from ACHIEVEMENT_CATEGORY_ACCENT. */
+  accent: string
   label: string
   description: string
   unlockedOnLabel: string | null
@@ -45,11 +47,16 @@ function Badge({
         }`}
       >
         <span
-          className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink text-bd-ink shadow-[2px_2px_0_#1F1B16] ${
-            item.earned ? 'bg-bd-sun' : 'bg-bd-bg2 grayscale'
+          className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink shadow-[2px_2px_0_var(--bd-ink-on-accent)] ${
+            item.earned ? '' : 'bg-bd-bg2 grayscale'
           }`}
+          style={item.earned ? { background: item.accent } : undefined}
         >
-          <Icon name={item.earned ? item.icon : 'lock'} size={20} />
+          <Icon
+            name={item.earned ? item.icon : 'lock'}
+            size={20}
+            tone={item.earned ? 'on-accent' : 'muted'}
+          />
         </span>
         <span className="mt-auto pt-3 text-sm font-bold leading-tight text-bd-ink dark:text-slate-100">
           {item.label}

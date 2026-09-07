@@ -27,7 +27,7 @@ import {
   setStoredAppearanceLocale,
 } from '@/lib/appearance-preferences'
 import { changeLanguageLazy, type Locale } from '@/i18n'
-import { ACHIEVEMENTS } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 interface LinkedAccount {
@@ -1423,6 +1423,7 @@ export default function ProfilePage() {
     return {
       id: achievement.key,
       icon: achievement.icon,
+      accent: ACHIEVEMENT_CATEGORY_ACCENT[achievement.category],
       label: t(`achievements.${achievement.key}.name` as TranslationKeys),
       description: t(`achievements.${achievement.key}.description` as TranslationKeys),
       unlockedOnLabel: unlockedAt

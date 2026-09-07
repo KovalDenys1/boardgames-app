@@ -68,9 +68,9 @@ export default function JoinPrompt({
         <div className="relative">
           <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">
             {gameMeta ? (
-              <GameIcon gameId={gameMeta.svgId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={34} variant="bare" />
+              <GameIcon gameId={gameMeta.svgId} accentColor="var(--bd-ink-on-accent)" detailColor="var(--bd-sun)" size={34} variant="bare" />
             ) : (
-              <Icon name="gamepad" size={34} tone="ink" />
+              <Icon name="gamepad" size={34} tone="on-accent" />
             )}
           </div>
 

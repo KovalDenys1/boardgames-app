@@ -100,6 +100,8 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
 export type IconTone =
   | 'current'
   | 'ink'
+  /** Ink on an accent fill — stays dark in both themes. */
+  | 'on-accent'
   | 'soft'
   | 'muted'
   | 'coral'
@@ -112,6 +114,7 @@ export type IconTone =
 
 const TONE_VAR: Record<Exclude<IconTone, 'current'>, string> = {
   ink: 'var(--bd-ink)',
+  'on-accent': 'var(--bd-ink-on-accent)',
   soft: 'var(--bd-ink-soft)',
   muted: 'var(--bd-ink-muted)',
   coral: 'var(--bd-coral)',
