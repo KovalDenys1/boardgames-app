@@ -22,6 +22,7 @@ export const ICON_NAMES = [
   'clipboard',
   'link',
   'mail',
+  'chat',
   // visibility & sound
   'eye',
   'eye-off',

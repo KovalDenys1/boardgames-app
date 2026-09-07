@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import {
   ArrowLeft, ArrowRight, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
   Diamond, DiceFive, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm,
-  Camera, Drop, GearSix, Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock,
+  Camera, ChatCircle, Drop, GearSix, Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock,
   MagnifyingGlass, Palette,
   MapTrifold, MaskHappy, Medal, Minus, PencilSimple, Play, Plus, Question, Robot, RocketLaunch, Scissors,
   ShieldCheck, Smiley, SmileyAngry, SmileyMeh, Sparkle, SpeakerHigh, SpeakerSlash, Star, Tag, Target,
@@ -39,6 +39,7 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
   clipboard: ClipboardText,
   link: Link,
   mail: EnvelopeSimple,
+  chat: ChatCircle,
   eye: Eye,
   'eye-off': EyeSlash,
   'sound-on': SpeakerHigh,

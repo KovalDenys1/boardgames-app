@@ -8,6 +8,8 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon, type IconName } from '@/components/icons'
+import Die from '@/components/ui/Die'
 import { getCatalogGames, getGameMetadata, isAvailableCatalogEntry, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
@@ -171,7 +173,7 @@ function CreateLobbyPage() {
     return (
       <div className="bd-page bd-screen flex-1 flex items-center justify-center p-4">
         <div className="bd-card" style={{ padding: 40, maxWidth: 400, width: '100%', textAlign: 'center' }}>
-          <div style={{ fontSize: 52, marginBottom: 16 }}>⚠️</div>
+          <div style={{ marginBottom: 16 }}><Icon name="warning" size={52} tone="coral" /></div>
           <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 12 }}>
             {t('lobby.create.gameNotFound')}
           </h1>
@@ -358,7 +360,7 @@ function CreateLobbyPage() {
               fontSize: Math.floor(dim / size * 0.48),
               fontFamily: 'var(--bd-font-display)', fontWeight: 800,
               color: m === 'x' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
-            }}>{m === 'x' ? '✕' : m === 'o' ? '○' : ''}</div>
+            }}>{m === 'x' ? 'X' : m === 'o' ? 'O' : ''}</div>
           )
         })}
       </div>
@@ -378,7 +380,6 @@ function CreateLobbyPage() {
       )
     }
     if (selectedGameType === 'yahtzee') {
-      const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
       const vals = [6, 3, 3, 1, 5]
       const rotations = [-5, 3, -8, 5, -3]
       const offsets = [0, -4, 0, -6, 2]
@@ -386,12 +387,9 @@ function CreateLobbyPage() {
         <div className="flex flex-col items-center gap-5">
           <div className="flex items-end gap-2">
             {vals.map((v, i) => (
-              <div key={i} style={{
-                width: 50, height: 50, borderRadius: 12, background: 'white',
-                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
-                display: 'grid', placeItems: 'center', fontSize: 26,
-                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
-              }}>{faces[v - 1]}</div>
+              <div key={i} style={{ transform: `translateY(${offsets[i]}px)` }}>
+                <Die value={v} size={50} rotate={`${rotations[i]}deg`} />
+              </div>
             ))}
           </div>
           <div className="text-center">
@@ -403,6 +401,9 @@ function CreateLobbyPage() {
     }
     if (selectedGameType === 'memory') {
       const cols = formData.memoryDifficulty === 'easy' ? 4 : formData.memoryDifficulty === 'medium' ? 5 : 6
+      // Preview of the memory card faces, the same game content that
+      // scripts/emoji-allowlist.json permits in lib/games/memory-game.ts.
+      // emoji-allow: memory card faces
       const emojis = ['🦊', '🐧', '🦁', '🐬', '🌟', '🍕', '🎸', '🚀', '🎨', '🎭', '🎲', '🌈']
       const revealed = [0, 5, 3]
       const total = Math.min(cols * cols, 20)
@@ -428,10 +429,10 @@ function CreateLobbyPage() {
       )
     }
     if (selectedGameType === 'guess_the_spy') {
-      const cards = [
-        { emoji: '🏖️', label: 'Beach', dark: false },
-        { emoji: '🕵️', label: '???', dark: true },
-        { emoji: '🏔️', label: 'Mountain', dark: false },
+      const cards: { icon: IconName; label: string; dark: boolean }[] = [
+        { icon: 'map', label: 'Beach', dark: false },
+        { icon: 'mask', label: '???', dark: true },
+        { icon: 'map', label: 'Mountain', dark: false },
       ]
       const rotations = [-6, 0, 6]
       const offsets = [4, 0, 4]
@@ -446,7 +447,7 @@ function CreateLobbyPage() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                 transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
               }}>
-                <span style={{ fontSize: 26 }}>{card.emoji}</span>
+                <Icon name={card.icon} size={26} />
                 <span style={{
                   fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
                   color: card.dark ? 'rgba(255,255,255,0.5)' : 'var(--bd-ink-muted)',
@@ -462,7 +463,9 @@ function CreateLobbyPage() {
       )
     }
     if (selectedGameType === 'rock_paper_scissors') {
-      const choices = [{ e: '✊', l: 'Rock' }, { e: '✋', l: 'Paper' }, { e: '✌️', l: 'Scissors' }]
+      const choices: { i: IconName; l: string }[] = [
+        { i: 'rock', l: 'Rock' }, { i: 'paper', l: 'Paper' }, { i: 'scissors', l: 'Scissors' },
+      ]
       const rotations = [-5, 0, 5]
       const offsets = [4, 0, 4]
       return (
@@ -475,7 +478,7 @@ function CreateLobbyPage() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                 transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
               }}>
-                <span style={{ fontSize: 28 }}>{c.e}</span>
+                <Icon name={c.i} size={28} />
                 <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--bd-ink-muted)' }}>{c.l}</span>
               </div>
             ))}
@@ -514,12 +517,8 @@ function CreateLobbyPage() {
       )
     }
     if (selectedGameType === 'liars_party') {
-      const cards = [
-        { rank: 'K', suit: '♠', red: false },
-        { rank: 'A', suit: '♥', red: true },
-        { rank: '7', suit: '♣', red: false },
-        { rank: 'Q', suit: '♦', red: true },
-      ]
+      // emoji-allow: playing-card suits are card content, not interface chrome
+      const cards = [{ rank: 'K', suit: '♠', red: false }, { rank: 'A', suit: '♥', red: true }, { rank: '7', suit: '♣', red: false }, { rank: 'Q', suit: '♦', red: true }]
       const rotations = [-8, -3, 3, 8]
       return (
         <div className="flex flex-col items-center gap-5">
@@ -621,9 +620,10 @@ function CreateLobbyPage() {
               </p>
               <div className="flex flex-wrap gap-1.5">
                 <span className={`bd-chip ${formData.password ? 'bd-chip-coral' : 'bd-chip-mint'}`}>
-                  {formData.password ? '🔒 Private' : '🌐 Public'}
+                  <Icon name={formData.password ? 'lock' : 'globe'} size={12} />{' '}
+                  {formData.password ? 'Private' : 'Public'}
                 </span>
-                <span className="bd-chip">👥 {formData.maxPlayers}</span>
+                <span className="bd-chip"><Icon name="users" size={12} /> {formData.maxPlayers}</span>
                 {isTTT && formData.ticTacToeRounds && (
                   <span className="bd-chip bd-chip-lav">Bo{formData.ticTacToeRounds}</span>
                 )}
@@ -676,7 +676,7 @@ function CreateLobbyPage() {
               />
               {showNameWarning && (
                 <p className="text-sm" style={{ color: 'var(--bd-coral-deep)' }}>
-                  ⚠️ {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
+                  <Icon name="warning" size={14} /> {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
                 </p>
               )}
             </div>
@@ -684,7 +684,7 @@ function CreateLobbyPage() {
             {/* Password */}
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-bd-ink">
-                🔒 {t('lobby.create.password')}{' '}
+                <Icon name="lock" size={14} /> {t('lobby.create.password')}{' '}
                 <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
               </label>
               <input
@@ -701,7 +701,7 @@ function CreateLobbyPage() {
             {gameInfo.allowedPlayers.length > 1 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-bd-ink">👥 {t('lobby.create.maxPlayers')}</label>
+                  <label className="text-sm font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.create.maxPlayers')}</label>
                   <span className="text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
                     {formData.maxPlayers}
                   </span>
@@ -735,7 +735,7 @@ function CreateLobbyPage() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-bd-ink">👥 {t('lobby.create.maxPlayers')}</span>
+                <span className="text-sm font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.create.maxPlayers')}</span>
                 <span className="bd-chip">{gameInfo.allowedPlayers[0]} {t('lobby.create.players')}</span>
               </div>
             )}
@@ -767,11 +767,12 @@ function CreateLobbyPage() {
 
                 {gameInfo.settings.hasDifficultySelection && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-bd-ink">🧠 {t('lobby.create.memoryDifficulty')}</label>
+                    <label className="block text-sm font-semibold text-bd-ink"><Icon name="cards" size={14} /> {t('lobby.create.memoryDifficulty')}</label>
                     <div className="flex gap-2">
                       {(['easy', 'medium', 'hard'] as MemoryDifficulty[]).map((d) => (
                         <button key={d} type="button" onClick={() => setFormData({ ...formData, memoryDifficulty: d })} className={chipOpt(formData.memoryDifficulty === d)}>
-                          {d === 'easy' ? '🟢 Easy' : d === 'medium' ? '🟡 Medium' : '🔴 Hard'}
+                          <Icon name={d === 'easy' ? 'bot-easy' : d === 'medium' ? 'bot-medium' : 'bot-hard'} size={13} />{' '}
+                          {d === 'easy' ? 'Easy' : d === 'medium' ? 'Medium' : 'Hard'}
                         </button>
                       ))}
                     </div>
@@ -780,7 +781,7 @@ function CreateLobbyPage() {
 
                 {gameInfo.settings.hasGameModes && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-bd-ink">🎲 {t('lobby.create.gameMode')}</label>
+                    <label className="block text-sm font-semibold text-bd-ink"><Icon name="dice" size={14} /> {t('lobby.create.gameMode')}</label>
                     <div className="flex gap-2">
                       {(gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map((m) => (
                         <button key={m} type="button" onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
@@ -794,7 +795,7 @@ function CreateLobbyPage() {
 
                 {gameInfo.settings.hasTurnTimer && (
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-bd-ink">⏱ {t('lobby.create.turnTimer')}</label>
+                    <label className="block text-sm font-semibold text-bd-ink"><Icon name="clock" size={14} /> {t('lobby.create.turnTimer')}</label>
                     <div className="flex gap-2">
                       {(gameInfo.settings.turnTimerOptions ?? [30, 60, 90, 120]).map((s) => (
                         <button key={s} type="button" onClick={() => setFormData({ ...formData, turnTimer: s })} className={chipOpt(formData.turnTimer === s)}>{s}s</button>
@@ -808,8 +809,8 @@ function CreateLobbyPage() {
             {/* Lobby theme — premium */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-bd-ink">🎨 Lobby Theme</label>
-                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500">👑 Premium</span>}
+                <label className="text-sm font-semibold text-bd-ink"><Icon name="palette" size={14} /> Lobby Theme</label>
+                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> Premium</span>}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {LOBBY_THEME_IDS.map((themeId) => {
@@ -840,7 +841,7 @@ function CreateLobbyPage() {
                         position: 'absolute', bottom: 0, left: 0, right: 0,
                         height: 8, background: t.accent,
                       }} />
-                      {isLocked && <span style={{ position: 'absolute', top: 1, right: 1, fontSize: 9 }}>👑</span>}
+                      {isLocked && <Icon name="crown" size={10} tone="premium" style={{ position: 'absolute', top: 1, right: 1 }} />}
                     </button>
                   )
                 })}
@@ -863,7 +864,7 @@ function CreateLobbyPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-bd-ink">Spectators</p>
-                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500">👑 Premium</span>}
+                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> Premium</span>}
                 </div>
                 <p className="text-[13px] text-bd-ink-muted">
                   {isPremiumUser ? 'Allow others to watch' : 'Upgrade to allow spectators'}
@@ -897,10 +898,10 @@ function CreateLobbyPage() {
             {!isGuest && (
               <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
                 <div>
-                  <p className="font-semibold text-bd-ink">👥 {t('lobby.invite.title')}</p>
+                  <p className="font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.invite.title')}</p>
                   <p className="text-[13px] text-bd-ink-muted">
                     {selectedFriendIds.length > 0
-                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}>✓ {selectedFriendIds.length} selected</span>
+                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}><Icon name="check" size={13} /> {selectedFriendIds.length} selected</span>
                       : t('lobby.invite.description')}
                   </p>
                 </div>

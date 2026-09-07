@@ -184,10 +184,6 @@
     "count": 5
   },
   {
-    "file": "app/lobby/[code]/LobbyPageClient.tsx",
-    "count": 17
-  },
-  {
     "file": "app/lobby/[code]/rock-paper-scissors-page.tsx",
     "count": 6
   },
@@ -202,10 +198,6 @@
   {
     "file": "app/lobby/[code]/tic-tac-toe-page.tsx",
     "count": 2
-  },
-  {
-    "file": "app/lobby/create/page.tsx",
-    "count": 28
   },
   {
     "file": "app/lobby/page.tsx",
