@@ -28,6 +28,9 @@
 ---
 
 ## Branching strategy
+- **Size decides whether there is a branch at all.** XS/S fixes and small features commit
+  straight to `develop`; a branch adds friction and buys nothing for a quick fix. M/L work,
+  or anything spanning more than one session, gets a `feature/*` or `fix/*` branch and a PR.
 - `develop` — integration branch, all feature PRs merge here first
 - `main` — production, only merges from `develop` via PR
 - `release/vX.Y.Z` — release branch (develop → main PR)
@@ -108,6 +111,19 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
 4. **Game-board or mobile fixes: real-device check is the final gate** — emulated
    viewports do not reproduce iOS Safari address-bar dvh behavior. If you cannot
    verify on a real device, say so explicitly instead of claiming the fix works.
+   Why this is a rule and not advice: in #688 Connect Four's bottom row was cropped
+   on a real iPhone after an emulated-viewport audit had called the game clean.
+5. **One flexible content region, as few `flex-shrink-0` blocks around it as
+   possible.** Before adding a banner, check whether the same signal is already
+   shown elsewhere on the screen, and reuse a compact pattern that exists in this
+   codebase rather than inventing one: `MemoryGameBoard.tsx`'s chip header,
+   `WaitingRoomActions.tsx`'s collapse-on-tap toggle, `LobbyInfo.tsx`'s
+   horizontal-scroll pill rail. Yahtzee's mobile Game/Score tabs once stacked six
+   never-shrink blocks — status bar, timer, Next Move card, a redundant turn banner,
+   Roll button, bottom nav — leaving almost no room for the dice and scorecard.
+6. **Cell sizing takes `min()` of a width-derived and a height-derived size.** A
+   multi-row board sized purely from `100vw` can come out taller than the usable
+   viewport and be silently clipped (#688 again).
 
 ## In-game layout — Definition of Done (rule from 2026-09-06)
 
@@ -177,3 +193,139 @@ npx tsc --noEmit   # must be clean
 pnpm test          # must be 0 failures
 npm run ci:quick   # lint + typecheck + arch audit
 ```
+
+---
+
+*The sections below moved here from Claude Code's global memory on 2026-09-07. They are
+Boardly-only rules, so they belong in the repo that loads them rather than in an index
+read at the start of every session, whatever the session is about.*
+
+## i18n — never hardcode a user-visible string
+
+Every label, message and piece of copy goes through the `t()` helper with a key defined in
+**all four** locale files (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`). Parity is enforced
+by the pre-commit hook.
+
+Add the key to all four files first, then use `t('namespace.key')`. Never write
+`t('key', 'fallback text')` — the fallback masks a missing translation and passes the
+parity check while leaving three languages broken.
+
+## Animations — never animate height
+
+Only `opacity` and `transform`. Height animations trigger layout on every frame and cannot
+be GPU-composited, so they stutter on a phone whatever the technique.
+
+Established 2026-08-13 after three failed attempts on the lobby settings panel: the
+grid-rows trick, then WAAPI on height, then FLIP. All three felt janky on Denys's own
+phone; the problem was the property, not the implementation.
+
+Design so element heights never change: crossfade fixed-size layers, a single-line
+horizontal rail with scroll and a fade mask, or a drill-down view. Any UI listing games
+must also scale — the catalog is 11+ games and growing, so wrapping chip layouts are a
+dead end; use vertically scrollable full-width plates (see `LobbySettingsPanel`'s Games
+drill-down).
+
+## Bots belong in move-based games only
+
+The catalog splits in two, and the split decides whether a bot is ever appropriate:
+
+- **Move-based** (tic-tac-toe, memory, Yahtzee, connect four, RPS) — the opponent is a
+  decision-maker. Bots are fine and already exist.
+- **Conversation-based** (Guess the Spy, Alias, anything built on people talking) — the
+  entire content is human conversation: pointed questions, hesitation, bluffing. **A bot
+  can never work here.** These games assume players talk to each other, in the in-game
+  chat or on Discord with the chat unused.
+
+A canned-phrase bot in a social deduction game carries no information, and if it draws the
+spy the round is empty. Never read an analytics finding like "51 % of Spy lobbies never
+start, most had one person" as a case for seat-filling: that converts "lobby never started"
+into "game started and was bad" — the metric improves and the experience gets worse. A
+person alone in a social game needs people: matchmaking, invites, or a lower minimum with
+a 2v1 split. Applies to #847 (Alias) — lower the minimum, do not add bots.
+
+## `availability: 'in-development'` does not mean unfinished
+
+In `lib/game-catalog.ts` it is a **product-visibility** flag, not a completeness flag. Rock
+Paper Scissors and Liar's Party were both fully built, playable and tested while
+deliberately kept `in-development` since 2026-05-18; Sketch & Guess (#253) followed the
+same pattern on 2026-08-06.
+
+So a ticket like "build game X's UI" is done once the game is playable behind its
+`ENABLE_<GAME>` flag via a direct lobby code and verified. Flipping `availability` to
+`'available'` — which also requires `lobbyCreateConfig` — is a separate decision for Denys
+about featuring it publicly. Ask; never flip it as the natural last step of closing a
+ticket.
+
+## Testing a game that needs three or more real players
+
+Games with `supportsBots: false` (Guess the Spy `minPlayers` 3, Alias 4, Liar's Party 4)
+cannot be reached solo through the browser: a second tab shares cookies and localStorage,
+so it is the same guest, not a second player.
+
+Fill the empty seats over HTTP and drive the board with the one real browser as host:
+
+```bash
+# create the lobby in the browser, take <code> from the /lobby/<code> URL, then per slot:
+curl -s -X POST http://localhost:3000/api/lobby/<code>/join-guest \
+  -H "Content-Type: application/json" -d '{"guestName":"Filler1"}'
+```
+
+`app/api/lobby/[code]/join-guest/route.ts` needs no auth: it mints a guest and adds them if
+a slot is open. This is the same public API the app's own UI calls — not a DB hack and not
+hand-minted JWTs — so it is safe against the local dev server.
+
+## Redis — Upstash, and two traps that have both been hit
+
+Upstash for Redis, Free plan, region `fra1`, connected to the Vercel project `boardly`
+through the Marketplace (store `boardly-cache`, created 2026-09-04). 256 MB, 500K
+commands/month. It backs chat history and rate limiting, and rate limiting is genuinely
+shared now, so counters survive a dev-server restart; the e2e suite clears its own loopback
+keys.
+
+**The env var names depend on how it was connected.** The Marketplace integration sets
+`KV_REST_API_URL` / `KV_REST_API_TOKEN` (plus `KV_URL`, `REDIS_URL`,
+`KV_REST_API_READ_ONLY_TOKEN`); a direct Upstash setup sets `UPSTASH_REDIS_REST_URL` /
+`UPSTASH_REDIS_REST_TOKEN`. `lib/redis-credentials.ts` reads both.
+
+- A store is **archived after long inactivity**, and its credentials then fail with
+  `fetch failed` while still looking correctly configured.
+- The REST client **deserializes JSON on read**, so `lrange` returns objects even though
+  `lpush` was handed a string. Calling `JSON.parse` on the result throws.
+
+## Emails to users are written in the company voice
+
+Anything sent to a Boardly user — feedback replies, support, announcements — speaks as the
+company: "we" / "our", signed **The Boardly team**. Never "I", never Denys personally. A
+one-person project still presents as a product.
+
+Send through the Resend API as `Boardly <support@boardly.online>`; the domain is verified
+in Resend and production sends from `noreply@boardly.online`. `RESEND_API_KEY` lives in
+`.env.local` — use `node --env-file`. Set `reply_to` to Denys's Gmail until inbound
+forwarding for `support@` exists. **Never send a Boardly user email from his personal or
+Comono mailbox.**
+
+## Boardly and the Control Panel are one database
+
+- **Shared database.** Both connect to the same Supabase Postgres. The Control Panel reads
+  and writes the same tables (Users, Games, Lobbies, Players, AdminAuditLogs).
+- **This repo owns the schema and runs the migrations.** The Control Panel keeps a
+  read-only copy of `schema.prisma`. The one exception, confirmed 2026-08-08: a table that
+  is genuinely Control-Panel-only bookkeeping with no relevance to Boardly's app logic
+  (e.g. `ChangelogChecklistItems` for `/changelog`) may be created through Supabase's own
+  migration tooling and added only to the Control Panel's schema. Keep that narrow —
+  anything with an FK into `Users` or `Games` still goes through this repo.
+- **Auth.** The Control Panel admits only users with `role = "admin"` in the shared `users`
+  table; admin accounts are managed in Boardly's database.
+- **Where they live.** Control Panel → `~/Projects/boardly-control-panel`,
+  `KovalDenys1/Boardly-control-panel`, `admin.boardly.online`. Its `AGENTS.md` carries the
+  same issue-before-commit rule as this file.
+
+A schema change here can break a Control Panel query, and a new admin feature there can
+need data this app is not yet writing. Check both.
+
+## DNS
+
+`boardly.online` is registered at **Namecheap** — Domain List → boardly.online → Manage →
+Advanced DNS. Checked 2026-08-03: registration active to 14 Nov 2027 and WhoisGuard privacy
+to 14 Nov 2026, both on auto-renew; PremiumDNS not purchased and not needed. Nothing to do
+until ~Nov 2026 beyond confirming the card on file is still valid.
