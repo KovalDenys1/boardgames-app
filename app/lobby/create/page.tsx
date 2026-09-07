@@ -657,7 +657,7 @@ function CreateLobbyPage() {
             {/* Lobby name */}
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-bd-ink">
-                {t('lobby.create.lobbyName')}{' '}
+                <Icon name="tag" size={14} /> {t('lobby.create.lobbyName')}{' '}
                 <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
               </label>
               <input
@@ -753,7 +753,7 @@ function CreateLobbyPage() {
                   <div className="space-y-4">
                     {gameInfo.settings.hasRoundSelection && (
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-bd-ink">{t('lobby.create.bestOf')}</label>
+                        <label className="block text-sm font-semibold text-bd-ink"><Icon name="target" size={14} /> {t('lobby.create.bestOf')}</label>
                         <div className="flex gap-2">
                           {[3, 5, 10].map((r) => (
                             <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>Bo{r}</button>
