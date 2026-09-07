@@ -1,6 +1,8 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 import { getGameMetadata } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 
@@ -65,7 +67,11 @@ export default function JoinPrompt({
 
         <div className="relative">
           <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">
-            <span>{gameMeta?.icon ?? '🎮'}</span>
+            {gameMeta ? (
+              <GameIcon gameId={gameMeta.svgId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={34} variant="bare" />
+            ) : (
+              <Icon name="gamepad" size={34} tone="ink" />
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 mb-4">

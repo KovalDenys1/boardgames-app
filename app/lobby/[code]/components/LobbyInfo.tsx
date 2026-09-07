@@ -1,6 +1,8 @@
 import { useRouter } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import LeaveIcon from '@/components/LeaveIcon'
@@ -113,7 +115,11 @@ export default function LobbyInfo({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xl shadow-[2px_2px_0_var(--bd-ink)] sm:h-14 sm:w-14 sm:rounded-2xl sm:text-[28px] sm:shadow-[3px_3px_0_var(--bd-ink)]"
             aria-hidden="true"
           >
-            {gameMeta?.icon ?? '🎮'}
+            {gameMeta ? (
+              <GameIcon gameId={gameMeta.svgId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={28} variant="bare" />
+            ) : (
+              <Icon name="gamepad" size={28} tone="ink" />
+            )}
           </div>
 
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">

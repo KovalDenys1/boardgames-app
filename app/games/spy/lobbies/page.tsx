@@ -13,7 +13,6 @@ export default function SpyLobbiesPage() {
       gameId="spy"
       accentColor="var(--bd-coral)"
       pagePath="/games/spy/lobbies"
-      titleEmoji="🕵️"
       gameNameKey="games.spy.name"
       lobbiesNamespace="games.spy.lobbies"
     />

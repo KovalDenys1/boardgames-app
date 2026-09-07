@@ -8,7 +8,8 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
-import { getCatalogGames, isAvailableCatalogEntry, type SupportedCatalogGameType } from '@/lib/game-catalog'
+import { getCatalogGames, getGameMetadata, isAvailableCatalogEntry, type SupportedCatalogGameType } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
 import {
@@ -40,7 +41,8 @@ type GameSettings = {
 
 type GameInfo = {
   nameKey: string
-  emoji: string
+  svgId: string
+  accentColor: string
   gradient: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
@@ -55,7 +57,8 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
         g.gameType,
         {
           nameKey: g.nameKey,
-          emoji: g.emoji,
+          svgId: g.id,
+          accentColor: getGameMetadata(g.gameType)?.accentColor ?? 'var(--bd-coral)',
           gradient: g.lobbyCreateConfig.gradient,
           allowedPlayers: g.lobbyCreateConfig.allowedPlayers,
           defaultMaxPlayers: g.lobbyCreateConfig.defaultMaxPlayers,
@@ -545,7 +548,9 @@ function CreateLobbyPage() {
     }
     return (
       <div className="text-center">
-        <div style={{ fontSize: 60, marginBottom: 12 }}>{gameInfo.emoji}</div>
+        <div className="mb-5 flex justify-center">
+          <GameIcon gameId={gameInfo.svgId} accentColor={gameInfo.accentColor} size={52} variant="sticker" />
+        </div>
         <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
       </div>
     )
@@ -587,7 +592,14 @@ function CreateLobbyPage() {
                 }
                 className="bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all"
               >
-                {info.emoji} {t(info.nameKey as TranslationKeys)}
+                <GameIcon
+                  gameId={info.svgId}
+                  accentColor="currentColor"
+                  detailColor={selectedGameType === key ? 'var(--bd-bg)' : 'white'}
+                  size={16}
+                  variant="bare"
+                />
+                {t(info.nameKey as TranslationKeys)}
               </button>
             ))}
         </div>

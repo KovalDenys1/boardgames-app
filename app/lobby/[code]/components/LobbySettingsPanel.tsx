@@ -1,6 +1,8 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata, getCatalogAvailableGames } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { LOBBY_THEMES, LOBBY_THEME_IDS, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 import type { Game, Lobby } from '@/types/game'
@@ -144,25 +146,25 @@ export default function LobbySettingsPanel({
   }> = [
     {
       key: 'gameType',
-      icon: gameMeta?.icon ?? '🎮',
+      icon: gameMeta ? <GameIcon gameId={gameMeta.svgId} accentColor={gameMeta.accentColor} size={20} variant="bare" /> : <Icon name="gamepad" size={20} />,
       label: t('lobby.changeGame'),
       value: gameMeta?.name ?? '—',
     },
     {
       key: 'maxPlayers',
-      icon: '👥',
+      icon: <Icon name="users" size={20} />,
       label: t('lobby.create.maxPlayers'),
       value: t('lobby.playerOccupancy', { current: currentPlayers, max: maxPlayers }),
     },
     {
       key: 'turnTimer',
-      icon: '⏱',
+      icon: <Icon name="clock" size={20} />,
       label: t('game.ui.timeLimit'),
       value: lobby?.turnTimer ? `${lobby.turnTimer}s` : '—',
     },
     {
       key: 'allowSpectators',
-      icon: '👁',
+      icon: <Icon name="eye" size={20} />,
       label: t('game.ui.spectatorsLabel'),
       value: spectatorsLabel,
     },
@@ -420,7 +422,7 @@ export default function LobbySettingsPanel({
                 ←
               </button>
               <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
-                <span aria-hidden className="text-base leading-none">{gameMeta?.icon ?? '🎮'}</span>
+                <span aria-hidden className="leading-none">{gameMeta ? <GameIcon gameId={gameMeta.svgId} accentColor={gameMeta.accentColor} size={18} variant="bare" /> : <Icon name="gamepad" size={18} />}</span>
                 {t('lobby.changeGame')}
               </h2>
             </div>
@@ -452,7 +454,7 @@ export default function LobbySettingsPanel({
                     : 'border-bd-line bg-bd-card-warm hover:border-bd-ink'
                 } ${updatingSetting === 'gameType' && !isGameActive ? 'opacity-50' : ''}`}
               >
-                <span aria-hidden className="flex w-6 shrink-0 items-center justify-center text-base">{meta?.icon ?? '🎮'}</span>
+                <span aria-hidden className="flex w-6 shrink-0 items-center justify-center">{meta ? <GameIcon gameId={meta.svgId} accentColor={meta.accentColor} size={20} variant="bare" /> : <Icon name="gamepad" size={20} />}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-bd-ink">{meta?.name ?? g.id}</span>
                 {isGameActive && <span className="shrink-0 text-sm font-bold text-bd-mint-deep">✓</span>}
               </button>

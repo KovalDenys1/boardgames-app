@@ -54,7 +54,7 @@ const nextConfig = {
   
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['react-hot-toast', 'next-auth'],
+    optimizePackageImports: ['react-hot-toast', 'next-auth', '@phosphor-icons/react'],
     // Note: optimizeCss requires critters package, disabled to avoid build issues
     // optimizeCss: true,
   },

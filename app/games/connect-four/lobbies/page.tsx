@@ -11,7 +11,6 @@ export default function ConnectFourLobbiesPage() {
     <GameLobbiesPage
       gameType="connect_four"
       pagePath="/games/connect-four/lobbies"
-      titleEmoji="🔴"
       gameNameKey="games.connect_four.name"
       lobbiesNamespace="games.connect_four.lobbies"
     />

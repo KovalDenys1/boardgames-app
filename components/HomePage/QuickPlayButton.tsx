@@ -6,7 +6,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import Modal from '@/components/Modal'
-import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import GameIcon from '@/components/GameIcon'
 import { getAvailableGameTypes, getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 
 // Catalog-driven: every game that is 'available' in the catalog shows up here
@@ -183,13 +183,12 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                       flexShrink: 0,
                     }}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 512 512"
-                      width={22}
-                      height={22}
-                      style={{ color: 'var(--bd-ink)' }}
-                      dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
+                    <GameIcon
+                      gameId={game.svgId}
+                      accentColor="var(--bd-ink)"
+                      detailColor={game.accentColor}
+                      size={24}
+                      variant="bare"
                     />
                   </span>
                   <div style={{ minWidth: 0, flex: isNarrow ? 1 : undefined }}>
