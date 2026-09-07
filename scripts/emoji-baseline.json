@@ -292,10 +292,6 @@
     "count": 1
   },
   {
-    "file": "components/PlayerList.tsx",
-    "count": 11
-  },
-  {
     "file": "components/replay/TTTReplayRenderer.tsx",
     "count": 2
   },
@@ -314,10 +310,6 @@
   {
     "file": "components/RollHistory.tsx",
     "count": 3
-  },
-  {
-    "file": "components/Scorecard.tsx",
-    "count": 21
   },
   {
     "file": "components/SketchAndGuessGameBoard.tsx",
