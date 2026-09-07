@@ -387,8 +387,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to join lobby')
+      if (res.ok === false) {
+        // The message is what the user sees; the code is what the caller branches on.
+        // Matching on an English message string is how 'Lobby is full' works and is why
+        // #879's new case carries a code instead.
+        throw Object.assign(new Error(data.error || 'Failed to join lobby'), {
+          code: typeof data.code === 'string' ? data.code : undefined,
+          allowSpectators: data.allowSpectators === true,
+        })
       }
 
       setGame(data.game)
@@ -416,7 +422,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setChatMessages(prev => [...prev, joinMessage])
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      if (message === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+      const errorCode = (err as { code?: string })?.code
+      // A running game is refused the same way a full lobby is: watch it if the lobby
+      // allows spectators, otherwise read the reason and take the lobbies button that
+      // JoinPrompt always shows.
+      const refused = message === 'Lobby is full' || errorCode === 'GAME_IN_PROGRESS'
+      if (refused && lobby?.allowSpectators && onLobbyFull) {
         onLobbyFull()
       } else {
         setError(message)
@@ -457,8 +468,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to join lobby')
+      if (response.ok === false) {
+        // The message is what the user sees; the code is what the caller branches on.
+        // Matching on an English message string is how 'Lobby is full' works and is why
+        // #879's new case carries a code instead.
+        throw Object.assign(new Error(data.error || 'Failed to join lobby'), {
+          code: typeof data.code === 'string' ? data.code : undefined,
+          allowSpectators: data.allowSpectators === true,
+        })
       }
 
       await setGuestMode(data.guestName || normalizedGuestName, {
@@ -485,7 +502,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       trackFunnelStep('guest-join')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      if (message === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+      const errorCode = (err as { code?: string })?.code
+      // A running game is refused the same way a full lobby is: watch it if the lobby
+      // allows spectators, otherwise read the reason and take the lobbies button that
+      // JoinPrompt always shows.
+      const refused = message === 'Lobby is full' || errorCode === 'GAME_IN_PROGRESS'
+      if (refused && lobby?.allowSpectators && onLobbyFull) {
         onLobbyFull()
       } else {
         setError(message)

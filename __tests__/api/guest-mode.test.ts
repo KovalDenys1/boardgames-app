@@ -243,6 +243,62 @@ describe('Guest mode API endpoints', () => {
     expect(data.player.userId).toBe(guestUser.id)
   })
 
+  // #879: a running game does not take newcomers. Before this, the registered route
+  // looked for a `waiting` game only and, finding none, created a *second* active game
+  // beside the running one — and pickRelevantLobbyGame prefers `playing`, so the
+  // newcomer sat in a waiting game nobody could start.
+  it('refuses a newcomer while a game is playing', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby_1',
+      code: 'TEST123',
+      maxPlayers: 4,
+      password: null,
+      allowSpectators: true,
+      games: [{ id: 'game_1', status: 'playing' }],
+    } as any)
+    mockPrisma.players.findUnique.mockResolvedValue(null as any)
+
+    const req = new NextRequest('http://localhost:3000/api/lobby/TEST123', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+
+    const response = await JOIN_LOBBY(req, { params: Promise.resolve({ code: 'TEST123' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(data.code).toBe('GAME_IN_PROGRESS')
+    expect(data.allowSpectators).toBe(true)
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('still lets a player of the running game back in', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby_1',
+      code: 'TEST123',
+      maxPlayers: 4,
+      password: null,
+      allowSpectators: false,
+      games: [{ id: 'game_1', status: 'playing' }],
+    } as any)
+    // the caller is already a Players row on the running game
+    mockPrisma.players.findUnique.mockResolvedValue({ id: 'player_1' } as any)
+
+    const req = new NextRequest('http://localhost:3000/api/lobby/TEST123', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+
+    const response = await JOIN_LOBBY(req, { params: Promise.resolve({ code: 'TEST123' }) })
+
+    // The point is that the guard let them past it, not what the transaction then does:
+    // rejoin is the transaction's own alreadyJoined path and is covered above.
+    expect(response.status).not.toBe(409)
+    expect(mockPrisma.$transaction).toHaveBeenCalled()
+  })
+
   it('allows guest lobby creator to add bot', async () => {
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       id: 'lobby_1',
