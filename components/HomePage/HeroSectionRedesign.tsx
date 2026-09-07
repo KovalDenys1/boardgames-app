@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { showToast } from '@/lib/i18n-toast'
@@ -73,12 +74,11 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             background: 'rgba(255,107,91,0.15)',
             display: 'grid',
             placeItems: 'center',
-            fontSize: 48,
             marginBottom: 24,
             border: '2px solid var(--bd-line)',
           }}
         >
-          👤
+          <Icon name="user" size={48} tone="soft" />
         </div>
         <h1
           style={{
@@ -178,11 +178,11 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             width: 96, height: 96, borderRadius: '50%',
             background: 'rgba(255,107,91,0.15)',
             display: 'grid', placeItems: 'center',
-            fontSize: 48, marginBottom: 24,
+            marginBottom: 24,
             border: '2px solid var(--bd-line)',
           }}
         >
-          👤
+          <Icon name="user" size={48} tone="soft" />
         </div>
         <h1
           style={{
@@ -232,8 +232,8 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               background: 'var(--bd-card-warm)',
             }}
           />
-          <p style={{ color: 'var(--bd-ink-muted)', fontSize: 13, marginBottom: 20, textAlign: 'left' }}>
-            💡 {t('guest.limitedFeatures')}
+          <p style={{ color: 'var(--bd-ink-muted)', fontSize: 13, marginBottom: 20, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="bulb" size={16} /> {t('guest.limitedFeatures')}
           </p>
           <button
             onClick={handleStartGuest}
@@ -253,7 +253,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               fontFamily: 'inherit',
             }}
           >
-            🎮 {isLoading ? t('common.loading') : t('guest.startPlaying', 'Start Playing')}
+            <Icon name="gamepad" size={20} /> {isLoading ? t('common.loading') : t('guest.startPlaying', 'Start Playing')}
           </button>
         </div>
       </div>
@@ -291,7 +291,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                 boxShadow: '2px 2px 0 var(--bd-ink)',
               }}
             >
-              🎲 {isLoggedIn && displayName ? t('home.welcomeBack', { name: displayName }) : t('home.gamesReadyBadge', { count: facts.availableGameCount })}
+              <Icon name="dice" size={16} /> {isLoggedIn && displayName ? t('home.welcomeBack', { name: displayName }) : t('home.gamesReadyBadge', { count: facts.availableGameCount })}
             </span>
             <span
               style={{

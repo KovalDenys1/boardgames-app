@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import GameIcon from '@/components/GameIcon'
 import { getGameMetadata } from '@/lib/game-catalog'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
@@ -135,8 +136,8 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
             {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
           </span>
           {lobby.allowSpectators && (
-            <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px' }}>
-              👁 {t('lobby.spectators', { count: lobby.spectatorCount ?? 0 })}
+            <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Icon name="eye" size={13} /> {t('lobby.spectators', { count: lobby.spectatorCount ?? 0 })}
             </span>
           )}
         </div>

@@ -1,28 +1,38 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import GameIcon from '@/components/GameIcon'
+import { Icon, type IconName } from '@/components/icons'
 
-const ITEM_ICONS = [
-  { key: 'home.marquee.playYahtzee',  icon: '🎲', color: 'var(--bd-coral)' },
-  { key: 'home.marquee.findTheSpy',   icon: '🕵️', color: 'var(--bd-lav)'   },
-  { key: 'home.marquee.quickTicTacToe', icon: '❌', color: 'var(--bd-mint)'  },
-  { key: 'home.marquee.matchCards',   icon: '🧠', color: 'var(--bd-sun)'   },
-  { key: 'home.marquee.joinAsGuest',  icon: '👤', color: 'var(--bd-sky)'   },
-  { key: 'home.marquee.shareCode',    icon: '🔗', color: 'var(--bd-coral)' },
-  { key: 'home.marquee.inviteFriends', icon: '💌', color: 'var(--bd-mint)'  },
-  { key: 'home.marquee.keepStats',    icon: '📊', color: 'var(--bd-lav)'   },
-  { key: 'home.marquee.noDownload',   icon: '⚡', color: 'var(--bd-sky)'   },
-  { key: 'home.marquee.playInBrowser', icon: '🌐', color: 'var(--bd-sun)'   },
+/**
+ * A marquee row is either a game (drawn with its own GameIcon, bare so it sits
+ * on the strip without a tile) or a platform claim (a chrome Icon).
+ */
+type MarqueeItemSpec =
+  | { key: TranslationKeys; game: string; color: string }
+  | { key: TranslationKeys; icon: IconName; color: string }
+
+const ITEM_ICONS: readonly MarqueeItemSpec[] = [
+  { key: 'home.marquee.playYahtzee',    game: 'yahtzee',     color: 'var(--bd-coral)' },
+  { key: 'home.marquee.findTheSpy',     game: 'spy',         color: 'var(--bd-lav)'   },
+  { key: 'home.marquee.quickTicTacToe', game: 'tic-tac-toe', color: 'var(--bd-mint)'  },
+  { key: 'home.marquee.matchCards',     game: 'memory',      color: 'var(--bd-sun)'   },
+  { key: 'home.marquee.joinAsGuest',    icon: 'user',        color: 'var(--bd-sky)'   },
+  { key: 'home.marquee.shareCode',      icon: 'link',        color: 'var(--bd-coral)' },
+  { key: 'home.marquee.inviteFriends',  icon: 'mail',        color: 'var(--bd-mint)'  },
+  { key: 'home.marquee.keepStats',      icon: 'chart',       color: 'var(--bd-lav)'   },
+  { key: 'home.marquee.noDownload',     icon: 'bolt',        color: 'var(--bd-sky)'   },
+  { key: 'home.marquee.playInBrowser',  icon: 'globe',       color: 'var(--bd-sun)'   },
 ] as const
 
 function MarqueeItem({
-  icon,
+  spec,
   color,
   txt,
   index,
 }: {
-  icon: string
+  spec: MarqueeItemSpec
   color: string
   txt: string
   index: number
@@ -40,7 +50,9 @@ function MarqueeItem({
         whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ fontSize: 26 }}>{icon}</span>
+      {'game' in spec
+        ? <GameIcon gameId={spec.game} accentColor={color} size={26} variant="bare" />
+        : <Icon name={spec.icon} size={26} />}
       <span style={{ color: index % 3 === 0 ? color : 'var(--bd-bg)' }}>{txt}</span>
     </span>
   )
@@ -123,12 +135,12 @@ export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps)
       <div className={`bd-marquee-track ${canAnimate ? 'is-ready' : ''}`}>
         {[0, 1, 2].map((groupIndex) => (
           <div key={groupIndex} className="bd-marquee-group">
-            {ITEM_ICONS.map(({ key, icon, color }, itemIndex) => (
+            {ITEM_ICONS.map((spec, itemIndex) => (
               <MarqueeItem
-                key={`${groupIndex}-${key}`}
-                icon={icon}
-                color={color}
-                txt={t(key)}
+                key={`${groupIndex}-${spec.key}`}
+                spec={spec}
+                color={spec.color}
+                txt={t(spec.key)}
                 index={itemIndex}
               />
             ))}

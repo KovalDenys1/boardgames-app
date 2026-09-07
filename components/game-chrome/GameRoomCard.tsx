@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 
@@ -54,7 +55,7 @@ export default function GameRoomCard({ emoji, title, code, isSpectator = false, 
       <div className="game-room-card game-room-card--compact">
         {allowSpectators && (
           <button type="button" className="game-room-card__copy" onClick={copyInvite} aria-label={inviteLabel} title={inviteLabel}>
-            👁
+            <Icon name="eye" size={16} />
           </button>
         )}
         {exit}
@@ -71,7 +72,7 @@ export default function GameRoomCard({ emoji, title, code, isSpectator = false, 
           <span className="game-room-card__code">#{code}</span>
           {allowSpectators ? (
             <button type="button" className="game-room-card__copy" onClick={copyInvite} aria-label={inviteLabel} title={inviteLabel}>
-              👁 <span>{inviteLabel}</span>
+              <Icon name="eye" size={14} /> <span>{inviteLabel}</span>
             </button>
           ) : (
             <span className="game-room-card__chip">{t('game.ui.spectatorsOff')}</span>

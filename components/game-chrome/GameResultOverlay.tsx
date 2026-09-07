@@ -3,6 +3,7 @@
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
+import { Icon } from '@/components/icons'
 
 /**
  * Shared end-of-game overlay (#736 phase 2) — one component for what used to
@@ -21,7 +22,7 @@ export interface GameResultOverlayProps {
   title: string
   /** Small uppercase label above the icon; defaults to t('game.ui.roundOver'). */
   kicker?: string
-  /** Custom icon slot (e.g. TTT's winner mark). Defaults to 🏆-in-a-circle, or 🤝 when isDraw. */
+  /** Custom icon slot (e.g. TTT's winner mark). Defaults to a trophy in a circle, or the handshake when isDraw. */
   icon?: React.ReactNode
   isDraw?: boolean
   /** Accent for the default trophy circle and the Play Again button. */
@@ -87,7 +88,7 @@ export default function GameResultOverlay({
   const { t } = useTranslation()
 
   const defaultIcon = isDraw ? (
-    <span style={{ fontSize: 44, lineHeight: 1 }}>🤝</span>
+    <Icon name="handshake" size={44} />
   ) : (
     <div
       style={{
@@ -97,11 +98,10 @@ export default function GameResultOverlay({
         background: accentColor,
         display: 'grid',
         placeItems: 'center',
-        fontSize: 26,
         boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
       }}
     >
-      🏆
+      <Icon name="trophy" size={30} tone="ink" />
     </div>
   )
 
