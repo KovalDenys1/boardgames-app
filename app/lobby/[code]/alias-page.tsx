@@ -6,6 +6,7 @@ import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
@@ -224,7 +225,7 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
       fontFamily: FONT_MONO,
       fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums',
     }}>
-      <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>{ok ? '✓' : '✗'}</span>
+      <Icon name={ok ? 'check' : 'close'} size={16} />
       <span>{ok ? '+' : '−'}{count}</span>
       <span style={{ fontSize: 11, opacity: 0.7, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
         {ok ? 'guessed' : 'skipped'}
@@ -770,7 +771,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
               <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-premium)' : undefined }}>
                 {p.name}
-                {p.user?.isPremium && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
+                {p.user?.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" style={{ marginLeft: 4 }} />}
                 {p.userId === currentUserId && (
                   <span style={{
                     marginLeft: 8, fontSize: 11, fontFamily: FONT_MONO,
@@ -781,7 +782,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 )}
               </span>
               <span style={{ flex: 1 }} />
-              {p.userId === lobby?.creatorId && <span style={{ fontSize: 16 }}>★</span>}
+              {p.userId === lobby?.creatorId && <Icon name="star" size={16} />}
             </div>
           ))}
         </div>
@@ -970,7 +971,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
                   <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
                     {name}
-                    {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
+                    {isPremiumPlayer && <Icon name="crown" size={13} tone="premium" label="Premium" style={{ marginLeft: 4 }} />}
                   </span>
                   {isYou && (
                     <span style={{
@@ -980,7 +981,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                     }}>YOU</span>
                   )}
                   {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
-                    <span style={{ marginLeft: isMyTeam ? 0 : 'auto', fontSize: 14 }}>★</span>
+                    <Icon name="star" size={14} style={{ marginLeft: isMyTeam ? 0 : 'auto' }} />
                   )}
                 </div>
               )
@@ -1012,7 +1013,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               fontWeight: 600, fontSize: 14,
               color: accentDeep,
             }}>
-              ✓ You're on this team
+              <Icon name="check" size={15} /> You&apos;re on this team
             </div>
           )}
         </div>
@@ -1259,7 +1260,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                     opacity: isMoveSubmitting ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: isMobile ? 20 : 24, lineHeight: 1 }}>✓</span>
+                  <Icon name="check" size={isMobile ? 20 : 24} />
                   {t('alias.guessed')}
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
                 </button>
@@ -1277,7 +1278,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                     opacity: isMoveSubmitting ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: isMobile ? 20 : 24, lineHeight: 1 }}>✗</span>
+                  <Icon name="close" size={isMobile ? 20 : 24} />
                   {t('alias.skip')}
                   <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
                 </button>
@@ -1396,7 +1397,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   </div>
                   {danger && (
                     <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      ⚡ Final seconds — go go go!
+                      <Icon name="bolt" size={12} /> Final seconds — go go go!
                     </span>
                   )}
                 </div>
@@ -1483,7 +1484,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                         fontSize: 14, fontWeight: 800,
                         color: ok ? '#06322a' : '#4a3a09',
                         boxShadow: `0 2px 0 ${ok ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)'}`,
-                      }}>{ok ? '✓' : '✗'}</span>
+                      }}>{ok ? <Icon name="check" size={14} /> : <Icon name="close" size={14} />}</span>
                       <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: 'var(--bd-ink)', textDecoration: ok ? 'none' : 'line-through', textDecorationColor: 'rgba(31,27,22,0.4)' }}>
                         {w.word}
                       </span>
@@ -1512,8 +1513,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                     {scoreDelta >= 0 ? '+' : ''}{scoreDelta}
                   </span>
                 </div>
-                <span aria-hidden style={{ fontSize: 64, lineHeight: 1, opacity: 0.85 }}>
-                  {positive ? '🏆' : scoreDelta === 0 ? '➖' : '💢'}
+                <span aria-hidden style={{ lineHeight: 1, opacity: 0.85 }}>
+                  <Icon name={positive ? 'trophy' : scoreDelta === 0 ? 'minus' : 'warning'} size={64} />
                 </span>
               </div>
 
@@ -1562,7 +1563,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   borderRadius: 14, padding: '16px 22px',
                   fontSize: 15, fontWeight: 600, color: 'var(--bd-ink-soft)',
                 }}>
-                  ⏳ Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
+                  <Icon name="hourglass" size={16} /> Waiting for {nextTeam?.name ?? 'next team'} to start their turn…
                 </div>
               ))}
               {!isSpectator && (
@@ -1654,7 +1655,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   <React.Fragment key={team.id}>
                     <div style={{ textAlign: i === 0 ? 'right' : 'left', opacity: isTie ? 1 : (isWinner ? 1 : 0.55) }}>
                       <BdLabel style={{ color: 'rgba(251,246,238,0.6)', display: 'block', marginBottom: 6 }}>
-                        {isWinner ? '★ Winner' : (isTie ? 'Team' : 'Runner-up')}
+                        {isWinner ? <><Icon name="star" size={12} /> Winner</> : (isTie ? 'Team' : 'Runner-up')}
                       </BdLabel>
                       <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: accent, lineHeight: 1.1, marginBottom: 4 }}>{team.name}</div>
                       <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-bg)' }}>{team.score}</div>

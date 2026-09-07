@@ -47,12 +47,12 @@ describe('PlayerList score animation', () => {
       <PlayerList players={[makePlayer({ id: 'p1', score: 5 })]} currentTurn={0} />
     )
 
-    expect(screen.queryByText('✨')).toBeNull()
+    expect(document.querySelector('[data-icon="sparkle"]')).toBeNull()
 
     rerender(<PlayerList players={[makePlayer({ id: 'p2', score: 5 })]} currentTurn={0} />)
     rerender(<PlayerList players={[makePlayer({ id: 'p2', score: 8 })]} currentTurn={0} />)
 
-    expect(screen.queryByText('✨')).not.toBeNull()
+    expect(document.querySelector('[data-icon="sparkle"]')).not.toBeNull()
   })
 
   it('clears score animation marker after timeout', () => {
@@ -61,12 +61,12 @@ describe('PlayerList score animation', () => {
     )
 
     rerender(<PlayerList players={[makePlayer({ id: 'p1', score: 2 })]} currentTurn={0} />)
-    expect(screen.queryByText('✨')).not.toBeNull()
+    expect(document.querySelector('[data-icon="sparkle"]')).not.toBeNull()
 
     act(() => {
       jest.advanceTimersByTime(1000)
     })
 
-    expect(screen.queryByText('✨')).toBeNull()
+    expect(document.querySelector('[data-icon="sparkle"]')).toBeNull()
   })
 })

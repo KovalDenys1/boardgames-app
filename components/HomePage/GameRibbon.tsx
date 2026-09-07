@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Icon } from '@/components/icons'
 import GameIcon from '@/components/GameIcon'
 import { getCatalogGames, isAvailableCatalogEntry, getGameMetadata, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
@@ -77,9 +78,14 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
         <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5, flex: 1 }}>{desc}</p>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[`👥 ${players}`, `⏱ ${time}`, diff, tag].filter(Boolean).map((chip, i) => (
+          {[
+            <><Icon name="users" size={12} /> {players}</>,
+            <><Icon name="clock" size={12} /> {time}</>,
+            diff,
+            tag,
+          ].filter(Boolean).map((chip, i) => (
             <span
-              key={`${i}-${chip}`}
+              key={i}
               style={{
                 padding: '5px 10px',
                 borderRadius: 999,

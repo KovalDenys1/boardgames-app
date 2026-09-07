@@ -1,4 +1,5 @@
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { useEffect, useState } from 'react'
 
 interface ConnectionStatusProps {
@@ -72,7 +73,7 @@ export function ConnectionStatus({
               )}
               {isSlowConnection && (
                 <p className="text-xs mt-1 pt-1" style={{ color: '#B45309', borderTop: '1px solid #FDE68A' }}>
-                  ⏳ {t('connection.coldStart', 'Server is waking up... This may take up to a minute.')}
+                  <Icon name="hourglass" size={14} /> {t('connection.coldStart', 'Server is waking up... This may take up to a minute.')}
                 </p>
               )}
             </div>

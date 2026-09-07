@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { showToast } from '@/lib/i18n-toast'
@@ -209,7 +210,7 @@ export default function AvatarPicker({
               onClick={onUnlockUpload}
               className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
             >
-              <span>⭐</span>
+              <Icon name="star" size={14} />
               <span>Get Premium — {PREMIUM_PACK_PRICE}/mo</span>
             </button>
           )}

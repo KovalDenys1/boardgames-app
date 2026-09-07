@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react'
 import {
-  ArrowLeft, ArrowRight, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
-  Diamond, DiceFive, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm,
-  Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock, MagnifyingGlass,
+  ArrowLeft, ArrowRight, ArrowsClockwise, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
+  Diamond, DiceFive, Eraser, FilmSlate, Flag, Flower, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm, HandPointing,
+  Camera, ChatCircle, Drop, GearSix, Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock,
+  MagnifyingGlass, Megaphone, Palette,
   MapTrifold, MaskHappy, Medal, Minus, PencilSimple, Play, Plus, Question, Robot, RocketLaunch, Scissors,
   ShieldCheck, Smiley, SmileyAngry, SmileyMeh, Sparkle, SpeakerHigh, SpeakerSlash, Star, Tag, Target,
-  Trophy, User, Users, Warning, X,
+  Trash, Trophy, User, Users, Warning, X,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhosphorIcon, IconWeight } from '@phosphor-icons/react'
 import type { IconName } from './names'
@@ -35,9 +36,12 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
   question: Question,
   search: MagnifyingGlass,
   copy: Copy,
+  refresh: ArrowsClockwise,
+  megaphone: Megaphone,
   clipboard: ClipboardText,
   link: Link,
   mail: EnvelopeSimple,
+  chat: ChatCircle,
   eye: Eye,
   'eye-off': EyeSlash,
   'sound-on': SpeakerHigh,
@@ -76,16 +80,28 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
   rocket: RocketLaunch,
   bulb: Lightbulb,
   pencil: PencilSimple,
+  eraser: Eraser,
+  trash: Trash,
+  flag: Flag,
+  point: HandPointing,
   chart: ChartBar,
+  gear: GearSix,
+  palette: Palette,
+  camera: Camera,
+  drop: Drop,
   tag: Tag,
   party: Confetti,
   butterfly: Butterfly,
+  film: FilmSlate,
+  flower: Flower,
   handshake: Handshake,
 }
 
 export type IconTone =
   | 'current'
   | 'ink'
+  /** Ink on an accent fill — stays dark in both themes. */
+  | 'on-accent'
   | 'soft'
   | 'muted'
   | 'coral'
@@ -98,6 +114,7 @@ export type IconTone =
 
 const TONE_VAR: Record<Exclude<IconTone, 'current'>, string> = {
   ink: 'var(--bd-ink)',
+  'on-accent': 'var(--bd-ink-on-accent)',
   soft: 'var(--bd-ink-soft)',
   muted: 'var(--bd-ink-muted)',
   coral: 'var(--bd-coral)',

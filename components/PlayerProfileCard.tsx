@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Modal from './Modal'
@@ -132,7 +133,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                     {data.username ?? 'Unknown'}
                   </span>
                   {data.isPremium && (
-                    <span className="text-base leading-none" title="Premium">👑</span>
+                    <Icon name="crown" size={16} tone="premium" label="Premium" />
                   )}
                   {data.isGuest && (
                     <span
@@ -196,12 +197,12 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               <div>
                 {data.relation === 'friends' ? (
                   <p className="text-sm font-semibold" style={{ color: '#22C55E' }}>
-                    ✓ Friends
+                    <Icon name="check" size={14} /> Friends
                   </p>
                 ) : data.relation === 'request_sent' ? (
-                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}>📨 Request sent</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}><Icon name="mail" size={15} /> Request sent</p>
                 ) : data.relation === 'request_received' ? (
-                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}>📩 Friend request received</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}><Icon name="mail" size={15} /> Friend request received</p>
                 ) : data.relation === 'can_send' ? (
                   <button
                     onClick={handleAddFriend}

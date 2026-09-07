@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { readLocal, writeLocal } from '@/lib/safe-storage'
 import { trackSignupPrompt } from '@/lib/analytics'
 
@@ -50,7 +51,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
   return (
     <div className="mt-6 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 shadow-sm dark:border-emerald-700/50 dark:from-emerald-900/20 dark:to-teal-900/20 sm:p-5">
       <div className="flex items-start gap-3">
-        <div className="shrink-0 text-2xl">🎉</div>
+        <div className="shrink-0"><Icon name="party" size={24} /></div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-emerald-900 dark:text-emerald-100 text-sm sm:text-base">
             {t('auth.guestConversion.headline')}
@@ -64,7 +65,7 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
               onClick={() => trackSignupPrompt('clicked')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors sm:text-sm"
             >
-              <span>✨</span>
+              <Icon name="sparkle" size={14} />
               <span>{t('auth.guestConversion.cta')}</span>
             </a>
             <button

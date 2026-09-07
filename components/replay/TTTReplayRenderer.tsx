@@ -1,4 +1,5 @@
 import type { ReplayRendererProps } from './types'
+import { Icon } from '@/components/icons'
 
 type CellValue = 'X' | 'O' | null
 
@@ -73,7 +74,7 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
                 >
                   {cell === 'X' && (
                     <span className={isWinCell ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}>
-                      ✕
+                      X
                     </span>
                   )}
                   {cell === 'O' && (
@@ -93,7 +94,7 @@ export default function TTTReplayRenderer({ snapshotState, players, playerNameBy
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-700 dark:bg-blue-950/30">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400 truncate">
-                  {xPlayer} (✕)
+                  {xPlayer} (X)
                 </div>
                 <div className="mt-1 text-xl font-bold text-blue-700 dark:text-blue-300">
                   {typeof winsBySymbol.X === 'number' ? winsBySymbol.X : 0}

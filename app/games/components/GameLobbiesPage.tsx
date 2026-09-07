@@ -12,6 +12,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { getSupabaseClient } from '@/lib/supabase-client'
@@ -205,11 +206,11 @@ export default function GameLobbiesPage({
           {/* Breadcrumb */}
           <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-bd-ink-muted sm:text-sm">
             <button onClick={() => router.push('/')} className="hover:text-bd-ink transition-colors">
-              🏠 <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
+              <Icon name="home" size={14} /> <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
             </button>
             <span>›</span>
             <button onClick={() => router.push('/games')} className="hover:text-bd-ink transition-colors">
-              🎮 <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
+              <Icon name="gamepad" size={14} /> <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
             </button>
             <span>›</span>
             <span className="inline-flex items-center gap-2 text-bd-ink">
@@ -300,7 +301,7 @@ export default function GameLobbiesPage({
                 className="mb-1 text-xl font-extrabold text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
-                🔍 {tx('quickJoin')}
+                <Icon name="search" size={15} /> {tx('quickJoin')}
               </h2>
               <p className="mb-5 text-sm text-bd-ink-soft">{tx('quickJoinDesc')}</p>
               <div className="flex gap-3">
@@ -327,7 +328,7 @@ export default function GameLobbiesPage({
           {/* Active lobbies */}
           <div className="bd-card overflow-hidden">
             <div className="flex items-center justify-between border-b border-bd-line bg-bd-card-warm px-5 py-4">
-              <h2 className="font-bold text-bd-ink">🎮 {tx('activeLobbies')}</h2>
+              <h2 className="flex items-center gap-2 font-bold text-bd-ink"><Icon name="gamepad" size={16} /> {tx('activeLobbies')}</h2>
               <span className="bd-kicker">{lobbies.length}</span>
             </div>
 
@@ -376,13 +377,13 @@ export default function GameLobbiesPage({
                       </div>
 
                       <p className="mb-3 truncate text-sm text-bd-ink-muted">
-                        👤 {tx('host')}: {hostName}
+                        <Icon name="user" size={13} /> {tx('host')}: {hostName}
                       </p>
 
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
-                            👥 {playerCount}/{lobby.maxPlayers}
+                            <Icon name="users" size={13} /> {playerCount}/{lobby.maxPlayers}
                           </span>
                           {isWaiting && (
                             <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-[#9b6b00]">
@@ -415,7 +416,7 @@ export default function GameLobbiesPage({
                               }}
                               className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
                             >
-                              👁 {t('lobby.watch')}
+                              <Icon name="eye" size={13} /> {t('lobby.watch')}
                             </button>
                           )}
                           {!canSpectate && isPlaying && isAdmin && (

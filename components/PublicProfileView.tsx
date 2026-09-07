@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 import { getGameMetadata } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
-import { ACHIEVEMENTS } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -180,6 +181,7 @@ export default function PublicProfileView({
     return {
       id: achievement.key,
       icon: achievement.icon,
+      accent: ACHIEVEMENT_CATEGORY_ACCENT[achievement.category],
       label: t(`achievements.${achievement.key}.name` as TranslationKeys),
       tooltip: unlockedAt
         ? `${description} — ${t('profile.achievements.unlockedOn' as TranslationKeys, { date: new Date(unlockedAt).toLocaleDateString(i18n.language || undefined) })}`
@@ -501,7 +503,7 @@ export default function PublicProfileView({
                     style={profile.isPremium && profile.accentColor ? { color: profile.accentColor } : undefined}
                   >
                     {displayName}
-                    {profile.isPremium && <span className="ml-2 text-3xl sm:text-4xl" title="Premium">👑</span>}
+                    {profile.isPremium && <Icon name="crown" size={32} tone="premium" label="Premium" className="ml-2" />}
                   </h1>
                   <p className={`mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] ${tc.handle}`}>
                     @{handle}
@@ -571,7 +573,9 @@ export default function PublicProfileView({
                             : `${tc.statCard} opacity-40 grayscale`
                         }`}
                       >
-                        <span className="text-xl">{badge.earned ? badge.icon : '🔒'}</span>
+                        <span style={badge.earned ? { color: badge.accent } : undefined}>
+                          <Icon name={badge.earned ? badge.icon : 'lock'} size={20} />
+                        </span>
                         <span className={`text-[10px] font-bold leading-tight ${tc.statLabel}`}>{badge.label}</span>
                       </div>
                     ))}
@@ -629,12 +633,12 @@ export default function PublicProfileView({
                         {copiedProfileLink ? (
                           <>
                             <span>{t('profile.publicProfile.linkCopied')}</span>
-                            <span aria-hidden>✓</span>
+                            <Icon name="check" size={16} />
                           </>
                         ) : (
                           <>
                             <span>{t('profile.publicProfile.copyLink')}</span>
-                            <span aria-hidden>↗</span>
+                            <Icon name="link" size={16} />
                           </>
                         )}
                       </button>

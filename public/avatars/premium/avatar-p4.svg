@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 4.8)">
   <!-- Wizard hat + face -->
   <!-- Hat brim -->
   <ellipse cx="50" cy="46" rx="24" ry="6" fill="white" opacity="0.95"/>
@@ -22,4 +23,5 @@
   <path d="M43 65 Q50 71 57 65" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
   <!-- Beard -->
   <path d="M38 70 Q42 78 50 76 Q58 78 62 70" fill="white" opacity="0.8"/>
+  </g>
 </svg>

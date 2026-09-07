@@ -1,4 +1,5 @@
 import type { LobbyTheme } from '@/lib/lobby-themes'
+import { Icon } from '@/components/icons'
 import { LOBBY_THEMES } from '@/lib/lobby-themes'
 
 interface LobbyThemeBannerProps {
@@ -57,7 +58,7 @@ function SakuraBanner() {
         boxShadow: '0 4px 14px -6px rgba(228,138,160,0.5), inset 0 0 0 1px rgba(228,138,160,0.25)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 26, position: 'relative', zIndex: 1,
-      }}>🌸</div>
+      }}><Icon name="flower" size={28} /></div>
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: t.text, letterSpacing: '-0.01em', lineHeight: 1 }}>
           Sakura
@@ -117,7 +118,7 @@ function NeonCityBanner() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 26, color: t.accent, position: 'relative', zIndex: 1,
         textShadow: '0 0 10px rgba(255,63,164,0.9)',
-      }}>⚡</div>
+      }}><Icon name="bolt" size={28} /></div>
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: 20, fontWeight: 600, color: t.text, letterSpacing: '-0.01em', lineHeight: 1, textShadow: '0 0 12px rgba(58,224,255,0.4)' }}>
           Neon City

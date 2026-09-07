@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon, type IconName } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
@@ -11,10 +12,10 @@ import { AuthGateModal } from '@/components/AuthGateModal'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
-const DIFFICULTIES: { id: Difficulty; emoji: string; labelKey: TranslationKeys }[] = [
-  { id: 'easy', emoji: '🙂', labelKey: 'lobby.create.difficultyEasy' },
-  { id: 'medium', emoji: '😐', labelKey: 'lobby.create.difficultyMedium' },
-  { id: 'hard', emoji: '😈', labelKey: 'lobby.create.difficultyHard' },
+const DIFFICULTIES: { id: Difficulty; icon: IconName; labelKey: TranslationKeys }[] = [
+  { id: 'easy', icon: 'bot-easy' as const, labelKey: 'lobby.create.difficultyEasy' },
+  { id: 'medium', icon: 'bot-medium' as const, labelKey: 'lobby.create.difficultyMedium' },
+  { id: 'hard', icon: 'bot-hard' as const, labelKey: 'lobby.create.difficultyHard' },
 ]
 
 interface PlayVsBotButtonProps {
@@ -91,7 +92,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
           open ? 'bg-bd-bg2' : ''
         }`}
       >
-        🤖 {loading ? '…' : t('quickPlay.playVsBot')}
+        <Icon name="robot" size={16} /> {loading ? '…' : t('quickPlay.playVsBot')}
       </button>
 
       {open && (
@@ -99,7 +100,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
           role="menu"
           className="absolute left-0 right-0 top-full z-30 mt-2 min-w-44 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.85)]"
         >
-          {DIFFICULTIES.map(({ id, emoji, labelKey }) => (
+          {DIFFICULTIES.map(({ id, icon, labelKey }) => (
             <button
               key={id}
               role="menuitem"
@@ -110,7 +111,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
               }}
               className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-bold text-bd-ink transition-colors hover:bg-bd-bg2 disabled:opacity-50"
             >
-              <span aria-hidden className="text-lg">{emoji}</span>
+              <Icon name={icon} size={18} />
               {t(labelKey)}
             </button>
           ))}

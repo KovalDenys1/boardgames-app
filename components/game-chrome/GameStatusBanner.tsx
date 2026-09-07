@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 
 /**
  * Shared turn/result status banner (#736 phase 4) — replaces
@@ -85,7 +86,7 @@ export default function GameStatusBanner({
         border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <span style={{ fontSize: 14 }}>👁</span>
+        <Icon name="eye" size={16} tone="muted" />
         {leadingIcon}
         <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTitle}</span>
         {meta !== undefined && <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>{meta}</span>}

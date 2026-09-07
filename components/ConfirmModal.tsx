@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { Icon } from '@/components/icons'
 import Modal from './Modal'
 
 interface ConfirmModalProps {
@@ -35,17 +36,17 @@ export default function ConfirmModal({
     danger: {
       buttonBg: 'var(--bd-coral)',
       buttonHoverBg: '#e85a4b',
-      icon: '⚠️'
+      icon: <Icon name="warning" size={26} />
     },
     warning: {
       buttonBg: 'var(--bd-sun)',
       buttonHoverBg: '#e6b040',
-      icon: '⚡'
+      icon: <Icon name="bolt" size={26} />
     },
     info: {
       buttonBg: 'var(--bd-ink)',
       buttonHoverBg: '#352F26',
-      icon: 'ℹ️'
+      icon: <Icon name="info" size={26} />
     }
   }
 

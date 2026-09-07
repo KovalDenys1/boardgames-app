@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { YahtzeeMode, getActiveCategories } from '@/lib/yahtzee'
 import GuestConversionNudge from './GuestConversionNudge'
 
@@ -24,11 +25,11 @@ interface YahtzeeResultsProps {
   registerUrl?: string
 }
 
-function getRankIcon(rank: number) {
-  if (rank === 0) return '🥇'
-  if (rank === 1) return '🥈'
-  if (rank === 2) return '🥉'
-  return `#${rank + 1}`
+function RankIcon({ rank }: { rank: number }) {
+  if (rank === 0) return <Icon name="medal" size={26} tone="sun" />
+  if (rank === 1) return <Icon name="medal" size={26} tone="muted" />
+  if (rank === 2) return <Icon name="medal" size={26} tone="coral" />
+  return <>{`#${rank + 1}`}</>
 }
 
 function getPlacementCardClass(rank: number) {
@@ -111,7 +112,7 @@ export default function YahtzeeResults({
                 <div className="bd-kicker">{t('yahtzee.results.matchComplete')}</div>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4 sm:h-20 sm:w-20">
-                    <span className="text-4xl sm:text-5xl">🏆</span>
+                    <Icon name="trophy" size={44} tone="on-accent" />
                   </div>
                   <div className="min-w-0">
                     <h2
@@ -151,7 +152,7 @@ export default function YahtzeeResults({
               }}
             >
               <div className="flex items-center gap-2 text-[var(--bd-coral-deep)]">
-                <span className="text-xl">👑</span>
+                <Icon name="crown" size={20} />
                 <span className="bd-kicker">{t('yahtzee.results.winnerLabel')}</span>
               </div>
               <p className="mt-3 text-2xl font-extrabold text-bd-ink sm:text-3xl">
@@ -190,7 +191,7 @@ export default function YahtzeeResults({
                       key={idx}
                       className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]"
                     >
-                      {achievement.icon} {achievement.label}
+                      <Icon name={achievement.icon} size={15} /> {achievement.label}
                     </span>
                   ))}
                 </div>
@@ -249,7 +250,7 @@ export default function YahtzeeResults({
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold sm:text-2xl">{getRankIcon(player.rank)}</span>
+                        <span className="flex items-center text-xl font-bold sm:text-2xl"><RankIcon rank={player.rank} /></span>
                         <p className="truncate text-base font-bold text-bd-ink sm:text-lg">
                           {player.playerName}
                         </p>
@@ -303,7 +304,7 @@ export default function YahtzeeResults({
                           key={idx}
                           className="bd-chip bd-chip-lav px-2 py-1 text-[11px]"
                         >
-                          <span>{achievement.icon}</span>
+                          <Icon name={achievement.icon} size={15} />
                           <span>{achievement.label}</span>
                         </span>
                       ))}
@@ -344,7 +345,7 @@ export default function YahtzeeResults({
                   disabled={!canStartGame}
                   className="bd-btn bd-btn-primary flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <span className="text-lg">🔄</span>
+                  <Icon name="refresh" size={18} />
                   <span>{t('yahtzee.results.playAgain')}</span>
                 </button>
                 {onReturnToWaiting && canStartGame && (
@@ -361,7 +362,7 @@ export default function YahtzeeResults({
                     disabled={isRequestRematchPending}
                     className="bd-btn bd-btn-soft flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <span className="text-lg">📣</span>
+                    <Icon name="megaphone" size={18} />
                     <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
                   </button>
                 )}
@@ -369,7 +370,7 @@ export default function YahtzeeResults({
                   onClick={onBackToLobby}
                   className="bd-btn bd-btn-coral flex items-center justify-center gap-2"
                 >
-                  <span className="text-lg">↩️</span>
+                  <Icon name="arrow-left" size={18} />
                   <span>{t('yahtzee.results.backToLobbies')}</span>
                 </button>
               </div>

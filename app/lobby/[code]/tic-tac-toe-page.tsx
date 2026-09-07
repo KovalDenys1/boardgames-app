@@ -19,6 +19,7 @@ import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConne
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -1041,7 +1042,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     opacity: canRequestDraw ? 1 : 0.5,
                 }}
             >
-                🤝 {t('games.tictactoe.game.drawBtn')}
+                <Icon name="handshake" size={16} /> {t('games.tictactoe.game.drawBtn')}
             </button>
         </div>
     )
@@ -1116,7 +1117,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     // and at the same height (layout DoD, scheme A): game, room code, invite
     // link, and Leave. Phones get the compact form beside the scoreboard.
     const roomCardProps = {
-        emoji: '❌',
+        gameId: 'tic-tac-toe',
         title: t('games.tictactoe.name'),
         code,
         isSpectator,

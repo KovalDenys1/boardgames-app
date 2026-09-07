@@ -9,6 +9,7 @@ import { GamePlayer } from '@/types/game'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { GameState } from '@/lib/game-engine'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 
@@ -712,7 +713,7 @@ export default function SpyGameBoard({
                         )}
                         <span className={`flex min-w-0 flex-1 items-center gap-1 truncate font-bold ${player.isPremium ? 'text-amber-500' : ''}`}>
                           {player.name}
-                          {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                          {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                         </span>
                         <span className="font-black">{scores[player.id] || 0}</span>
                       </div>

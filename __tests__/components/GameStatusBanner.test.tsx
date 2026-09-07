@@ -39,7 +39,7 @@ describe('GameStatusBanner (#736 phase 4)', () => {
   it('renders the spectator variant without a timer', () => {
     render(<GameStatusBanner {...base} isSpectator />)
     expect(screen.getByText('game.ui.spectatingBadge')).toBeTruthy()
-    expect(screen.getByText('👁')).toBeTruthy()
+    expect(document.querySelector('[data-icon="eye"]')).toBeTruthy()
     expect(screen.queryByText(':45')).toBeNull()
   })
 })

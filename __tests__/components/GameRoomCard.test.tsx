@@ -12,7 +12,7 @@ describe('GameRoomCard', () => {
     Object.assign(navigator, { clipboard: { writeText } })
     const onLeave = jest.fn()
 
-    render(<GameRoomCard emoji="✊" title="Rock Paper Scissors" code="1311" leaveLabel="Leave" onLeave={onLeave} allowSpectators />)
+    render(<GameRoomCard gameId="rps" title="Rock Paper Scissors" code="1311" leaveLabel="Leave" onLeave={onLeave} allowSpectators />)
 
     expect(screen.getByText('Rock Paper Scissors')).toBeTruthy()
     expect(screen.getByText('#1311')).toBeTruthy()
@@ -28,19 +28,19 @@ describe('GameRoomCard', () => {
   })
 
   it('gives a spectator a link back to the lobby instead of Leave', () => {
-    render(<GameRoomCard emoji="✊" title="RPS" code="1311" leaveLabel="Leave" isSpectator />)
+    render(<GameRoomCard gameId="rps" title="RPS" code="1311" leaveLabel="Leave" isSpectator />)
     expect(screen.getByRole('link', { name: 'game.ui.backToLobby' }).getAttribute('href')).toBe('/lobby/1311')
     expect(screen.queryByRole('button', { name: 'Leave' })).toBeNull()
   })
 
   it('says spectators are off instead of offering a link that dead-ends', () => {
-    render(<GameRoomCard emoji="✊" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} />)
+    render(<GameRoomCard gameId="rps" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} />)
     expect(screen.getByText('game.ui.spectatorsOff')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'game.ui.inviteSpectators' })).toBeNull()
   })
 
   it('compact form keeps only the icon controls', () => {
-    render(<GameRoomCard emoji="✊" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} allowSpectators compact />)
+    render(<GameRoomCard gameId="rps" title="RPS" code="1311" leaveLabel="Leave" onLeave={() => {}} allowSpectators compact />)
     expect(screen.queryByText('RPS')).toBeNull()
     expect(screen.getByRole('button', { name: 'game.ui.inviteSpectators' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Leave' })).toBeTruthy()

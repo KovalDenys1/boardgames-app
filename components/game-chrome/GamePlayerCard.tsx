@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 
 /**
  * Shared scoreboard player card (#736 phase 3) — one card for what used to
@@ -78,7 +79,7 @@ export default function GamePlayerCard({
           <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? 'var(--bd-premium)' : undefined }}>
             {name}
           </span>
-          {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
+          {isPremium && <Icon name="crown" size={14} tone="premium" label="Premium" />}
           {isWinner && (
             <span style={{
               display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,

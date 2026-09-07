@@ -4,6 +4,7 @@ import CelebrationBanner from '@/components/CelebrationBanner'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 import { CelebrationEvent } from '@/lib/celebrations'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { sounds } from '@/lib/sounds'
 import type { Game } from '@/types/game'
 
@@ -115,7 +116,7 @@ export default function GameBoard({
             }`}
             style={percentage > 50 ? { background: 'rgba(107,193,240,0.18)', border: '1px solid rgba(107,193,240,0.24)' } : undefined}
           >
-            <span className={compact ? 'text-base' : 'text-lg sm:text-2xl'}>⏱️</span>
+            <Icon name="clock" size={compact ? 16 : 22} />
             <span className={`font-bold ${compact ? 'text-base' : 'text-xl sm:text-2xl'}`} style={{ fontFamily: 'var(--bd-font-display)' }}>{timeLeft}s</span>
           </div>
         </div>
@@ -158,9 +159,13 @@ export default function GameBoard({
               </p>
               <div className="flex items-center gap-1.5 text-[11px] font-semibold">
                 <span className={`bd-chip px-2 py-1 ${isMyTurn && timeLeft <= 10 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse' : isMyTurn ? 'bd-chip-mint' : ''}`}>
-                  {isMyTurn
-                    ? (timeLeft <= 10 ? `⚠️ ${t('yahtzee.ui.hurry')}` : `🎯 ${t('game.ui.yourTurn')}`)
-                    : `⏳ ${t('game.ui.waiting')}`}
+                  {isMyTurn ? (
+                    timeLeft <= 10
+                      ? <><Icon name="warning" size={12} /> {t('yahtzee.ui.hurry')}</>
+                      : <><Icon name="target" size={12} /> {t('game.ui.yourTurn')}</>
+                  ) : (
+                    <><Icon name="hourglass" size={12} /> {t('game.ui.waiting')}</>
+                  )}
                 </span>
                 <span className="bd-chip px-2 py-1">
                   {rollsLeft} left
@@ -197,7 +202,7 @@ export default function GameBoard({
           {isStateReverting && (
             <div className="text-center px-3 py-1.5 rounded-2xl shadow-sm border text-red-700 animate-pulse" style={{ background: 'rgba(255,107,91,0.14)', borderColor: 'rgba(255,107,91,0.24)' }}>
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                <span className="text-base sm:text-lg">↩️</span>
+                <Icon name="arrow-left" size={18} />
                 <p className="text-xs sm:text-sm font-semibold">{t('yahtzee.ui.moveReverted')}</p>
               </div>
             </div>
@@ -237,13 +242,13 @@ export default function GameBoard({
           >
             {isRolling ? (
               <span className="flex w-full items-center justify-center gap-1.5 sm:gap-2 min-w-0">
-                <span className="text-lg sm:text-xl animate-spin">🎲</span>
+                <Icon name="dice" size={20} className="animate-spin" />
                 <span className="truncate">{t('yahtzee.ui.rolling')}</span>
               </span>
             ) : (
               <span className="flex w-full items-center justify-between gap-2 min-w-0">
                 <span className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <span className="text-lg sm:text-xl shrink-0">🎲</span>
+                  <Icon name="dice" size={20} className="shrink-0" />
                   <span className="truncate">{rollButtonLabel}</span>
                 </span>
                 <span

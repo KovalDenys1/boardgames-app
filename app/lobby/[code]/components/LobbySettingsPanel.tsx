@@ -196,7 +196,7 @@ export default function LobbySettingsPanel({
       {/* Panel header */}
       <div className="flex items-center justify-between pb-1">
         <h2 className="inline-flex items-center gap-1.5 text-sm font-bold text-bd-ink">
-          <span aria-hidden className="text-base leading-none">⚙️</span>
+          <Icon name="gear" size={16} />
           {t('game.ui.settings')}
         </h2>
         <button
@@ -205,7 +205,7 @@ export default function LobbySettingsPanel({
           aria-label={t('common.close')}
           className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
         >
-          ✕
+          <Icon name="close" size={14} />
         </button>
       </div>
 
@@ -225,7 +225,7 @@ export default function LobbySettingsPanel({
             key={row.key}
             rowKey={row.key}
             /* The whole row opens the editor; while open it does nothing
-               (chip clicks bubble here harmlessly, closing is ✕ / label). */
+               (chip clicks bubble here harmlessly, closing is the X / label). */
             onClick={canEditLobbySettings && !isActive ? () => openEditor(row.key) : undefined}
             className={`flex-[1_0_auto] rounded-xl border px-3 py-3 transition-colors sm:px-4 ${
               isActive ? 'border-bd-mint/60 bg-bd-mint/12' : 'border-bd-line bg-bd-card-warm'
@@ -307,15 +307,15 @@ export default function LobbySettingsPanel({
                         disabled={isPremium && (updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true)}
                         onClick={() => {
                           if (!isPremium) {
-                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                             return
                           }
                           void applySettingUpdate('allowSpectators', { allowSpectators: true })
                         }}
-                        title={isPremium ? undefined : '👑 Premium'}
+                        title={isPremium ? undefined : 'Premium'}
                         className={chipClass(Boolean(lobby?.allowSpectators), !isPremium)}
                       >
-                        {t('common.enabled')}{!isPremium && ' 👑'}
+                        {t('common.enabled')}{!isPremium && <Icon name="crown" size={12} tone="premium" />}
                       </button>
                       <button
                         type="button"
@@ -360,12 +360,12 @@ export default function LobbySettingsPanel({
                           disabled={updatingSetting === 'theme' || isThemeActive}
                           onClick={() => {
                             if (isLocked) {
-                              showToast.custom('profile.premiumFeatureLocked', '👑')
+                              showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                               return
                             }
                             void applySettingUpdate('theme', { theme: themeId })
                           }}
-                          title={isLocked ? '👑 Premium' : theme.name}
+                          title={isLocked ? 'Premium' : theme.name}
                           data-selected={isThemeActive}
                           className={chipClass(isThemeActive, isLocked)}
                         >
@@ -375,7 +375,7 @@ export default function LobbySettingsPanel({
                             style={{ background: theme.accent }}
                           />
                           <span>{theme.name}</span>
-                          {isLocked && <span aria-hidden className="shrink-0">👑</span>}
+                          {isLocked && <Icon name="crown" size={12} tone="premium" className="shrink-0" />}
                         </button>
                       )
                     })}
@@ -391,7 +391,7 @@ export default function LobbySettingsPanel({
                   aria-label={t('common.close')}
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
                 >
-                  ✕
+                  <Icon name="close" size={14} />
                 </button>
               )}
             </div>
@@ -435,7 +435,7 @@ export default function LobbySettingsPanel({
               aria-label={t('common.close')}
               className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink"
             >
-              ✕
+              <Icon name="close" size={14} />
             </button>
           </div>
 
@@ -456,7 +456,7 @@ export default function LobbySettingsPanel({
               >
                 <span aria-hidden className="flex w-6 shrink-0 items-center justify-center">{meta ? <GameIcon gameId={meta.svgId} accentColor={meta.accentColor} size={20} variant="bare" /> : <Icon name="gamepad" size={20} />}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-bd-ink">{meta?.name ?? g.id}</span>
-                {isGameActive && <span className="shrink-0 text-sm font-bold text-bd-mint-deep">✓</span>}
+                {isGameActive && <span className="shrink-0 text-bd-mint-deep"><Icon name="check" size={15} /></span>}
               </button>
             )
           })}

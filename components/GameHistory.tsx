@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import { formatGameTypeLabel } from '@/lib/game-display'
@@ -439,7 +440,7 @@ export default function GameHistory() {
                                 {player.username || `Player ${index + 1}`}
                               </span>
                               {player.isPremium && !(player.isBot || player.bot) && (
-                                <span className="shrink-0 text-xs" title="Premium">👑</span>
+                                <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />
                               )}
                             </span>
                             {(player.isBot || player.bot) && (

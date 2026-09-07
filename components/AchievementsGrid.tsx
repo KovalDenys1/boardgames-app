@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon, type IconName } from '@/components/icons'
 
 export type AchievementGridItem = {
   id: string
-  icon: string
+  icon: IconName
+  /** Tile fill, from ACHIEVEMENT_CATEGORY_ACCENT. */
+  accent: string
   label: string
   description: string
   unlockedOnLabel: string | null
@@ -44,11 +47,16 @@ function Badge({
         }`}
       >
         <span
-          className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink text-lg shadow-[2px_2px_0_#1F1B16] ${
-            item.earned ? 'bg-bd-sun' : 'bg-bd-bg2 grayscale'
+          className={`grid h-10 w-10 place-items-center rounded-xl border-2 border-bd-ink shadow-[2px_2px_0_var(--bd-ink-on-accent)] ${
+            item.earned ? '' : 'bg-bd-bg2 grayscale'
           }`}
+          style={item.earned ? { background: item.accent } : undefined}
         >
-          {item.earned ? item.icon : '🔒'}
+          <Icon
+            name={item.earned ? item.icon : 'lock'}
+            size={20}
+            tone={item.earned ? 'on-accent' : 'muted'}
+          />
         </span>
         <span className="mt-auto pt-3 text-sm font-bold leading-tight text-bd-ink dark:text-slate-100">
           {item.label}
@@ -63,7 +71,9 @@ function Badge({
         <p className="text-sm font-bold leading-tight text-bd-ink">{item.label}</p>
         <p className="mt-1 text-xs leading-snug text-bd-ink-soft">{item.description}</p>
         {item.unlockedOnLabel && (
-          <p className="mt-1.5 text-[11px] font-semibold text-bd-mint-deep">✓ {item.unlockedOnLabel}</p>
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-bd-mint-deep">
+            <Icon name="check" size={12} /> {item.unlockedOnLabel}
+          </p>
         )}
       </div>
     </div>

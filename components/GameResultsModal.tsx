@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { YahtzeeCategory, getActiveCategories } from '@/lib/yahtzee'
 import {
@@ -204,7 +205,7 @@ export default function GameResultsModal({
                     >
                       <span className="flex items-center justify-center gap-1">
                         {getPlayerLabel(player, index)}
-                        {player.isPremium && !player.isBot && <span title="Premium">👑</span>}
+                        {player.isPremium && !player.isBot && <Icon name="crown" size={14} tone="premium" label="Premium" />}
                       </span>
                     </th>
                   ))}
@@ -383,7 +384,7 @@ export default function GameResultsModal({
                 </div>
                 {winner && (
                   <span className="mt-1 shrink-0 text-3xl sm:text-4xl" aria-hidden>
-                    👑
+                    <Icon name="crown" size={18} />
                   </span>
                 )}
               </div>
@@ -476,7 +477,7 @@ export default function GameResultsModal({
                     <div className="flex items-center gap-1.5 text-sm font-semibold" title={getPlayerLabel(player, index)}>
                       <span className="truncate">{getPlayerLabel(player, index)}</span>
                       {player.isPremium && !player.isBot && (
-                        <span className="shrink-0" title="Premium">👑</span>
+                        <Icon name="crown" size={14} tone="premium" label="Premium" className="shrink-0" />
                       )}
                     </div>
                     <p className="mt-0.5 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
@@ -494,7 +495,7 @@ export default function GameResultsModal({
                     <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
                       {t('profile.gameResults.points')}
                     </span>
-                    {player.isWinner && <span aria-hidden>👑</span>}
+                    {player.isWinner && <Icon name="crown" size={14} />}
                   </div>
                 </div>
               ))}

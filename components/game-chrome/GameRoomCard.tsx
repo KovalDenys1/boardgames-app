@@ -2,6 +2,8 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
+import GameIcon from '@/components/GameIcon'
 import { showToast } from '@/lib/i18n-toast'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 
@@ -15,7 +17,8 @@ import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
  * row with the scoreboard.
  */
 export interface GameRoomCardProps {
-  emoji: string
+  /** Catalog id, drawn with the game's own GameIcon. */
+  gameId: string
   /** Already-translated game name. */
   title: string
   code: string
@@ -33,7 +36,7 @@ export interface GameRoomCardProps {
   compact?: boolean
 }
 
-export default function GameRoomCard({ emoji, title, code, isSpectator = false, onLeave, leaveLabel, allowSpectators = false, compact = false }: GameRoomCardProps) {
+export default function GameRoomCard({ gameId, title, code, isSpectator = false, onLeave, leaveLabel, allowSpectators = false, compact = false }: GameRoomCardProps) {
   const { t } = useTranslation()
 
   const copyInvite = () => {
@@ -54,7 +57,7 @@ export default function GameRoomCard({ emoji, title, code, isSpectator = false, 
       <div className="game-room-card game-room-card--compact">
         {allowSpectators && (
           <button type="button" className="game-room-card__copy" onClick={copyInvite} aria-label={inviteLabel} title={inviteLabel}>
-            👁
+            <Icon name="eye" size={16} />
           </button>
         )}
         {exit}
@@ -64,14 +67,14 @@ export default function GameRoomCard({ emoji, title, code, isSpectator = false, 
 
   return (
     <div className="game-room-card">
-      <span className="game-room-card__emoji" aria-hidden>{emoji}</span>
+      <span className="game-room-card__emoji" aria-hidden><GameIcon gameId={gameId} accentColor="currentColor" size={22} variant="bare" /></span>
       <div className="game-room-card__text">
         <span className="game-room-card__title">{title}</span>
         <span className="game-room-card__meta">
           <span className="game-room-card__code">#{code}</span>
           {allowSpectators ? (
             <button type="button" className="game-room-card__copy" onClick={copyInvite} aria-label={inviteLabel} title={inviteLabel}>
-              👁 <span>{inviteLabel}</span>
+              <Icon name="eye" size={14} /> <span>{inviteLabel}</span>
             </button>
           ) : (
             <span className="game-room-card__chip">{t('game.ui.spectatorsOff')}</span>

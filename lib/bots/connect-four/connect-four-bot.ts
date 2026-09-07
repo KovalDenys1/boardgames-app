@@ -167,14 +167,14 @@ export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecis
       }
     }
 
-    // Diagonal ↘
+    // Diagonal down-right
     for (let r = 0; r <= ROWS - 4; r++) {
       for (let c = 0; c <= COLS - 4; c++) {
         windows.push([board[r][c], board[r + 1][c + 1], board[r + 2][c + 2], board[r + 3][c + 3]])
       }
     }
 
-    // Diagonal ↙
+    // Diagonal down-left
     for (let r = 0; r <= ROWS - 4; r++) {
       for (let c = 3; c < COLS; c++) {
         windows.push([board[r][c], board[r + 1][c - 1], board[r + 2][c - 2], board[r + 3][c - 3]])
