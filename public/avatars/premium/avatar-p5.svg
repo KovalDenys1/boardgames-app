@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(-8 0.5)">
   <!-- Ninja/Mask -->
   <!-- Head wrap -->
   <circle cx="50" cy="45" r="22" fill="white" opacity="0.15"/>
@@ -24,4 +25,5 @@
   <!-- Headband knot -->
   <circle cx="82" cy="36" r="6" fill="white" opacity="0.9"/>
   <path d="M76 36 Q80 28 82 30 Q84 28 88 36" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  </g>
 </svg>

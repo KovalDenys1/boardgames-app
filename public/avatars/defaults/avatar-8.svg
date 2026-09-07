@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 -4)">
   <!-- Trophy cup -->
   <path d="M32 20 L68 20 L72 48 Q72 65 50 68 Q28 65 28 48 Z" fill="white" opacity="0.95"/>
   <!-- Left handle -->
@@ -18,4 +19,5 @@
   <rect x="32" y="80" width="36" height="8" rx="4" fill="white" opacity="0.95"/>
   <!-- Star on cup -->
   <polygon points="50,30 52.5,37 60,37 54,41.5 56.5,49 50,44.5 43.5,49 46,41.5 40,37 47.5,37" fill="#d97706" opacity="0.6"/>
+  </g>
 </svg>

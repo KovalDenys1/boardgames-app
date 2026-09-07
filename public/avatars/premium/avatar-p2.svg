@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 6.5)">
   <!-- Rocket -->
   <!-- Body -->
   <path d="M50 18 Q60 28 62 50 L50 56 L38 50 Q40 28 50 18 Z" fill="white" opacity="0.95"/>
@@ -21,4 +22,5 @@
   <!-- Flame -->
   <path d="M44 60 Q50 75 56 60 Q53 68 50 72 Q47 68 44 60 Z" fill="#f59e0b" opacity="0.9"/>
   <path d="M46 60 Q50 70 54 60 Q52 65 50 68 Q48 65 46 60 Z" fill="white" opacity="0.8"/>
+  </g>
 </svg>

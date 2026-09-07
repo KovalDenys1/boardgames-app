@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 5.67)">
   <!-- Viking helmet -->
   <!-- Helmet dome -->
   <path d="M22 50 Q22 24 50 24 Q78 24 78 50 L74 54 L26 54 Z" fill="white" opacity="0.95"/>
@@ -23,4 +24,5 @@
   <!-- Cheek guards -->
   <path d="M22 54 L22 72 Q26 76 34 74 L34 54 Z" fill="white" opacity="0.8"/>
   <path d="M78 54 L78 72 Q74 76 66 74 L66 54 Z" fill="white" opacity="0.8"/>
+  </g>
 </svg>

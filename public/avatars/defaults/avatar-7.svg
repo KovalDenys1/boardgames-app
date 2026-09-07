@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 3)">
   <!-- Chess pawn -->
   <!-- Head -->
   <circle cx="50" cy="30" r="12" fill="white" opacity="0.95"/>
@@ -15,4 +16,5 @@
   <path d="M37 49 L63 49 L68 68 L32 68 Z" fill="white" opacity="0.95"/>
   <!-- Base -->
   <rect x="28" y="68" width="44" height="8" rx="4" fill="white" opacity="0.95"/>
+  </g>
 </svg>

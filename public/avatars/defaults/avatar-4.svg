@@ -6,8 +6,10 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 -1)">
   <!-- Shield -->
   <path d="M50 20 L76 32 L76 54 Q76 72 50 82 Q24 72 24 54 L24 32 Z" fill="white" opacity="0.95"/>
   <!-- Checkmark inside -->
   <path d="M36 52 L46 62 L64 40" fill="none" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
