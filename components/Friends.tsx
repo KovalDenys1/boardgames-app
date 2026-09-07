@@ -4,6 +4,7 @@ import { type FormEvent, type ReactNode, useState, useEffect, useCallback } from
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
@@ -822,7 +823,7 @@ export default function Friends() {
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="flex items-center gap-1.5 truncate text-lg font-bold text-bd-ink dark:text-white">
                                 {friend.username || 'Unknown'}
-                                {friend.isPremium && <span className="shrink-0 text-sm" title="Premium">👑</span>}
+                                {friend.isPremium && <Icon name="crown" size={15} tone="premium" label="Premium" className="shrink-0" />}
                               </h4>
                               {presenceBadge && (
                                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${presenceBadge.className}`}>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import SketchAndGuessGameBoard from '@/components/SketchAndGuessGameBoard'
@@ -501,7 +502,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h1 className="text-2xl font-extrabold text-bd-ink sm:text-3xl">
-                                    🎨 {t('games.guess_my_drawing.name')}
+                                    <Icon name="palette" size={16} /> {t('games.guess_my_drawing.name')}
                                 </h1>
                                 <p className="mt-1 text-sm text-bd-ink-muted">
                                     {t('lobby.game.code')}: <span className="font-mono font-semibold">{code.toUpperCase()}</span>

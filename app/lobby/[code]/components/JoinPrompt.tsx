@@ -130,7 +130,7 @@ export default function JoinPrompt({
         {requiresPassword && (
           <div className="text-left mb-6">
             <label className="mb-2 block text-sm font-semibold text-bd-ink">
-              🔒 {t('lobby.joinSection.password')}
+              <Icon name="lock" size={14} /> {t('lobby.joinSection.password')}
             </label>
             <input
               type="password"
@@ -152,7 +152,7 @@ export default function JoinPrompt({
         {error && (
           <div className="mb-6 animate-shake rounded-xl border border-bd-coral/35 bg-bd-coral/10 px-4 py-3 text-bd-coral-deep">
             <div className="flex items-center gap-2">
-              <span className="text-lg">⚠️</span>
+              <Icon name="warning" size={18} />
               <p className="font-semibold text-sm">{error}</p>
             </div>
             {error === 'Lobby is full' && lobby.allowSpectators && onWatchAsSpectator && (
@@ -161,7 +161,7 @@ export default function JoinPrompt({
                 onClick={onWatchAsSpectator}
                 className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10"
               >
-                👁 Watch as spectator instead →
+                <Icon name="eye" size={14} /> Watch as spectator instead →
               </button>
             )}
           </div>
@@ -222,7 +222,7 @@ export default function JoinPrompt({
         )}
 
         <p className="mt-4 text-xs text-bd-ink-muted">
-          💡 {t('lobby.joinPromptHint')}
+          <Icon name="bulb" size={14} /> {t('lobby.joinPromptHint')}
         </p>
         </div>
       </div>

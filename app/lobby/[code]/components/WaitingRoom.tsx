@@ -10,7 +10,7 @@ import { sounds } from '@/lib/sounds'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 import TryBotGamesBanner from './TryBotGamesBanner'
 
-const BOT_DIFFICULTY_EMOJI: Record<BotDifficulty, string> = {
+const BOT_DIFFICULTY_ICON: Record<BotDifficulty, IconName> = {
   easy: 'bot-easy',
   medium: 'bot-medium',
   hard: 'bot-hard',
@@ -141,7 +141,7 @@ export default function WaitingRoom({
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
                 title="Remove bot"
               >
-                ✕
+                <Icon name="close" size={14} />
               </button>
             )}
             {/* Kick player button */}
@@ -151,7 +151,7 @@ export default function WaitingRoom({
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
                 title={t('game.ui.kickPlayer')}
               >
-                ✕
+                <Icon name="close" size={14} />
               </button>
             )}
           </div>
@@ -199,7 +199,7 @@ export default function WaitingRoom({
                     }}
                     className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink disabled:opacity-50"
                   >
-                    <span aria-hidden>{BOT_DIFFICULTY_EMOJI[difficulty]}</span>
+                    <Icon name={BOT_DIFFICULTY_ICON[difficulty]} size={16} />
                     <span className="truncate">
                       {t(`game.ui.botDifficulty${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` as Parameters<typeof t>[0])}
                     </span>
@@ -212,7 +212,7 @@ export default function WaitingRoom({
                   aria-label={t('common.cancel')}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-colors hover:bg-bd-coral/15 hover:text-bd-coral-deep disabled:opacity-50"
                 >
-                  ✕
+                  <Icon name="close" size={14} />
                 </button>
               </div>
             ) : (

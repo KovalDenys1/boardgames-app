@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
 
 type SpyPlayer = Player & { isPremium?: boolean }
@@ -68,7 +69,7 @@ export default function SpyVoting({
                   </span>
                   <span className="flex min-w-0 flex-1 items-center gap-1 text-left font-bold">
                     <span className="truncate">{player.name}</span>
-                    {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                    {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                   </span>
                   <span className={`spy-check ${selected ? 'spy-check-selected' : ''}`} />
                 </button>

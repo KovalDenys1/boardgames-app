@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useId } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { clientLogger } from '@/lib/client-logger'
 import HelpTooltip from '@/components/ui/help-tooltip'
 
@@ -178,12 +179,12 @@ export default function UsernameInput({
       <div className="mt-1">
         {status === 'taken' && (
           <p className="text-xs text-red-600">
-            ✗ {t('auth.username.taken', 'Username is already taken')}
+            <Icon name="close" size={13} /> {t('auth.username.taken', 'Username is already taken')}
           </p>
         )}
         {status === 'invalid' && validationError && (
           <p className="text-xs text-red-600">
-            ✗ {validationError}
+            <Icon name="close" size={13} /> {validationError}
           </p>
         )}
       </div>

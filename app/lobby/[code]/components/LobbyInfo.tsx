@@ -57,7 +57,7 @@ export default function LobbyInfo({
               aria-label={t('common.goHome')}
               className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
             >
-              🏠 {t('breadcrumbs.home')}
+              <Icon name="home" size={14} /> {t('breadcrumbs.home')}
             </button>
             <span aria-hidden="true" className="shrink-0 opacity-30">›</span>
             <button
@@ -65,7 +65,7 @@ export default function LobbyInfo({
               aria-label={t('games.title')}
               className="shrink-0 rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bd-ink/30"
             >
-              🎮 {t('breadcrumbs.games')}
+              <Icon name="gamepad" size={14} /> {t('breadcrumbs.games')}
             </button>
             <span aria-hidden="true" className="shrink-0 opacity-30">›</span>
             <button
@@ -87,7 +87,7 @@ export default function LobbyInfo({
                 aria-expanded={settingsOpen}
                 className={`bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3 ${settingsOpen ? 'bg-bd-bg2' : ''}`}
               >
-                <span aria-hidden className="text-base leading-none">⚙️</span>
+                <Icon name="gear" size={16} />
               </button>
             )}
             <button
@@ -95,7 +95,7 @@ export default function LobbyInfo({
               title={t('game.ui.copyInvite')}
               className="bd-btn bd-btn-soft gap-1.5 px-2.5 py-2 text-xs sm:px-3"
             >
-              <span>🔗</span>
+              <Icon name="link" size={14} />
               <span className="hidden sm:inline">{t('game.ui.copyInvite')}</span>
             </button>
             <button

@@ -1,4 +1,6 @@
 import toast from 'react-hot-toast'
+import type { ReactNode } from 'react'
+import { Icon } from '@/components/icons'
 import type { Toast as HotToast, ToastOptions } from 'react-hot-toast'
 import { CelebrationEvent, getCategoryDisplayName } from '@/lib/celebrations'
 import { YahtzeeCategory } from '@/lib/yahtzee'
@@ -55,7 +57,8 @@ function BoardlyMomentToast({
   tone,
 }: {
   toastState: HotToast
-  icon: string
+  /** An <Icon>, or a celebration emoji — celebrations keep theirs by design. */
+  icon: ReactNode
   eyebrow: string
   title: string
   detail: string
@@ -101,7 +104,8 @@ function showBoardlyMomentToast(
     badge,
     tone,
   }: {
-    icon: string
+    /** An <Icon>, or a celebration emoji — celebrations keep theirs by design. */
+  icon: ReactNode
     eyebrow: string
     title: string
     detail: string
@@ -180,7 +184,7 @@ export function showYahtzeeCategoryToast({
   if (isBestPick) {
     showBoardlyMomentToast(
       {
-        icon: '✨',
+        icon: <Icon name="sparkle" size={22} />,
         eyebrow,
         title: 'Best category banked',
         detail: `${categoryName} was the strongest scoring line for this hand.`,
@@ -195,7 +199,7 @@ export function showYahtzeeCategoryToast({
   if (score >= 20) {
     showBoardlyMomentToast(
       {
-        icon: '💫',
+        icon: <Icon name="star" size={22} />,
         eyebrow,
         title: 'Strong score',
         detail: `${categoryName} locked in a solid result.`,

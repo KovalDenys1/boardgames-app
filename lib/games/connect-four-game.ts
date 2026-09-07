@@ -307,8 +307,8 @@ export class ConnectFourGame extends GameEngine {
     const directions: [number, number][] = [
       [0, 1],   // horizontal
       [1, 0],   // vertical
-      [1, 1],   // diagonal ↘
-      [1, -1],  // diagonal ↙
+      [1, 1],   // diagonal down-right
+      [1, -1],  // diagonal down-left
     ]
 
     for (const [dr, dc] of directions) {

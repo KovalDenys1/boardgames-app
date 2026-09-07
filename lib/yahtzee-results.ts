@@ -1,3 +1,5 @@
+import type { IconName } from '@/components/icons/names'
+
 import { YahtzeeScorecard, YahtzeeCategory } from './yahtzee'
 
 export interface PlayerResults {
@@ -15,7 +17,7 @@ export interface PlayerResults {
 export interface Achievement {
   type: 'yahtzee' | 'large-straight' | 'small-straight' | 'full-house' | 'high-score' | 'perfect-upper'
   label: string
-  icon: string
+  icon: IconName
   score?: number
 }
 
@@ -67,7 +69,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
     achievements.push({
       type: 'yahtzee',
       label: 'Yahtzee!',
-      icon: '🎯',
+      icon: 'target',
       score: 50
     })
   }
@@ -77,7 +79,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
     achievements.push({
       type: 'large-straight',
       label: 'Large Straight',
-      icon: '📊',
+      icon: 'chart',
       score: 40
     })
   }
@@ -87,7 +89,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
     achievements.push({
       type: 'small-straight',
       label: 'Small Straight',
-      icon: '📈',
+      icon: 'rocket',
       score: 30
     })
   }
@@ -97,7 +99,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
     achievements.push({
       type: 'full-house',
       label: 'Full House',
-      icon: '🏠',
+      icon: 'home',
       score: 25
     })
   }
@@ -107,7 +109,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
     achievements.push({
       type: 'perfect-upper',
       label: 'Upper Bonus',
-      icon: '💎',
+      icon: 'gem',
       score: 35
     })
   }
@@ -117,7 +119,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
     achievements.push({
       type: 'high-score',
       label: 'High Score',
-      icon: '⭐',
+      icon: 'star',
       score: totalScore
     })
   }

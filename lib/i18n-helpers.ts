@@ -16,8 +16,8 @@ type RecursiveKeyOf<TObj extends object> = {
  * Usage:
  * ```tsx
  * const { t } = useTranslation()
- * t('common.loading') // ✅ Type-safe
- * t('invalid.key')    // ❌ TypeScript error
+ * t('common.loading') // ok, type-safe
+ * t('invalid.key')    // TypeScript error
  * ```
  */
 type I18nTranslationHook = ReturnType<typeof useTranslationOriginal>

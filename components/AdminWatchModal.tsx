@@ -2,6 +2,7 @@
 
 import Modal from './Modal'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 
 interface AdminWatchModalProps {
   isOpen: boolean
@@ -29,7 +30,7 @@ export default function AdminWatchModal({
             className="flex items-center gap-3 rounded-xl border-1.5 p-4 text-left transition-colors"
             style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-card-warm)' }}
           >
-            <span className="text-2xl">👁️</span>
+            <Icon name="eye" size={22} />
             <span>
               <span className="block font-bold" style={{ color: 'var(--bd-ink)' }}>{t('admin.watchModal.spectatorTitle')}</span>
               <span className="block text-sm" style={{ color: 'var(--bd-ink-muted)' }}>{t('admin.watchModal.spectatorDesc')}</span>
@@ -41,7 +42,7 @@ export default function AdminWatchModal({
           className="flex items-center gap-3 rounded-xl border-1.5 p-4 text-left transition-colors"
           style={{ borderColor: 'rgba(124,58,237,0.4)', background: 'rgba(124,58,237,0.08)' }}
         >
-          <span className="text-2xl">🛡️</span>
+          <Icon name="shield" size={22} />
           <span>
             <span className="block font-bold" style={{ color: 'var(--bd-ink)' }}>{t('admin.watchModal.adminTitle')}</span>
             <span className="block text-sm" style={{ color: 'var(--bd-ink-muted)' }}>{t('admin.watchModal.adminDesc')}</span>

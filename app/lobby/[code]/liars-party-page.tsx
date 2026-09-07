@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
@@ -70,7 +71,7 @@ function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLe
       className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-waiting-room"
     >
-      <h1 className="text-3xl font-bold text-white drop-shadow">🎭 {t('liarsParty.name')}</h1>
+      <h1 className="flex items-center gap-2 text-3xl font-bold text-white drop-shadow"><Icon name="mask" size={30} /> {t('liarsParty.name')}</h1>
 
       <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white text-center">
         <div className="text-lg font-semibold mb-1">{players.length} / 12</div>
@@ -172,13 +173,13 @@ function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRema
               onClick={() => setIsBluffSelected(false)}
               className={`px-6 py-3 rounded-xl font-bold transition-all ${isBluffSelected === false ? 'bg-white text-green-600 scale-105 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
             >
-              ✓ {t('liarsParty.truth')}
+              <Icon name="check" size={16} /> {t('liarsParty.truth')}
             </button>
             <button
               onClick={() => setIsBluffSelected(true)}
               className={`px-6 py-3 rounded-xl font-bold transition-all ${isBluffSelected === true ? 'bg-white text-rose-600 scale-105 shadow-lg' : 'bg-white/20 text-white hover:bg-white/30'}`}
             >
-              🎭 {t('liarsParty.bluff')}
+              <Icon name="mask" size={16} /> {t('liarsParty.bluff')}
             </button>
           </div>
           <button
@@ -397,7 +398,7 @@ function RevealScreen({ data, players, isMoveSubmitting, onAdvanceRound, onLeave
                   <div key={vote.playerId} className="flex items-center justify-between text-sm">
                     <span>{voterName}</span>
                     <span>{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
-                    <span>{correct ? '✓' : '✗'}</span>
+                    <span><Icon name={correct ? 'check' : 'close'} size={14} /></span>
                     <span className={delta >= 0 ? 'text-green-300' : 'text-red-300'}>{delta >= 0 ? `+${delta}` : delta}</span>
                   </div>
                 )
@@ -472,7 +473,7 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
       className="flex min-h-[var(--game-h)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-game-over-screen"
     >
-      <div className="text-5xl">🎭</div>
+      <div><Icon name="mask" size={48} /></div>
       <h2 className="text-4xl font-extrabold text-white drop-shadow">
         {t('liarsParty.wins', { name: winnerName })}
       </h2>

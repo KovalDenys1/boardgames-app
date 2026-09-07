@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Icon } from '@/components/icons'
 import HeroDemoTicTacToe from './HeroDemoTicTacToe'
 import HeroDemoMemory from './HeroDemoMemory'
 import HeroDemoConnectFour from './HeroDemoConnectFour'
@@ -31,7 +32,7 @@ const DEMOS: Demo[] = [
             color: 'var(--bd-coral)', transform: 'rotate(-14deg)',
             animationDelay: '0.4s', lineHeight: 1, userSelect: 'none',
           }}
-        >✕</div>
+        ><Icon name="close" size={20} /></div>
         <div
           className="bd-float"
           style={{

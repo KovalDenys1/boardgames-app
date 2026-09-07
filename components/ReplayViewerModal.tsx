@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ComponentType, Suspense } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { hasReplayRenderer, loadReplayRenderer } from './replay/registry'
 import type { ReplayRendererProps } from './replay/types'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
@@ -665,7 +666,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
         <div className="overflow-hidden rounded-3xl border border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/70">
           <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-3xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
-              🎞️
+              <Icon name="film" size={22} />
             </div>
             <h3 className="mt-4 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               {t('profile.gameReplay.unavailable')}
@@ -899,7 +900,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                         className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
                         style={{ background: 'rgba(255,196,77,0.15)', color: 'var(--bd-ink)' }}
                       >
-                        👑 {winnerLabel}
+                        <Icon name="crown" size={14} /> {winnerLabel}
                       </span>
                     )}
                     {phaseLabel && (
@@ -945,7 +946,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                       <span className="text-base font-bold" style={{ color: 'var(--bd-ink)' }}>
                         {entry.score ?? '-'}
                       </span>
-                      {entry.isWinner && <span aria-hidden className="text-sm">👑</span>}
+                      {entry.isWinner && <Icon name="crown" size={14} />}
                     </div>
                   ))}
                 </div>

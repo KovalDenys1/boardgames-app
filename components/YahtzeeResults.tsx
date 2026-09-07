@@ -191,7 +191,7 @@ export default function YahtzeeResults({
                       key={idx}
                       className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]"
                     >
-                      {achievement.icon} {achievement.label}
+                      <Icon name={achievement.icon} size={15} /> {achievement.label}
                     </span>
                   ))}
                 </div>
@@ -304,7 +304,7 @@ export default function YahtzeeResults({
                           key={idx}
                           className="bd-chip bd-chip-lav px-2 py-1 text-[11px]"
                         >
-                          <span>{achievement.icon}</span>
+                          <Icon name={achievement.icon} size={15} />
                           <span>{achievement.label}</span>
                         </span>
                       ))}

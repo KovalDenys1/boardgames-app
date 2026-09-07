@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import Footer from '@/components/Footer'
 import GuidesSection from '@/components/GuidesSection'
@@ -155,8 +156,8 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
 
               {/* Meta row */}
               <div className="flex flex-wrap gap-2">
-                <span className="bd-chip text-xs">👥 {game.players} {t('games.players')}</span>
-                <span className="bd-chip text-xs">⚡ {t(game.difficultyKey)}</span>
+                <span className="bd-chip text-xs"><Icon name="users" size={12} /> {game.players} {t('games.players')}</span>
+                <span className="bd-chip text-xs"><Icon name="bolt" size={12} /> {t(game.difficultyKey)}</span>
               </div>
 
               {/* CTA */}

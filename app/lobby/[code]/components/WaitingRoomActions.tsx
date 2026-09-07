@@ -2,6 +2,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { sounds } from '@/lib/sounds'
 import { hasBotSupport } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 
 interface WaitingRoomActionsProps {
@@ -114,7 +115,7 @@ export default function WaitingRoomActions({
         className="bd-btn bd-btn-primary w-full justify-center px-5 py-3.5 text-base transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
       >
         <span className="inline-flex items-center justify-center gap-2">
-          <span className="text-xl">▶</span>
+          <Icon name="play" size={18} />
           <span>{t('game.ui.startGame')}</span>
         </span>
       </button>

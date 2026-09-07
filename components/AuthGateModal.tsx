@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 
 interface AuthGateModalProps {
   /** Where Login/Sign Up should return to, and (if onGuestReady is omitted) where guest play navigates. */
@@ -66,7 +67,7 @@ export function AuthGateModal({ dest, onClose, onGuestReady }: AuthGateModalProp
             borderRadius: 16, background: 'var(--bd-sun)',
             border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
             display: 'grid', placeItems: 'center', fontSize: 28,
-          }}>🎮</div>
+          }}><Icon name="gamepad" size={30} /></div>
           <h2 style={{
             fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22,
             color: 'var(--bd-ink)', letterSpacing: '-0.02em', margin: '0 0 8px',

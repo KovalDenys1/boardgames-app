@@ -80,6 +80,8 @@ export const ICON_NAMES = [
   'tag',
   'party',
   'butterfly',
+  'film',
+  'flower',
   'handshake',
 ] as const
 
