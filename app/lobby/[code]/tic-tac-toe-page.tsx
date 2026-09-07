@@ -1116,7 +1116,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     // and at the same height (layout DoD, scheme A): game, room code, invite
     // link, and Leave. Phones get the compact form beside the scoreboard.
     const roomCardProps = {
-        emoji: '❌',
+        gameId: 'tic-tac-toe',
         title: t('games.tictactoe.name'),
         code,
         isSpectator,

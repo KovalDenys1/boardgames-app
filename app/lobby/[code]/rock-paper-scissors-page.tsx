@@ -813,7 +813,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     // and at the same height (layout DoD, scheme A): game, room code, invite
     // link, and Leave. Phones get the compact form beside the scoreboard.
     const roomCardProps = {
-        emoji: '✊',
+        gameId: 'rps',
         title: t('games.rock_paper_scissors.name'),
         code,
         isSpectator,

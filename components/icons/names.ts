@@ -19,6 +19,8 @@ export const ICON_NAMES = [
   'question',
   'search',
   'copy',
+  'refresh',
+  'megaphone',
   'clipboard',
   'link',
   'mail',

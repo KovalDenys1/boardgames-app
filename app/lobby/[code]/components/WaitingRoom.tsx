@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon, type IconName } from '@/components/icons'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
 import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
@@ -10,9 +11,9 @@ import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBan
 import TryBotGamesBanner from './TryBotGamesBanner'
 
 const BOT_DIFFICULTY_EMOJI: Record<BotDifficulty, string> = {
-  easy: '🙂',
-  medium: '😐',
-  hard: '😈',
+  easy: 'bot-easy',
+  medium: 'bot-medium',
+  hard: 'bot-hard',
 }
 
 interface WaitingRoomProps {
@@ -109,7 +110,7 @@ export default function WaitingRoom({
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
               <span className={`truncate text-sm font-bold ${isPremium ? 'text-bd-premium' : 'text-bd-ink'}`}>{playerName}</span>
               {isPremium && (
-                <span className="shrink-0 text-[11px]" title="Premium">👑</span>
+                <Icon name="crown" size={12} tone="premium" label="Premium" className="shrink-0" />
               )}
               {isCurrentUser && !isBot && (
                 <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
@@ -230,7 +231,7 @@ export default function WaitingRoom({
                         }}
                         className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
                       >
-                        <span aria-hidden>💌</span>
+                        <Icon name="mail" size={16} />
                         <span>{t('game.ui.slotInvite')}</span>
                       </button>
                     )}
@@ -243,7 +244,7 @@ export default function WaitingRoom({
                         }}
                         className="flex items-center gap-1 rounded-lg border border-bd-line bg-bd-bg px-2.5 py-2 text-xs font-bold text-bd-ink transition-colors hover:border-bd-ink"
                       >
-                        <span aria-hidden>🤖</span>
+                        <Icon name="robot" size={16} />
                         <span>{t('game.ui.slotAddBot')}</span>
                         <span aria-hidden className="text-bd-ink-muted">▾</span>
                       </button>

@@ -1066,7 +1066,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // and at the same height (layout DoD, scheme A): game, room code, invite
     // link, and Leave. Phones get the compact form beside the scoreboard.
     const roomCardProps = {
-        emoji: '🔴',
+        gameId: 'connect-four',
         title: t('games.connect_four.name'),
         code,
         isSpectator,

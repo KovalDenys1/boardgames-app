@@ -40,10 +40,6 @@
     "count": 1
   },
   {
-    "file": "app/games/components/GameLobbiesPage.tsx",
-    "count": 7
-  },
-  {
     "file": "app/games/components/PlayVsBotButton.tsx",
     "count": 4
   },
@@ -148,16 +144,12 @@
     "count": 4
   },
   {
-    "file": "app/lobby/[code]/components/LobbySettingsPanel.tsx",
-    "count": 12
-  },
-  {
     "file": "app/lobby/[code]/components/SpyGameBoard.tsx",
     "count": 1
   },
   {
     "file": "app/lobby/[code]/components/WaitingRoom.tsx",
-    "count": 9
+    "count": 3
   },
   {
     "file": "app/lobby/[code]/components/WaitingRoomActions.tsx",
@@ -166,10 +158,6 @@
   {
     "file": "app/lobby/[code]/components/YahtzeeGameBoard.tsx",
     "count": 6
-  },
-  {
-    "file": "app/lobby/[code]/connect-four-page.tsx",
-    "count": 1
   },
   {
     "file": "app/lobby/[code]/hooks/useGameActions.ts",
@@ -185,7 +173,7 @@
   },
   {
     "file": "app/lobby/[code]/rock-paper-scissors-page.tsx",
-    "count": 6
+    "count": 5
   },
   {
     "file": "app/lobby/[code]/sketch-and-guess-page.tsx",
@@ -197,7 +185,7 @@
   },
   {
     "file": "app/lobby/[code]/tic-tac-toe-page.tsx",
-    "count": 2
+    "count": 1
   },
   {
     "file": "app/lobby/page.tsx",
@@ -314,10 +302,6 @@
   {
     "file": "components/UsernameInput.tsx",
     "count": 2
-  },
-  {
-    "file": "components/YahtzeeResults.tsx",
-    "count": 8
   },
   {
     "file": "lib/bots/connect-four/connect-four-bot.ts",

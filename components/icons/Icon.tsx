@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react'
 import {
-  ArrowLeft, ArrowRight, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
+  ArrowLeft, ArrowRight, ArrowsClockwise, Butterfly, Cards, ChartBar, Check, ClipboardText, Clock, Confetti, Copy, Crown,
   Diamond, DiceFive, EnvelopeSimple, Eye, EyeSlash, Fire, GameController, Globe, HandFist, HandPalm,
   Camera, ChatCircle, Drop, GearSix, Handshake, Heart, Hourglass, House, Info, Laptop, Lightbulb, Lightning, Link, Lock,
-  MagnifyingGlass, Palette,
+  MagnifyingGlass, Megaphone, Palette,
   MapTrifold, MaskHappy, Medal, Minus, PencilSimple, Play, Plus, Question, Robot, RocketLaunch, Scissors,
   ShieldCheck, Smiley, SmileyAngry, SmileyMeh, Sparkle, SpeakerHigh, SpeakerSlash, Star, Tag, Target,
   Trophy, User, Users, Warning, X,
@@ -36,6 +36,8 @@ const GLYPHS: Record<IconName, PhosphorIcon> = {
   question: Question,
   search: MagnifyingGlass,
   copy: Copy,
+  refresh: ArrowsClockwise,
+  megaphone: Megaphone,
   clipboard: ClipboardText,
   link: Link,
   mail: EnvelopeSimple,
