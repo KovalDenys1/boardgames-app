@@ -1,7 +1,11 @@
 import { getAvailableGameTypes, isRegisteredGameType } from './game-catalog'
 import type { RegisteredGameType, SupportedCatalogGameType } from './game-catalog'
 
-type UpcomingPublicGameType = never
+// An experimental game that already has a public lobbies route. It is not a
+// RegisteredGameType, so it has to be named here or the route falls through
+// isTemporarilyUnavailableGameType and the page offers a create button that
+// drops the visitor into the default game's form.
+type UpcomingPublicGameType = 'sketch_and_guess'
 type LobbyRouteGameType = RegisteredGameType | UpcomingPublicGameType
 type PublicGameType = RegisteredGameType | UpcomingPublicGameType
 
@@ -14,6 +18,7 @@ const GAME_LOBBIES_ROUTES: Record<LobbyRouteGameType, string> = {
   connect_four: '/games/connect-four/lobbies',
   alias: '/games/alias/lobbies',
   liars_party: '/games/liars-party/lobbies',
+  sketch_and_guess: '/games/sketch-and-guess/lobbies',
 }
 
 export function isTemporarilyUnavailableGameType(
