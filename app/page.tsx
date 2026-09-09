@@ -7,6 +7,7 @@ import HowItWorksRedesign from '@/components/HomePage/HowItWorksRedesign'
 import CtaBanner from '@/components/HomePage/CtaBanner'
 import GuidesSection from '@/components/GuidesSection'
 import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
+import { buildFaqFacts } from '@/lib/faq-facts'
 
 // Keep home page fully static for fast global TTFB.
 export const dynamic = 'force-static'
@@ -64,7 +65,7 @@ export default function HomePage() {
 
       {/* FAQ — kept for SEO value */}
       <div className="home-faq-wrap">
-        <FaqSection />
+        <FaqSection facts={buildFaqFacts()} />
       </div>
 
       <Footer />

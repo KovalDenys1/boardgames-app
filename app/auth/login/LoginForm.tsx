@@ -19,6 +19,11 @@ import {
 } from '@/lib/auth-redirect'
 import { getLastAccount, saveLastAccount, type LastAccount } from '@/lib/last-account'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import { getCatalogAvailableGames } from '@/lib/game-catalog'
+
+// The hero chip used to say "6 games ready to play" in all four locales, which
+// went stale the moment a game was released (#878).
+const AVAILABLE_GAME_COUNT = getCatalogAvailableGames().length
 
 export default function LoginForm() {
   const router = useRouter()
@@ -457,7 +462,7 @@ export default function LoginForm() {
             <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
                 {[
-                  ['🎲', t('auth.login.heroChipGames', '6 games ready to play')],
+                  ['🎲', t('auth.login.heroChipGames', { games: AVAILABLE_GAME_COUNT, defaultValue: '{{games}} games ready to play' })],
                   ['⚡', t('auth.login.heroChipInstant', 'No download — play in the browser')],
                   ['👥', t('auth.login.heroChipGuests', 'Friends join with one link')],
                 ].map(([icon, label]) => (

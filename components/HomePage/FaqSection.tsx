@@ -1,21 +1,75 @@
 'use client'
 
+import type { FaqFacts, FaqGame } from '@/lib/faq-facts'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
 
-// JSON-LD stays in English for SEO regardless of user language
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'Is Boardly free to play?', acceptedAnswer: { '@type': 'Answer', text: 'Yes, Boardly is completely free. There are no subscriptions, no ads, and no paywalls. All games are available at no cost.' } },
-    { '@type': 'Question', name: 'Do I need an account to play?', acceptedAnswer: { '@type': 'Answer', text: 'No account is required. You can jump in as a guest instantly. Creating an account lets you save your stats and history across sessions.' } },
-    { '@type': 'Question', name: 'What games are available on Boardly?', acceptedAnswer: { '@type': 'Answer', text: 'Boardly currently offers Yahtzee, Tic Tac Toe, Connect Four, Memory card game, and Guess the Spy. More games are in development, including Alias, Sketch & Guess, Telephone Doodle, and others.' } },
-    { '@type': 'Question', name: 'Can I play solo?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Yahtzee, Tic Tac Toe, and Connect Four can add computer players, so you can start even when friends are offline.' } },
-    { '@type': 'Question', name: 'How do I play with friends online?', acceptedAnswer: { '@type': 'Answer', text: 'Create a room, then share the room code or link with your friends. They join instantly — no account or download needed on their end either.' } },
-    { '@type': 'Question', name: 'Does Boardly work on mobile?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Boardly runs in any modern browser on desktop, tablet, and mobile. You can also install it from your browser if you want an app-like shortcut.' } },
-    { '@type': 'Question', name: 'How many players can play at once?', acceptedAnswer: { '@type': 'Answer', text: 'It depends on the game. Tic Tac Toe and Connect Four support 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one room.' } },
-    { '@type': 'Question', name: 'Is there anything to download or install?', acceptedAnswer: { '@type': 'Answer', text: 'Nothing to download. Boardly runs entirely in your browser. Just open the site and start playing.' } },
-  ],
+/**
+ * "A, B and C". All four locales put the conjunction in the same place and none
+ * of them takes a comma before it, so one shape covers them — the word itself
+ * comes from the locale file. Intl.ListFormat would do this too, but its types
+ * need lib ES2021 and the project targets ES2020.
+ */
+function joinList(names: string[], and: string): string {
+  if (names.length <= 1) return names[0] ?? ''
+  return `${names.slice(0, -1).join(', ')} ${and} ${names[names.length - 1]}`
+}
+
+// The catalog's nameKey is a plain string; every value in it is a real
+// translation key, which the locale-parity check enforces.
+function localized(t: (key: TranslationKeys) => string, games: FaqGame[], and: string): string {
+  return joinList(games.map((game) => t(game.nameKey as TranslationKeys)), and)
+}
+
+function english(games: FaqGame[]): string {
+  return joinList(games.map((game) => game.nameEn), 'and')
+}
+
+function buildFaqJsonLd(facts: FaqFacts) {
+  const qa: [string, string][] = [
+    [
+      'Is Boardly free to play?',
+      `Every game on Boardly is free to play, with no download and no account required. Premium is an optional subscription at ${facts.premiumPrice} a month for extras like replays, custom lobby themes and full stats; free players may see ads.`,
+    ],
+    [
+      'Do I need an account to play?',
+      'No account is required. You can jump in as a guest instantly. Creating an account lets you save your stats and history across sessions.',
+    ],
+    [
+      'What games are available on Boardly?',
+      `Boardly currently offers ${english(facts.games)}. More games are in development and appear on the games page as they are released.`,
+    ],
+    [
+      'Can I play solo?',
+      `Yes. ${english(facts.botGames)} can add computer players, so you can start even when friends are offline.`,
+    ],
+    [
+      'How do I play with friends online?',
+      'Create a room, then share the room code or link with your friends. They join instantly — no account or download needed on their end either.',
+    ],
+    [
+      'Does Boardly work on mobile?',
+      'Yes. Boardly runs in any modern browser on desktop, tablet, and mobile. You can also install it from your browser if you want an app-like shortcut.',
+    ],
+    [
+      'How many players can play at once?',
+      `It depends on the game. Rooms run from 2 players up to ${facts.maxPlayers} in ${facts.maxPlayersGame.nameEn}. Each game page lists its own range.`,
+    ],
+    [
+      'Is there anything to download or install?',
+      'Nothing to download. Boardly runs entirely in your browser. Just open the site and start playing.',
+    ],
+  ]
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: qa.map(([name, text]) => ({
+      '@type': 'Question',
+      name,
+      acceptedAnswer: { '@type': 'Answer', text },
+    })),
+  }
 }
 
 const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'] as const
@@ -26,20 +80,30 @@ const FAQ_COLORS = [
   'var(--bd-lav)',
 ] as const
 
-export default function FaqSection() {
+export default function FaqSection({ facts }: { facts: FaqFacts }) {
   const { t } = useTranslation()
+
+  // The four answers that name games or money take their values from the
+  // catalog, so the copy cannot drift from what the site actually offers.
+  const and = t('faq.listAnd')
+  const answerVars: Partial<Record<(typeof FAQ_KEYS)[number], Record<string, string | number>>> = {
+    q1: { price: facts.premiumPrice },
+    q3: { games: localized(t, facts.games, and) },
+    q4: { games: localized(t, facts.botGames, and) },
+    q7: { max: facts.maxPlayers, game: t(facts.maxPlayersGame.nameKey as TranslationKeys) },
+  }
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildFaqJsonLd(facts)) }}
       />
       <section className="home-faq-section" aria-labelledby="home-faq-title">
         <div className="home-faq-intro">
           <span className="home-faq-kicker">FAQ</span>
           <h2 id="home-faq-title">{t('faq.title')}</h2>
-          <p>Quick answers before you start a room, invite friends, or play as a guest.</p>
+          <p>{t('faq.intro')}</p>
         </div>
 
         <dl className="home-faq-list">
@@ -51,7 +115,7 @@ export default function FaqSection() {
                 </span>
                 {t(`faq.${key}.question`)}
               </dt>
-              <dd>{t(`faq.${key}.answer`)}</dd>
+              <dd>{t(`faq.${key}.answer`, answerVars[key])}</dd>
             </div>
           ))}
         </dl>

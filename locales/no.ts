@@ -1323,7 +1323,7 @@ const no = {
       heroQuote: '«Beste\nfredagskvelden\nnoensinne»',
       heroQuoteBy: '— spillerne våre om boardly',
       heroPlayers: '180 000+ spillere er her allerede',
-      heroChipGames: '6 spill klare til å spille',
+      heroChipGames: '{{games}} spill klare til å spille',
       heroChipInstant: 'Ingen nedlasting — spill i nettleseren',
       heroChipGuests: 'Venner blir med via én lenke',
       title: 'Logg inn på Boardly',
@@ -2394,9 +2394,12 @@ const no = {
   },
   faq: {
     title: 'Ofte stilte spørsmål',
+    intro: 'Raske svar før du starter et rom, inviterer venner eller spiller som gjest.',
+    // Conjunction for the generated game lists in q3 and q4
+    listAnd: 'og',
     q1: {
       question: 'Er Boardly gratis å spille?',
-      answer: 'Ja, Boardly er helt gratis. Det er ingen abonnementer, ingen reklame og ingen betalingsmurer. Alle spill er tilgjengelige uten kostnad.',
+      answer: 'Ja – alle spill er gratis å spille, uten nedlasting og uten konto. Premium er et valgfritt abonnement til {{price}} i måneden for ekstra ting som reprise, egne lobbytemaer og full statistikk, og gratisspillere kan se reklame.',
     },
     q2: {
       question: 'Trenger jeg en konto for å spille?',
@@ -2404,11 +2407,11 @@ const no = {
     },
     q3: {
       question: 'Hvilke spill er tilgjengelige på Boardly?',
-      answer: 'Boardly tilbyr for øyeblikket Yahtzee, Tic Tac Toe, Fire på rad, Memory-kortspill og Gjett spionen. Flere spill er under utvikling, inkludert Alias, Sketch & Guess og andre.',
+      answer: 'Boardly tilbyr for øyeblikket {{games}}. Flere spill er under utvikling og dukker opp på spillsiden etter hvert som de slippes.',
     },
     q4: {
       question: 'Kan jeg spille alene?',
-      answer: 'Ja. Yahtzee, Tic Tac Toe og Fire på rad kan legge til dataspillere, så du kan starte selv når venner er offline.',
+      answer: 'Ja. {{games}} kan legge til dataspillere, så du kan starte selv når venner er offline.',
     },
     q5: {
       question: 'Hvordan spiller jeg med venner online?',
@@ -2420,7 +2423,7 @@ const no = {
     },
     q7: {
       question: 'Hvor mange spillere kan spille samtidig?',
-      answer: 'Det avhenger av spillet. Tic Tac Toe og Fire på rad støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i ett rom.',
+      answer: 'Det avhenger av spillet. Rom går fra 2 spillere opp til {{max}} i {{game}}. Hver spillside viser sitt eget spenn.',
     },
     q8: {
       question: 'Er det noe å laste ned eller installere?',
