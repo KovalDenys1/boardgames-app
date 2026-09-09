@@ -1,13 +1,5 @@
+import Die from '@/components/ui/Die'
 import type { ReplayRendererProps } from './types'
-
-const DICE_FACES: Record<number, string> = {
-  1: '⚀',
-  2: '⚁',
-  3: '⚂',
-  4: '⚃',
-  5: '⚄',
-  6: '⚅',
-}
 
 export default function YahtzeeReplayRenderer({ snapshotState, players, playerNameById }: ReplayRendererProps) {
   const state = snapshotState as Record<string, unknown> | null
@@ -48,16 +40,8 @@ export default function YahtzeeReplayRenderer({ snapshotState, players, playerNa
           {dice.map((value, index) => {
             const isHeld = held?.[index] === true
             return (
-              <div
-                key={index}
-                className={`flex h-14 w-14 items-center justify-center rounded-xl border text-3xl transition-colors ${
-                  isHeld
-                    ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/40'
-                    : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800'
-                }`}
-                title={isHeld ? 'Held' : undefined}
-              >
-                {DICE_FACES[value] ?? value}
+              <div key={index} className="flex items-center justify-center" title={isHeld ? 'Held' : undefined}>
+                <Die value={value} size={56} held={isHeld} />
               </div>
             )
           })}

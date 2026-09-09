@@ -6,6 +6,7 @@
     </linearGradient>
   </defs>
   <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <g id="avatar-glyph" transform="translate(0 2)">
   <!-- Crown body -->
   <path d="M22 70 L22 46 L37 60 L50 23 L63 60 L78 46 L78 70 Z" fill="white" opacity="0.95"/>
   <!-- Crown band -->
@@ -14,4 +15,5 @@
   <circle cx="33" cy="68" r="3.5" fill="#c026d3"/>
   <circle cx="50" cy="68" r="3.5" fill="#c026d3"/>
   <circle cx="67" cy="68" r="3.5" fill="#c026d3"/>
+  </g>
 </svg>

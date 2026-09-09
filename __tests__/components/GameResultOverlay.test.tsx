@@ -74,7 +74,7 @@ describe('GameResultOverlay (#736 phase 2)', () => {
 
   it('renders the draw handshake instead of the trophy', () => {
     render(<GameResultOverlay {...base} title="It's a draw" isDraw />)
-    expect(screen.getByText('🤝')).toBeTruthy()
+    expect(document.querySelector('[data-icon="handshake"]')).toBeTruthy()
     expect(screen.queryByText('🏆')).toBeNull()
   })
 })

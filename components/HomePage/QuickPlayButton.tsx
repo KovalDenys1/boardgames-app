@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import Modal from '@/components/Modal'
-import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import GameIcon from '@/components/GameIcon'
 import { getAvailableGameTypes, getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 
 // Catalog-driven: every game that is 'available' in the catalog shows up here
@@ -29,6 +30,40 @@ const QUICK_PLAY_GAMES = getAvailableGameTypes().map((type) => {
 })
 
 type GameType = string
+
+/**
+ * Who you would be playing against: a bot, or the humans the matcher still has
+ * to find. Rendered in two places (the wide row and the narrow chip), so it
+ * lives here rather than being duplicated with its icon.
+ */
+function PartnerChipLabel({
+  supportsBots,
+  minPlayers,
+  t,
+}: {
+  supportsBots: boolean
+  minPlayers: number
+  t: ReturnType<typeof useTranslation>['t']
+}) {
+  if (supportsBots) {
+    return (
+      <>
+        <Icon name="robot" size={13} />
+        <span>{t('quickPlay.vsBots', 'Vs bots')}</span>
+      </>
+    )
+  }
+  return (
+    <>
+      <Icon name="users" size={13} />
+      <span>
+        {minPlayers >= 4
+          ? t('quickPlay.needsGroup', { count: minPlayers })
+          : t('quickPlay.withPlayers', 'With players')}
+      </span>
+    </>
+  )
+}
 
 interface QuickPlayButtonProps {
   className?: string
@@ -102,7 +137,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
         onClick={() => setShowPicker(true)}
         className={className ?? 'home-cta-button home-cta-button-primary'}
       >
-        <span>⚡</span>
+        <Icon name="bolt" size={18} />
         <span>{t('home.quickPlay', 'Quick Play')}</span>
       </button>
 
@@ -111,12 +146,12 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
         onClose={() => {
           if (!isSearching) setShowPicker(false)
         }}
-        title={`⚡ ${t('home.quickPlay', 'Quick Play')}`}
+        title={t('home.quickPlay', 'Quick Play')}
         maxWidth="2xl"
       >
         {isSearching ? (
           <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
-            <p style={{ fontSize: 48, marginBottom: 16, lineHeight: 1 }}>⚡</p>
+            <p style={{ marginBottom: 16, lineHeight: 1 }}><Icon name="bolt" size={48} tone="sun" /></p>
             <p
               style={{
                 fontFamily: 'var(--bd-font-display)',
@@ -183,13 +218,12 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                       flexShrink: 0,
                     }}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 512 512"
-                      width={22}
-                      height={22}
-                      style={{ color: 'var(--bd-ink)' }}
-                      dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
+                    <GameIcon
+                      gameId={game.svgId}
+                      accentColor="var(--bd-ink)"
+                      detailColor={game.accentColor}
+                      size={24}
+                      variant="bare"
                     />
                   </span>
                   <div style={{ minWidth: 0, flex: isNarrow ? 1 : undefined }}>
@@ -229,11 +263,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                           borderRadius: 999,
                         }}
                       >
-                        {game.supportsBots
-                          ? `🤖 ${t('quickPlay.vsBots', 'Vs bots')}`
-                          : game.minPlayers >= 4
-                            ? `👥 ${t('quickPlay.needsGroup', { count: game.minPlayers })}`
-                            : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
+                        <PartnerChipLabel supportsBots={game.supportsBots} minPlayers={game.minPlayers} t={t} />
                       </span>
                     )}
                   </div>
@@ -254,11 +284,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {game.supportsBots
-                        ? `🤖 ${t('quickPlay.vsBots', 'Vs bots')}`
-                        : game.minPlayers >= 4
-                          ? `👥 ${t('quickPlay.needsGroup', { count: game.minPlayers })}`
-                          : `👥 ${t('quickPlay.withPlayers', 'With players')}`}
+                      <PartnerChipLabel supportsBots={game.supportsBots} minPlayers={game.minPlayers} t={t} />
                     </span>
                   )}
                 </button>

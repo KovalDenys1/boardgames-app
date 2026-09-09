@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import type { SketchAndGuessGameData, SketchAndGuessRound } from '@/lib/games/sketch-and-guess-game'
 import LoadingButton from '@/components/LoadingButton'
 
@@ -314,14 +315,19 @@ function DrawerCanvasView({
             isEraser ? 'border-bd-ink bg-[var(--bd-bg2)]' : 'border-[var(--bd-line)]'
           }`}
         >
-          🧼 {t('games.guess_my_drawing.game.eraser')}
+          <Icon name="eraser" size={13} /> {t('games.guess_my_drawing.game.eraser')}
         </button>
         <button
           type="button"
           onClick={() => setIsThick((v) => !v)}
           className="rounded-full border-2 border-[var(--bd-line)] px-3 py-1 text-xs font-semibold"
         >
-          {isThick ? '⬤' : '●'} {t('games.guess_my_drawing.game.brushSize')}
+          <span
+            aria-hidden
+            className="inline-block rounded-full bg-bd-ink align-middle"
+            style={{ width: isThick ? 12 : 7, height: isThick ? 12 : 7 }}
+          />{' '}
+          {t('games.guess_my_drawing.game.brushSize')}
         </button>
         <button
           type="button"
@@ -329,7 +335,7 @@ function DrawerCanvasView({
           disabled={strokes.length === 0}
           className="rounded-full border-2 border-[var(--bd-line)] px-3 py-1 text-xs font-semibold disabled:opacity-40"
         >
-          ↩️ {t('games.guess_my_drawing.game.undo')}
+          <Icon name="arrow-left" size={13} /> {t('games.guess_my_drawing.game.undo')}
         </button>
         <button
           type="button"
@@ -337,7 +343,7 @@ function DrawerCanvasView({
           disabled={strokes.length === 0}
           className="rounded-full border-2 border-[var(--bd-line)] px-3 py-1 text-xs font-semibold disabled:opacity-40"
         >
-          🗑️ {t('games.guess_my_drawing.game.clear')}
+          <Icon name="trash" size={13} /> {t('games.guess_my_drawing.game.clear')}
         </button>
       </div>
 
@@ -504,7 +510,7 @@ function RevealView({
             </span>
             <span className={g.isCorrect ? 'font-semibold text-emerald-700' : 'text-bd-ink-muted'}>
               {g.autoSubmitted ? t('games.guess_my_drawing.game.autoSubmittedTag') : `"${g.guess}"`}{' '}
-              {g.isCorrect ? '✅' : '❌'}
+              <Icon name={g.isCorrect ? 'check' : 'close'} size={14} />
             </span>
           </li>
         ))}
@@ -544,7 +550,8 @@ function FinishedView({
   return (
     <div className="space-y-4 text-center">
       {winnerName && (
-        <p className="text-xl font-extrabold text-bd-ink">
+        <p className="flex items-center justify-center gap-2 text-xl font-extrabold text-bd-ink">
+          <Icon name="trophy" size={20} />
           {t('games.guess_my_drawing.game.winnerBanner', { name: winnerName })}
         </p>
       )}
@@ -594,7 +601,7 @@ function ScoreboardStrip({
             p.id === currentUserId ? 'border-bd-ink' : 'border-[var(--bd-line)]'
           }`}
         >
-          {p.id === drawerId && '✏️'}
+          {p.id === drawerId && <Icon name="pencil" size={13} />}
           <span className="text-bd-ink">{p.name}</span>
           <span className="text-bd-ink-muted">{scores[p.id] || 0}</span>
         </div>
@@ -653,7 +660,7 @@ export default function SketchAndGuessGameBoard({
           <DrawerCanvasView prompt={currentRound.prompt} onSubmit={onSubmitDrawing} isSubmitting={isSubmitting} t={t} />
         ) : (
           <div className="space-y-3 py-10 text-center">
-            <div className="text-5xl">✏️</div>
+            <div><Icon name="pencil" size={48} tone="muted" /></div>
             <p className="text-sm font-semibold text-bd-ink-muted">
               {t('games.guess_my_drawing.game.waitingForDrawer', { name: drawerName })}
             </p>

@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Modal from './Modal'
+import GameIcon from '@/components/GameIcon'
+import { getGameMetadata } from '@/lib/game-catalog'
 
 interface PlayerCardData {
   userId: string
@@ -25,15 +28,6 @@ interface PlayerProfileCardProps {
   onClose: () => void
 }
 
-const GAME_LABELS: Record<string, { emoji: string; name: string }> = {
-  yahtzee:           { emoji: '🎲', name: 'Yahtzee' },
-  guess_the_spy:     { emoji: '🕵️', name: 'Guess the Spy' },
-  tic_tac_toe:       { emoji: '❌', name: 'Tic-Tac-Toe' },
-  memory:            { emoji: '🧠', name: 'Memory' },
-  rock_paper_scissors: { emoji: '✊', name: 'Rock Paper Scissors' },
-  alias:             { emoji: '🗣️', name: 'Alias' },
-  liars_party:       { emoji: '🎭', name: "Liar's Party" },
-}
 
 export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCardProps) {
   const { status } = useSession()
@@ -78,7 +72,10 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
   }
 
   const initials = data?.username?.slice(0, 2).toUpperCase() ?? '?'
-  const gameLabel = data?.favouriteGame ? GAME_LABELS[data.favouriteGame] : null
+  const favouriteMeta = data?.favouriteGame ? getGameMetadata(data.favouriteGame) : null
+  const gameLabel = favouriteMeta
+    ? { svgId: favouriteMeta.svgId, accentColor: favouriteMeta.accentColor, name: favouriteMeta.name }
+    : null
   const isOpen = !!userId
 
   return (
@@ -136,7 +133,7 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                     {data.username ?? 'Unknown'}
                   </span>
                   {data.isPremium && (
-                    <span className="text-base leading-none" title="Premium">👑</span>
+                    <Icon name="crown" size={16} tone="premium" label="Premium" />
                   )}
                   {data.isGuest && (
                     <span
@@ -188,8 +185,9 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
             {!data.isGuest && gameLabel && (
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                 <span>Favourite:</span>
-                <span className="font-semibold" style={{ color: 'var(--bd-ink)' }}>
-                  {gameLabel.emoji} {gameLabel.name}
+                <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                  <GameIcon gameId={gameLabel.svgId} accentColor={gameLabel.accentColor} size={16} variant="bare" />
+                  {gameLabel.name}
                 </span>
               </div>
             )}
@@ -199,12 +197,12 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               <div>
                 {data.relation === 'friends' ? (
                   <p className="text-sm font-semibold" style={{ color: '#22C55E' }}>
-                    ✓ Friends
+                    <Icon name="check" size={14} /> Friends
                   </p>
                 ) : data.relation === 'request_sent' ? (
-                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}>📨 Request sent</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}><Icon name="mail" size={15} /> Request sent</p>
                 ) : data.relation === 'request_received' ? (
-                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}>📩 Friend request received</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}><Icon name="mail" size={15} /> Friend request received</p>
                 ) : data.relation === 'can_send' ? (
                   <button
                     onClick={handleAddFriend}

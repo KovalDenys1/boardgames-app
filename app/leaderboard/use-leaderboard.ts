@@ -16,19 +16,18 @@ export interface LeaderboardEntry {
   winRate: number
 }
 
-const COMPACT_GAME_ICONS: Record<string, string> = {
-  tic_tac_toe: '❌',
-  rock_paper_scissors: '✊',
-}
+export type GameFilter = { value: string; label: string; svgId: string | null; accentColor: string }
 
-export const getCompactGameIcon = (type: string, icon: string) => COMPACT_GAME_ICONS[type] ?? icon
-
-export const GAME_FILTERS = [
-  { value: '', label: '', icon: '🎮', displayIcon: '🎮' },
+export const GAME_FILTERS: GameFilter[] = [
+  { value: '', label: '', svgId: null, accentColor: 'var(--bd-ink)' },
   ...getAvailableGameTypes().map((type) => {
     const meta = getGameMetadata(type)
-    const icon = meta?.icon ?? '🎮'
-    return { value: type, label: meta?.name ?? type, icon, displayIcon: getCompactGameIcon(type, icon) }
+    return {
+      value: type,
+      label: meta?.name ?? type,
+      svgId: meta?.svgId ?? null,
+      accentColor: meta?.accentColor ?? 'var(--bd-ink)',
+    }
   }),
 ]
 

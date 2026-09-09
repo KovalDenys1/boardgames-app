@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
+import { Icon, type IconName } from '@/components/icons'
+import GameIcon from '@/components/GameIcon'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
 import AchievementsGrid from '@/components/AchievementsGrid'
@@ -25,7 +27,7 @@ import {
   setStoredAppearanceLocale,
 } from '@/lib/appearance-preferences'
 import { changeLanguageLazy, type Locale } from '@/i18n'
-import { ACHIEVEMENTS } from '@/lib/achievements'
+import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 
 interface LinkedAccount {
@@ -272,7 +274,7 @@ export default function ProfilePage() {
       {
         id: 'premium',
         label: t('profile.premiumAccount'),
-        value: hasUploadPack ? (premiumCancelAtPeriodEnd ? '⭐ Cancels soon' : '⭐ Active') : 'Free',
+        value: hasUploadPack ? (premiumCancelAtPeriodEnd ? 'Cancels soon' : 'Active') : 'Free',
         accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-[#7867e8]',
         onClick: () => {
           setActiveTab('premium')
@@ -454,7 +456,7 @@ export default function ProfilePage() {
     }
 
     if (currentUrl.searchParams.get('premium') === 'success') {
-      showToast.success('toast.success', '🎉 Welcome to Boardly Premium!')
+      showToast.success('toast.success', 'Welcome to Boardly Premium!')
       currentUrl.searchParams.delete('premium')
       window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
     }
@@ -1404,13 +1406,13 @@ export default function ProfilePage() {
     }
   }, [updateActiveTabIndicator])
 
-  const tabItems: Array<{ id: TabType; icon: string; label: string }> = [
-    { id: 'profile', icon: '👤', label: t('profile.title') },
-    { id: 'friends', icon: '👥', label: t('profile.friends.title') },
-    { id: 'history', icon: '🎮', label: t('profile.gameHistory.title') },
-    { id: 'stats', icon: '📊', label: t('profile.stats.title') },
-    { id: 'premium', icon: '⭐', label: 'Premium' },
-    { id: 'settings', icon: '⚙️', label: t('profile.settings.title') },
+  const tabItems: Array<{ id: TabType; icon: IconName; label: string }> = [
+    { id: 'profile', icon: 'user', label: t('profile.title') },
+    { id: 'friends', icon: 'users', label: t('profile.friends.title') },
+    { id: 'history', icon: 'gamepad', label: t('profile.gameHistory.title') },
+    { id: 'stats', icon: 'chart', label: t('profile.stats.title') },
+    { id: 'premium', icon: 'star', label: 'Premium' },
+    { id: 'settings', icon: 'gear', label: t('profile.settings.title') },
   ]
 
   const unlockedAchievementsByKey = new Map(
@@ -1421,6 +1423,7 @@ export default function ProfilePage() {
     return {
       id: achievement.key,
       icon: achievement.icon,
+      accent: ACHIEVEMENT_CATEGORY_ACCENT[achievement.category],
       label: t(`achievements.${achievement.key}.name` as TranslationKeys),
       description: t(`achievements.${achievement.key}.description` as TranslationKeys),
       unlockedOnLabel: unlockedAt
@@ -1539,7 +1542,7 @@ export default function ProfilePage() {
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
                 aria-label={t('profile.inline.confirm')}
               >
-                ✓
+                <Icon name="check" size={16} />
               </button>
               <button
                 type="button"
@@ -1846,7 +1849,7 @@ export default function ProfilePage() {
                       : 'text-bd-ink-soft hover:bg-white/70 hover:text-bd-ink dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
                   }`}
                 >
-                  <span aria-hidden className="text-base sm:text-sm">{tab.icon}</span>
+                  <Icon name={tab.icon} size={16} />
                   <span className="hidden sm:inline truncate text-xs lg:text-sm">{tab.label}</span>
                 </button>
               ))}
@@ -2450,19 +2453,19 @@ export default function ProfilePage() {
                           {([
                             {
                               value: 'public' as const,
-                              icon: '🌍',
+                              icon: 'globe' as const,
                               label: t('profile.settings.privacy.public'),
                               description: t('profile.settings.privacy.publicDesc'),
                             },
                             {
                               value: 'friends' as const,
-                              icon: '👥',
+                              icon: 'users' as const,
                               label: t('profile.settings.privacy.friendsOnly'),
                               description: t('profile.settings.privacy.friendsOnlyDesc'),
                             },
                             {
                               value: 'private' as const,
-                              icon: '🔒',
+                              icon: 'lock' as const,
                               label: t('profile.settings.privacy.private'),
                               description: t('profile.settings.privacy.privateDesc'),
                             },
@@ -2482,7 +2485,7 @@ export default function ProfilePage() {
                             >
                               <div className="flex items-center gap-2 text-sm font-semibold">
                                 <span className="inline-flex min-w-[2.2rem] items-center justify-center rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-300">
-                                  {option.icon}
+                                  <Icon name={option.icon} size={13} />
                                 </span>
                                 <span>{option.label}</span>
                               </div>
@@ -2536,7 +2539,7 @@ export default function ProfilePage() {
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/40">
-                        {premiumCancelAtPeriodEnd ? '⌛' : '⭐'}
+                        <Icon name={premiumCancelAtPeriodEnd ? 'hourglass' : 'star'} size={22} />
                       </span>
                       <div>
                         <p className="font-bold text-amber-800 dark:text-amber-300">
@@ -2567,7 +2570,7 @@ export default function ProfilePage() {
                           disabled={premiumActionLoading}
                           className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
                         >
-                          <span>⭐</span>
+                          <Icon name="star" size={16} />
                           <span>{premiumActionLoading ? '...' : 'Reactivate'}</span>
                         </button>
                       )}
@@ -2602,31 +2605,31 @@ export default function ProfilePage() {
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-muted dark:text-slate-500">Free forever</p>
                 <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {[
-                    { icon: '🎮', label: 'Play all games', desc: 'Full access to every game mode' },
-                    { icon: '🎭', label: '16 built-in avatars', desc: 'Choose from all avatar styles' },
-                    { icon: '📝', label: 'Bio', desc: 'Show a short bio on your profile' },
-                    { icon: '🔗', label: 'Public profile', desc: 'Shareable profile link' },
+                    { icon: 'gamepad' as IconName, label: 'Play all games', desc: 'Full access to every game mode' },
+                    { icon: 'mask' as IconName, label: '16 built-in avatars', desc: 'Choose from all avatar styles' },
+                    { icon: 'pencil' as IconName, label: 'Bio', desc: 'Show a short bio on your profile' },
+                    { icon: 'link' as IconName, label: 'Public profile', desc: 'Shareable profile link' },
                   ].map(({ icon, label, desc }) => (
                     <div key={label} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
-                      <span className="mt-0.5 text-base">{icon}</span>
+                      <span className="mt-0.5"><Icon name={icon} size={18} /></span>
                       <div>
                         <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
                         <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
                       </div>
-                      <span className="ml-auto shrink-0 text-sm text-bd-mint-deep dark:text-bd-mint">✓</span>
+                      <span className="ml-auto shrink-0 text-bd-mint-deep dark:text-bd-mint"><Icon name="check" size={15} /></span>
                     </div>
                   ))}
                 </div>
 
                 {/* Premium features */}
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">⭐ Premium exclusive</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Premium exclusive</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {[
-                    { icon: '📸', label: 'Custom photo upload', desc: 'Use any photo as your avatar' },
-                    { icon: '👑', label: 'Badge & gold name', desc: 'Crown icon + gold color in every lobby' },
-                    { icon: '🎨', label: 'Profile card style', desc: 'Gold, Glass, Holographic or Dark Glow' },
-                    { icon: '🌈', label: 'Accent color', desc: 'Custom color for your username' },
-                    { icon: '🏆', label: 'Featured game', desc: 'Show your favorite game on your profile' },
+                    { icon: 'camera' as IconName, label: 'Custom photo upload', desc: 'Use any photo as your avatar' },
+                    { icon: 'crown' as IconName, label: 'Badge & gold name', desc: 'Crown icon + gold color in every lobby' },
+                    { icon: 'palette' as IconName, label: 'Profile card style', desc: 'Gold, Glass, Holographic or Dark Glow' },
+                    { icon: 'drop' as IconName, label: 'Accent color', desc: 'Custom color for your username' },
+                    { icon: 'trophy' as IconName, label: 'Featured game', desc: 'Show your favorite game on your profile' },
                   ].map(({ icon, label, desc }) => (
                     <div
                       key={label}
@@ -2636,13 +2639,13 @@ export default function ProfilePage() {
                           : 'border-bd-line bg-white opacity-60 dark:border-slate-700 dark:bg-slate-800/50'
                       }`}
                     >
-                      <span className="mt-0.5 text-base">{icon}</span>
+                      <span className="mt-0.5"><Icon name={icon} size={18} /></span>
                       <div>
                         <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
                         <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
                       </div>
                       <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}`}>
-                        {hasUploadPack ? '✓' : '—'}
+                        {hasUploadPack ? <Icon name="check" size={15} /> : '—'}
                       </span>
                     </div>
                   ))}
@@ -2664,7 +2667,7 @@ export default function ProfilePage() {
                         </>
                       ) : (
                         <>
-                          <span>⭐</span>
+                          <Icon name="star" size={16} />
                           <span>Get Premium — {PREMIUM_PRICE_AMOUNT}/mo</span>
                         </>
                       )}
@@ -2719,7 +2722,7 @@ export default function ProfilePage() {
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Accent Color</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> Premium</span>}
                   </div>
                   <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Applied to your username on your public profile.</p>
                   <div className="flex flex-wrap gap-2">
@@ -2738,7 +2741,7 @@ export default function ProfilePage() {
                         type="button"
                         onClick={() => {
                           if (!hasUploadPack) {
-                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                             return
                           }
                           const next = profileAccentColor === hex ? null : hex
@@ -2771,39 +2774,40 @@ export default function ProfilePage() {
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink dark:text-white">Featured Game</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> Premium</span>}
                   </div>
                   <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Shown as a badge on your public profile. Click again to remove.</p>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { id: 'yahtzee', label: '🎲 Yahtzee' },
-                      { id: 'connect_four', label: '🔴 Connect Four' },
-                      { id: 'tic_tac_toe', label: '✕ Tic-Tac-Toe' },
-                      { id: 'memory', label: '🃏 Memory' },
-                      { id: 'guess_the_spy', label: '🕵️ Spy' },
-                      { id: 'alias', label: '💬 Alias' },
-                      { id: 'rock_paper_scissors', label: '✊ RPS' },
-                      { id: 'liars_party', label: '🃏 Liar\'s Party' },
-                    ].map(({ id, label }) => (
+                      { id: 'yahtzee', glyph: 'yahtzee', label: 'Yahtzee' },
+                      { id: 'connect_four', glyph: 'connect-four', label: 'Connect Four' },
+                      { id: 'tic_tac_toe', glyph: 'tic-tac-toe', label: 'Tic-Tac-Toe' },
+                      { id: 'memory', glyph: 'memory', label: 'Memory' },
+                      { id: 'guess_the_spy', glyph: 'spy', label: 'Spy' },
+                      { id: 'alias', glyph: 'alias', label: 'Alias' },
+                      { id: 'rock_paper_scissors', glyph: 'rps', label: 'RPS' },
+                      { id: 'liars_party', glyph: 'liars-party', label: "Liar's Party" },
+                    ].map(({ id, glyph, label }) => (
                       <button
                         key={id}
                         type="button"
                         onClick={() => {
                           if (!hasUploadPack) {
-                            showToast.custom('profile.premiumFeatureLocked', '👑')
+                            showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                             return
                           }
                           const next = profileFeaturedGame === id ? null : id
                           setProfileFeaturedGame(next)
                           void handleSaveCustomization({ featuredGame: next })
                         }}
-                        className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
                           profileFeaturedGame === id
                             ? 'border-bd-ink bg-bd-ink text-bd-bg dark:border-white dark:bg-white dark:text-bd-ink'
                             : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-slate-400'
                         }`}
                         style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: 'pointer' }}
                       >
+                        <GameIcon gameId={glyph} accentColor="currentColor" size={14} variant="bare" />
                         {label}
                       </button>
                     ))}
@@ -2814,7 +2818,7 @@ export default function ProfilePage() {
                 <div>
                   <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Card Style</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> Premium</span>}
                   </div>
                   <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">How your profile card looks to others on your public page.</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -2833,7 +2837,7 @@ export default function ProfilePage() {
                           aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
                           onClick={() => {
                             if (!hasUploadPack) {
-                              showToast.custom('profile.premiumFeatureLocked', '👑')
+                              showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
                               return
                             }
                             setPremiumCardStyle(id)
@@ -2851,7 +2855,7 @@ export default function ProfilePage() {
                           <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
                           <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{desc}</span>
                           {active && (
-                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-bd-ink shadow-sm">✓</span>
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-bd-ink shadow-sm"><Icon name="check" size={10} /></span>
                           )}
                         </button>
                       )

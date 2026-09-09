@@ -1,13 +1,14 @@
 'use client'
 
 import { sounds } from '@/lib/sounds'
+import { Icon, type IconName } from '@/components/icons'
 
 export type TabId = 'game' | 'scorecard' | 'players' | 'chat'
 
 interface Tab {
   id: TabId
   label: string
-  icon: string
+  icon: IconName
   badge?: number | string
 }
 
@@ -52,8 +53,8 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
               )}
               
               {/* Icon */}
-              <span className={`text-2xl mb-0.5 transition-transform ${isActive ? 'scale-110' : ''}`}>
-                {tab.icon}
+              <span className={`mb-0.5 transition-transform ${isActive ? 'scale-110' : ''}`}>
+                <Icon name={tab.icon} size={24} />
               </span>
               
               {/* Label */}

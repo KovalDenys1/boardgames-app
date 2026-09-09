@@ -146,6 +146,6 @@ describe('PublicProfileView', () => {
     const firstWinLabel = screen.getByText('First Win')
     const firstWinCard = firstWinLabel.closest('div')
     expect(firstWinCard?.className).toContain('grayscale')
-    expect(firstWinCard?.textContent).toContain('🔒')
+    expect(firstWinCard?.querySelector('[data-icon="lock"]')).toBeTruthy()
   })
 })

@@ -43,6 +43,41 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in `tailwind.
 
 ---
 
+## Icons
+
+**No Unicode emoji in the UI.** Emoji render in the OS emoji font, ignore every token
+above and read as generic. `npm run audit:emoji` (part of `ci:quick`) fails on any new
+emoji in `app/`, `components/`, `lib/`, `locales/`, `hooks/`, `contexts/`; legacy debt
+shrinks through `scripts/emoji-baseline.json`. The only allowed emoji are user content
+(chat, reactions), celebration bursts and log prefixes — see `scripts/emoji-allowlist.json`.
+
+Two components, both coloured only through `currentColor` / tokens so they survive dark
+mode and the premium lobby themes:
+
+| Component | Grid | Use |
+|---|---|---|
+| `<Icon name size tone label>` (`components/icons`) | 24×24 | UI chrome: status, buttons, chips, tabs, empty states |
+| `<GameIcon gameId accentColor size variant>` (`components/GameIcon.tsx`) | 48×48 | anything that stands for a game |
+
+`Icon` defaults to 20px and `currentColor`; `tone` picks a token (`ink`, `muted`, `coral`,
+`mint`, `sun`, `lav`, `sky`, `premium`, `bg`). It is decorative (`aria-hidden`) unless you
+pass `label`, which you must when the icon is the only thing conveying meaning.
+
+`GameIcon` has three frames: `tile` (default — tinted rounded square, glyph in the accent),
+`bare` (just the glyph, for breadcrumbs, chips, inline text) and `sticker` (accent tile, ink
+border, hard offset shadow, rotated −6°, glyph in ink — the B-tile language, for hero and
+create-page art). `gameId` is the catalog `id` / `svgId`.
+
+Drawing rules for new glyphs (review them on `/dev/icons`, dev only):
+
+- Filled, rounded, slightly chunky — never thin outline icons. Rings and lines use a
+  2.4–3.2 stroke (24 grid) with round caps; corner radius ≥ 1.5; smallest feature ≥ 2px.
+- One colour. Cut details out with `fillRule="evenodd"`; a second layer of the same colour
+  at 40 % opacity is fine *beside* the main shape, never on top. Game glyphs get a second
+  tone through `--gi-detail` (GameIcon sets it per variant) — nothing else.
+- 1px safe margin on the 24 grid, 4px on the 48 grid; optically centre, and check 16px.
+- No hex, no `fill="#…"`; `stroke="currentColor"` is fine.
+
 ## Shadow tokens (Tailwind `shadow-*`)
 
 | Token | Value | Use case |

@@ -205,6 +205,6 @@ describe('TicTacToeLobbyPage', () => {
 
     expect((await screen.findAllByRole('button', { name: /undo/i })).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('button', { name: /draw/i }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('button', { name: /leaveLobby/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'game.ui.leave' }).length).toBeGreaterThan(0)
   })
 })

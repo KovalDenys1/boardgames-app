@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { getSupabaseClient } from '@/lib/supabase-client'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -89,6 +90,7 @@ function SpectatorTopBar({
         color: 'white', fontSize: 13, fontWeight: 600,
         display: 'flex', alignItems: 'center', gap: 6,
       }}>
+        <Icon name={isAdminView ? 'shield' : 'eye'} size={14} />
         {isAdminView ? t('spectate.adminViewBanner') : t('spectate.watchingCount', { count: spectatorCount })}
       </span>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -167,7 +169,7 @@ function FloatingSpectatorChat({
           boxShadow: '0 6px 16px -4px rgba(31,27,22,0.4)',
         }}
       >
-        {isOpen ? '✕' : '💬'}
+        <Icon name={isOpen ? 'close' : 'chat'} size={18} />
         {!isOpen && chatMessages.length > 0 && (
           <span aria-hidden style={{
             position: 'absolute', top: -2, right: -2,
@@ -484,7 +486,7 @@ export default function SpectatorLobbyPage() {
       <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
-            🎮
+            <Icon name="gamepad" size={24} />
           </div>
           <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.youArePlayer')}</h1>
           <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.youArePlayerDesc')}</p>
@@ -504,7 +506,7 @@ export default function SpectatorLobbyPage() {
       <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
-            👥
+            <Icon name="users" size={24} />
           </div>
           <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.limitReached')}</h1>
           <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.limitReachedDesc')}</p>
@@ -539,7 +541,7 @@ export default function SpectatorLobbyPage() {
       <div className="bd-page bd-screen page-shell items-center justify-center p-6">
         <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
-            👀
+            <Icon name="eye" size={24} />
           </div>
           <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.unavailableTitle')}</h1>
           <p className="mt-2 text-sm text-bd-ink-muted">{error || 'No data'}</p>
@@ -747,7 +749,8 @@ export default function SpectatorLobbyPage() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {isAdminView && (
-          <div className="mb-4 rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: 'rgba(124,58,237,0.92)' }}>
+          <div className="mb-4 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: 'rgba(124,58,237,0.92)' }}>
+            <Icon name="shield" size={15} />
             {t('spectate.adminViewBanner')}
           </div>
         )}

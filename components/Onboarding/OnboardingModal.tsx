@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/OnboardingContext'
 import { useTour } from '@/contexts/TourContext'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-game-access'
@@ -132,7 +133,7 @@ export function OnboardingModal() {
             }}
             aria-label="Close"
           >
-            ✕
+            <Icon name="close" size={16} />
           </button>
 
           <div

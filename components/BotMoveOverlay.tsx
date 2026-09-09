@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 import type { BotMoveStep } from '@/types/game'
 
@@ -97,7 +98,7 @@ export default function BotMoveOverlay({
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
             <div className="flex items-center" style={{ gap: `clamp(6px, 0.6vw, 10px)` }}>
-              <span className="animate-spin" style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}>🎲</span>
+              <Icon name="dice" size={32} className="animate-spin" />
               <p className="font-semibold" style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, color: 'var(--bd-ink)' }}>
                 {currentStep.message}
               </p>
@@ -130,7 +131,7 @@ export default function BotMoveOverlay({
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
             <div className="flex items-center" style={{ gap: `clamp(6px, 0.6vw, 10px)` }}>
-              <span style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}>🤔</span>
+              <Icon name="question" size={32} />
               <p className="font-semibold" style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, color: 'var(--bd-ink)' }}>
                 {currentStep.message}
               </p>
@@ -173,7 +174,7 @@ export default function BotMoveOverlay({
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
             <div className="flex items-center" style={{ gap: `clamp(6px, 0.6vw, 10px)` }}>
-              <span style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}>📊</span>
+              <Icon name="chart" size={32} />
               <p className="font-semibold" style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, color: 'var(--bd-ink)' }}>
                 {currentStep.message}
               </p>
@@ -237,7 +238,7 @@ export default function BotMoveOverlay({
             marginBottom: `clamp(20px, 2vh, 32px)`,
           }}
         >
-          <span style={{ fontSize: `clamp(32px, 3.5vw, 48px)` }}>🤖</span>
+          <Icon name="robot" size={42} />
           <h2
             className="font-bold"
             style={{ fontSize: `clamp(20px, 2vw, 32px)`, color: 'var(--bd-ink)' }}

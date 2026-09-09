@@ -6,13 +6,18 @@
  * routed through i18n – they mirror the page <title>s.
  */
 
+import type { IconName } from '@/components/icons/names'
+
 export type GuideCategory = 'how-to-play' | 'strategy' | 'best-of'
+
+/** A game glyph (catalog id) or a chrome icon, drawn in the guide's accent. */
+export type GuideIcon = { game: string } | { glyph: IconName }
 
 export interface GuideEntry {
   slug: string
   title: string
   description: string
-  emoji: string
+  icon: GuideIcon
   readTime: string
   accent: string
   category: GuideCategory
@@ -25,7 +30,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     slug: 'how-to-play-yahtzee-online',
     title: 'How to Play Yahtzee Online',
     description: 'Scoring categories, strategy tips, and how to set up a multiplayer game.',
-    emoji: '🎲',
+    icon: { game: 'yahtzee' },
     readTime: '5 min',
     accent: 'var(--bd-sky)',
     category: 'how-to-play',
@@ -35,7 +40,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     slug: 'how-to-play-spy-game-online',
     title: 'How to Play Guess the Spy',
     description: 'Tips for finding the spy, bluffing, and running a great game night.',
-    emoji: '🕵️',
+    icon: { game: 'spy' },
     readTime: '4 min',
     accent: 'var(--bd-lav)',
     category: 'how-to-play',
@@ -45,7 +50,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     slug: 'how-to-play-memory-card-game-online',
     title: 'How to Play Memory Card Game',
     description: 'Rules, difficulty levels, and strategy for the classic matching game.',
-    emoji: '🧠',
+    icon: { game: 'memory' },
     readTime: '4 min',
     accent: 'var(--bd-mint)',
     category: 'how-to-play',
@@ -55,7 +60,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     slug: 'how-to-play-tic-tac-toe-online',
     title: 'How to Play Tic Tac Toe Online',
     description: 'All 8 winning lines and the strategy to never lose.',
-    emoji: '⭕',
+    icon: { game: 'tic-tac-toe' },
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'how-to-play',
@@ -65,7 +70,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     slug: 'how-to-play-connect-four-online',
     title: 'How to Play Connect Four Online',
     description: 'Drop discs, get four in a row, beat your opponent. Rules and winning tips.',
-    emoji: '🔴',
+    icon: { game: 'connect-four' },
     readTime: '3 min',
     accent: 'var(--bd-sun)',
     category: 'how-to-play',
@@ -75,7 +80,7 @@ export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
     slug: 'how-to-play-alias-online',
     title: 'How to Play Alias Online',
     description: 'Describe words, help your team guess, and score more than the other team.',
-    emoji: '🗣️',
+    icon: { game: 'alias' },
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'how-to-play',
@@ -88,7 +93,7 @@ export const STRATEGY_GUIDES: GuideEntry[] = [
     slug: 'yahtzee-strategy-guide',
     title: 'Yahtzee Strategy Guide — How to Win More Often',
     description: 'When to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
-    emoji: '🏆',
+    icon: { glyph: 'trophy' },
     readTime: '6 min',
     accent: 'var(--bd-sky)',
     category: 'strategy',
@@ -98,7 +103,7 @@ export const STRATEGY_GUIDES: GuideEntry[] = [
     slug: 'connect-four-strategy-guide',
     title: 'Connect Four Strategy Guide — How to Win Every Time',
     description: 'Center control, double threats, and the key traps that catch most players off guard.',
-    emoji: '🔴',
+    icon: { game: 'connect-four' },
     readTime: '5 min',
     accent: 'var(--bd-sun)',
     category: 'strategy',
@@ -111,7 +116,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     slug: 'best-free-multiplayer-browser-games',
     title: 'Best Free Multiplayer Browser Games in 2026',
     description: 'No download, no payment — the best games to play with friends right now.',
-    emoji: '🎮',
+    icon: { glyph: 'gamepad' },
     readTime: '4 min',
     accent: 'var(--bd-sun)',
     category: 'best-of',
@@ -121,7 +126,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     slug: 'best-2-player-games-online',
     title: 'Best 2 Player Games Online — Free, No Download',
     description: 'Tic Tac Toe, Memory, Yahtzee and more for playing with one friend.',
-    emoji: '👥',
+    icon: { glyph: 'users' },
     readTime: '4 min',
     accent: 'var(--bd-sun)',
     category: 'best-of',
@@ -131,7 +136,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     slug: 'best-3-player-games-online',
     title: 'Best 3 Player Games Online — Free, No Download',
     description: 'Yahtzee, Memory, Guess the Spy — the best games for groups of three.',
-    emoji: '🎮',
+    icon: { glyph: 'dice' },
     readTime: '3 min',
     accent: 'var(--bd-mint)',
     category: 'best-of',
@@ -141,7 +146,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     slug: 'best-online-games-for-game-night',
     title: 'Best Online Games for Game Night',
     description: 'Five games that work for any group size — with tips for hosting online.',
-    emoji: '🎉',
+    icon: { glyph: 'party' },
     readTime: '5 min',
     accent: 'var(--bd-lav)',
     category: 'best-of',
@@ -151,7 +156,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     slug: 'best-games-to-play-on-zoom',
     title: 'Best Games to Play on Zoom — Free, No Download',
     description: 'Browser games that work perfectly alongside any video call. No screen sharing needed.',
-    emoji: '💻',
+    icon: { glyph: 'laptop' },
     readTime: '4 min',
     accent: 'var(--bd-sky)',
     category: 'best-of',
@@ -161,7 +166,7 @@ export const BEST_OF_GUIDES: GuideEntry[] = [
     slug: 'best-party-games-online',
     title: 'Best Party Games Online — Free to Play',
     description: 'The best online party games for groups of 4 or more — no download, no account.',
-    emoji: '🎊',
+    icon: { glyph: 'sparkle' },
     readTime: '4 min',
     accent: 'var(--bd-coral)',
     category: 'best-of',

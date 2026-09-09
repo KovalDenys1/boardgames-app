@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getFeaturedGuides } from '@/lib/guides-catalog'
+import GameIcon from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
 
 /**
  * Compact "Guides & tips" strip rendered on `/` and `/games`.
@@ -51,7 +53,11 @@ export default function GuidesSection() {
                   background: `color-mix(in srgb, ${guide.accent} 18%, var(--bd-bg2))`,
                 }}
               >
-                {guide.emoji}
+                {'game' in guide.icon ? (
+                  <GameIcon gameId={guide.icon.game} accentColor={guide.accent} size={22} variant="bare" />
+                ) : (
+                  <Icon name={guide.icon.glyph} size={22} style={{ color: guide.accent }} />
+                )}
               </span>
               <span className="min-w-0 flex-1">
                 <span

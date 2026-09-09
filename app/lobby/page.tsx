@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
+import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
@@ -95,9 +96,9 @@ function LobbyListPageContent() {
                   <span className="bd-live-dot h-1.5 w-1.5" />
                   {t('lobby.lobbiesCount', { count: lobbies.length })}
                 </span>
-                <span className="bd-chip">⏳ {stats.waitingLobbies} {t('lobby.status.waiting')}</span>
-                <span className="bd-chip bd-chip-mint">🎲 {stats.playingLobbies} {t('lobby.status.playing')}</span>
-                <span className="bd-chip">👥 {stats.totalPlayers} {t('lobby.stats.players')}</span>
+                <span className="bd-chip"><Icon name="hourglass" size={12} /> {stats.waitingLobbies} {t('lobby.status.waiting')}</span>
+                <span className="bd-chip bd-chip-mint"><Icon name="dice" size={12} /> {stats.playingLobbies} {t('lobby.status.playing')}</span>
+                <span className="bd-chip"><Icon name="users" size={12} /> {stats.totalPlayers} {t('lobby.stats.players')}</span>
               </div>
             </div>
 
@@ -108,7 +109,7 @@ function LobbyListPageContent() {
               onClick={handleCreateLobby}
               className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
             >
-              <span className="text-4xl">✨</span>
+              <Icon name="sparkle" size={34} />
               <span
                 className="text-center text-[18px] font-extrabold leading-tight"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
@@ -151,7 +152,7 @@ function LobbyListPageContent() {
                 className="inline-block transition-transform duration-300"
                 style={{ transform: isManualRefreshing || isAutoRefreshing ? 'rotate(360deg)' : 'none' }}
               >
-                {isRefreshUpdated ? '✓' : '↻'}
+                <Icon name={isRefreshUpdated ? 'check' : 'refresh'} size={14} />
               </span>
               {isManualRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : t('lobby.refresh')}
               <span className="sr-only" aria-live="polite">
@@ -177,7 +178,7 @@ function LobbyListPageContent() {
             </div>
           ) : lobbies.length === 0 ? (
             <div className="px-8 py-[60px] text-center">
-              <div className="mb-4 text-[56px]">🎲</div>
+              <div className="mb-4"><Icon name="dice" size={56} tone="muted" /></div>
               <h3
                 className="mb-2 text-2xl font-bold text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}

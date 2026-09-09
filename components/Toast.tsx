@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 
+import { Icon, type IconName } from '@/components/icons'
+
 interface ToastProps {
   message: string
   type?: 'success' | 'error' | 'info' | 'warning'
@@ -22,11 +24,11 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
     warning: { background: 'var(--bd-sun)', color: 'var(--bd-ink)' },
   }
 
-  const icons = {
-    success: '✓',
-    error: '✕',
-    info: 'ℹ',
-    warning: '⚠',
+  const icons: Record<NonNullable<ToastProps['type']>, IconName> = {
+    success: 'check',
+    error: 'close',
+    info: 'info',
+    warning: 'warning',
   }
 
   return (
@@ -35,14 +37,14 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
       style={typeStyles[type]}
       role="alert"
     >
-      <span className="text-xl font-bold">{icons[type]}</span>
+      <Icon name={icons[type]} size={22} />
       <p className="font-medium">{message}</p>
       <button
         onClick={onClose}
-        className="ml-4 text-xl font-bold opacity-70 hover:opacity-100 transition-opacity"
+        className="ml-4 flex items-center opacity-70 hover:opacity-100 transition-opacity"
         aria-label="Close"
       >
-        ×
+        <Icon name="close" size={18} />
       </button>
     </div>
   )

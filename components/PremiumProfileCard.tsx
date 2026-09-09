@@ -1,5 +1,7 @@
 'use client'
 
+import { Icon } from '@/components/icons'
+
 export type PremiumCardStyle = 'gold' | 'glass' | 'holo' | 'dark'
 
 export const PREMIUM_CARD_STYLES: { id: PremiumCardStyle; name: string; description: string }[] = [
@@ -77,7 +79,7 @@ function GoldCard({ profile }: { profile: ProfileData }) {
           fontSize: 11, color: '#7A5800', display: 'flex', alignItems: 'center', gap: 5,
           letterSpacing: '0.04em',
         }}>
-          <span>👑</span> Premium
+          <Icon name="crown" size={16} /> Premium
         </div>
       </div>
       <div style={{ position: 'relative' }}>
@@ -142,7 +144,7 @@ function GlassCard({ profile }: { profile: ProfileData }) {
               background: 'rgba(255,255,255,0.95)', border: '2px solid rgba(255,255,255,0.9)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 11, color: '#FFC44D', boxShadow: '0 2px 5px rgba(0,0,0,0.16)',
-            }}>✦</div>
+            }}><Icon name="sparkle" size={14} /></div>
           </div>
           <div style={{
             padding: '4px 9px', borderRadius: 999,

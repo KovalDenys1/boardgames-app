@@ -631,6 +631,29 @@ export async function POST(
       }
     }
 
+    // A running game does not take newcomers (#879). The transaction below looks for a
+    // `waiting` game and creates one when it finds none, so without this a latecomer got
+    // a second active game beside the running one — and `pickRelevantLobbyGame` prefers
+    // `playing`, so they sat in a waiting game nobody could start. Players of the running
+    // game still get through: the transaction's `alreadyJoined` path is what rejoin uses.
+    const playingGame = lobby.games.find((g) => g.status === 'playing')
+    if (playingGame) {
+      const alreadyPlaying = await prisma.players.findUnique({
+        where: { gameId_userId: { gameId: playingGame.id, userId } },
+        select: { id: true },
+      })
+      if (!alreadyPlaying) {
+        return NextResponse.json(
+          {
+            error: 'Game in progress',
+            code: 'GAME_IN_PROGRESS',
+            allowSpectators: lobby.allowSpectators,
+          },
+          { status: 409 }
+        )
+      }
+    }
+
     // Pre-compute initial game state outside the transaction (pure computation, no DB)
     const requestedGameType = lobby.gameType || DEFAULT_GAME_TYPE
     if (!isSupportedGameType(requestedGameType)) {

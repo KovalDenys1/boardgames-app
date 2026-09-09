@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     canonical: 'https://boardly.online/games/rock-paper-scissors',
   },
   robots: {
-    index: false,
+    index: true,
     follow: true,
   },
 }

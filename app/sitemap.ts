@@ -30,7 +30,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/games/memory', { changeFrequency: 'monthly', priority: 0.85, lastModified: '2026-05-05' }),
     page('/games/connect-four', { changeFrequency: 'monthly', priority: 0.85, lastModified: '2026-05-08' }),
     page('/games/alias', { changeFrequency: 'monthly', priority: 0.85, lastModified: '2026-05-09' }),
-    // rock-paper-scissors and liars-party are in-development — excluded from sitemap
+    page('/games/rock-paper-scissors', { changeFrequency: 'monthly', priority: 0.85, lastModified: '2026-09-09' }),
+    // liars-party and sketch-and-guess are in-development — excluded from the sitemap
+    // and noindex on their own pages until they are released
 
     // Guides index
     page('/guides', { changeFrequency: 'weekly', priority: 0.85, lastModified: '2026-05-26' }),

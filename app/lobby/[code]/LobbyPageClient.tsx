@@ -22,6 +22,7 @@ import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -1255,7 +1256,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           } else {
             showToast.custom(
               'toast.timerScored',
-              '⏱️',
+              <Icon name="clock" size={18} />,
               undefined,
               { score, category: displayName },
               { duration: 4000 }
@@ -1750,7 +1751,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       <div className="bd-page page-shell flex items-center justify-center px-4">
         <div className="bd-card w-full max-w-md p-8 text-center">
           <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
-            <span className="text-3xl">🔍</span>
+            <Icon name="search" size={30} tone="on-accent" />
           </div>
           <h1
             className="mb-3 text-2xl font-extrabold text-bd-ink"
@@ -1782,9 +1783,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
     >
       <div className="flex min-w-0 items-center gap-2.5 overflow-hidden text-[11px] font-bold text-bd-ink">
-        <span className="shrink-0">🎯 {roundInfo.current}/{roundInfo.total}</span>
-        <span className="truncate">👤 {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}</span>
-        <span className="shrink-0">🏆 {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}</span>
+        <span className="flex shrink-0 items-center gap-1"><Icon name="target" size={13} /> {roundInfo.current}/{roundInfo.total}</span>
+        <span className="flex min-w-0 items-center gap-1 truncate"><Icon name="user" size={13} /> {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}</span>
+        <span className="flex shrink-0 items-center gap-1"><Icon name="trophy" size={13} /> {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}</span>
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <button
@@ -1801,7 +1802,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           className="flex h-7 w-7 items-center justify-center rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
           style={{ background: 'var(--bd-bg)', border: '1px solid var(--bd-line)' }}
         >
-          {soundEnabled ? '🔊' : '🔇'}
+          <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={15} />
         </button>
         <button
           onClick={() => {
@@ -1867,7 +1868,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             <div className="max-w-xl mx-auto w-full animate-scale-in">
               <div className="bd-card p-6 text-center sm:p-8">
                 <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
-                  <span className="text-3xl">🎮</span>
+                  <Icon name="gamepad" size={30} tone="on-accent" />
                 </div>
                 <h2
                   className="mb-2 text-2xl font-extrabold text-bd-ink sm:text-3xl"
@@ -1952,7 +1953,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     : 'text-bd-ink-soft'
                 }`}
               >
-                <span aria-hidden>{tab === 'players' ? '👥' : '💬'}</span>
+                <Icon name={tab === 'players' ? 'users' : 'chat'} size={16} />
                 <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
                   <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-white">
@@ -2060,7 +2061,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           {isSpectator && (
             <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
               <div className="flex items-center gap-2">
-                <span>👁</span>
+                <Icon name="eye" size={16} />
                 <span>{t('lobby.spectatingBanner')}</span>
               </div>
               {lobby?.allowSpectators && (
@@ -2122,19 +2123,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     {/* Stats group - wraps internally, no hard-coded row break */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base sm:text-xl">🎯</span>
+                        <Icon name="target" size={20} />
                         <span className="text-sm sm:text-base font-bold text-bd-ink">
                           {roundInfo.current}/{roundInfo.total}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 max-w-[140px] sm:max-w-[150px]">
-                        <span className="text-base sm:text-xl">👤</span>
+                        <Icon name="user" size={20} />
                         <span className="truncate text-sm sm:text-base font-bold text-bd-ink">
                           {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base sm:text-xl">🏆</span>
+                        <Icon name="trophy" size={20} />
                         <span className="text-sm sm:text-base font-bold text-bd-ink">
                           {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
                         </span>
@@ -2157,7 +2158,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                         className="bd-btn bd-btn-soft bd-btn-icon sm:!w-auto sm:!aspect-auto sm:!px-3 sm:!py-1.5 !rounded-xl flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
-                        <span className="text-base sm:text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
+                        <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={18} />
                         <span className="hidden sm:inline text-xs">{t('game.ui.sound')}</span>
                       </button>
                       <button
@@ -2397,10 +2398,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     }
                   }}
                   tabs={[
-                    { id: 'game' as const, label: 'Game', icon: '🎲' },
-                    { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
-                    { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: '👥' },
-                    ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: '💬', badge: unreadMessageCount }] : []),
+                    { id: 'game' as const, label: 'Game', icon: 'dice' as const },
+                    { id: 'scorecard' as const, label: 'Score', icon: 'chart' as const, badge: yahtzeeScoreTabBadge },
+                    { id: 'players' as const, label: t('game.ui.tabPlayers'), icon: 'users' as const },
+                    ...(hasMultipleHumans ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), icon: 'chat' as const, badge: unreadMessageCount }] : []),
                   ]}
                   unreadChatCount={unreadMessageCount}
                 />
@@ -2569,7 +2570,7 @@ export default function LobbyPage() {
   }
 
   if (dedicatedGameType === 'rock_paper_scissors') {
-    return <RockPaperScissorsLobbyPage code={code} />
+    return <RockPaperScissorsLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'alias') {

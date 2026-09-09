@@ -124,6 +124,21 @@ export async function POST(
       }
     }
 
+    // A running game does not take newcomers (#879). Without this the guest is written
+    // as a Players row the engine's state never learns about: they land on "You're not
+    // part of this match" while occupying a seat and counting toward "full". The rejoin
+    // path above already returned, so reaching here with `playing` means a stranger.
+    if (activeGame && activeGame.status === 'playing') {
+      return NextResponse.json(
+        {
+          error: 'Game in progress',
+          code: 'GAME_IN_PROGRESS',
+          allowSpectators: lobby.allowSpectators,
+        },
+        { status: 409 }
+      )
+    }
+
     // Check if lobby is full
     if (activeGame && activeGame.players.length >= lobby.maxPlayers) {
       return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })

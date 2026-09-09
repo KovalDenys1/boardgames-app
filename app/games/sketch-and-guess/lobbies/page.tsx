@@ -13,7 +13,6 @@ export default function SketchAndGuessLobbiesPage() {
       gameId="guess-my-drawing"
       accentColor="var(--bd-mint)"
       pagePath="/games/sketch-and-guess/lobbies"
-      titleEmoji="🎨"
       gameNameKey="games.guess_my_drawing.name"
       lobbiesNamespace="games.guess_my_drawing.lobbies"
     />

@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import { Icon } from '@/components/icons'
+import GameIcon from '@/components/GameIcon'
 import { getGameMetadata } from '@/lib/game-catalog'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import AdminWatchModal from '@/components/AdminWatchModal'
@@ -116,14 +117,7 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
     >
       {/* Game icon */}
       <div style={{ width: 48, height: 48, borderRadius: 14, background: `${game.accent}22`, border: `1.5px solid ${game.accent}44`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-          width={24}
-          height={24}
-          style={{ color: game.accent }}
-          dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
-        />
+        <GameIcon gameId={game.svgId} accentColor={game.accent} size={26} variant="bare" />
       </div>
 
       {/* Main info */}
@@ -142,8 +136,8 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
             {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
           </span>
           {lobby.allowSpectators && (
-            <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px' }}>
-              👁 {t('lobby.spectators', { count: lobby.spectatorCount ?? 0 })}
+            <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Icon name="eye" size={13} /> {t('lobby.spectators', { count: lobby.spectatorCount ?? 0 })}
             </span>
           )}
         </div>

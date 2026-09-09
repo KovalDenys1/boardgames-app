@@ -31,7 +31,7 @@ const DEMOS: Demo[] = [
             color: 'var(--bd-coral)', transform: 'rotate(-14deg)',
             animationDelay: '0.4s', lineHeight: 1, userSelect: 'none',
           }}
-        >✕</div>
+        >X</div>
         <div
           className="bd-float"
           style={{
@@ -40,7 +40,7 @@ const DEMOS: Demo[] = [
             color: 'var(--bd-ink)', transform: 'rotate(9deg)',
             animationDelay: '1.2s', lineHeight: 1, userSelect: 'none',
           }}
-        >○</div>
+        >O</div>
       </>
     ),
   },

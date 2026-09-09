@@ -1,347 +1,207 @@
 'use client'
 
-import { useTranslation } from 'react-i18next'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon, type IconName } from '@/components/icons'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
-import LoadingButton from '@/components/LoadingButton'
 
-interface RPSPlayer {
+type TFn = ReturnType<typeof useTranslation>['t']
+
+/**
+ * The Rock Paper Scissors board, composed as a duel (#870, layout DoD):
+ *
+ *   ┌──────── stage ────────┐   two hands in the players' colours, with
+ *   │  hand  1:0  hand      │   "choosing / locked in", the match score and
+ *   │  Denys  ●○·○○  Pattern│   round pips between them, and the reveal of
+ *   ├──────── tiles ────────┤   the latest round played as a shake-and-flip;
+ *   │  rock  paper  sciss.  │   three same-sized choice tiles.
+ *   └───────────────────────┘
+ *
+ * Scoreboard, status line, result overlay, history and chat are the shared
+ * game-chrome kit, composed by the page. Every size here comes from one
+ * scale (`.rps-*` in globals.css). Animations are transform/opacity only.
+ */
+
+export interface RPSPlayer {
   id: string
   name: string
+  avatarSrc?: string | null
+  /** CSS colour for this seat (the header uses coral for the left seat, lavender for the right). */
+  accent?: string
 }
 
 interface RockPaperScissorsGameBoardProps {
   gameData: RockPaperScissorsGameData
+  /** Empty string for spectators. */
   playerId: string
-  playerName: string
   players: RPSPlayer[]
   onSubmitChoice: (choice: RPSChoice) => Promise<void>
-  isLoading?: boolean
+  disabled?: boolean
+  isSubmitting?: boolean
+  isSpectator?: boolean
+  testId?: string
 }
 
-const CHOICES: { choice: RPSChoice; emoji: string; label: string; beats: string; color: string }[] = [
-  {
-    choice: 'rock',
-    emoji: '🪨',
-    label: 'lobby.choice.rock',
-    beats: '✂️',
-    color: 'from-slate-100 to-slate-200 border-slate-300 hover:from-slate-200 hover:to-slate-300 hover:border-slate-400 dark:from-slate-700 dark:to-slate-800 dark:border-slate-600',
-  },
-  {
-    choice: 'paper',
-    emoji: '📄',
-    label: 'lobby.choice.paper',
-    beats: '🪨',
-    color: 'from-sky-50 to-blue-100 border-sky-200 hover:from-sky-100 hover:to-blue-200 hover:border-sky-300 dark:from-sky-900/40 dark:to-blue-900/40 dark:border-sky-700',
-  },
-  {
-    choice: 'scissors',
-    emoji: '✂️',
-    label: 'lobby.choice.scissors',
-    beats: '📄',
-    color: 'from-rose-50 to-pink-100 border-rose-200 hover:from-rose-100 hover:to-pink-200 hover:border-rose-300 dark:from-rose-900/40 dark:to-pink-900/40 dark:border-rose-700',
-  },
+const CHOICES: { choice: RPSChoice; icon: IconName; labelKey: TranslationKeys; beats: RPSChoice; accent: string }[] = [
+  { choice: 'rock', icon: 'rock', labelKey: 'lobby.choice.rock', beats: 'scissors', accent: 'var(--bd-lav)' },
+  { choice: 'paper', icon: 'paper', labelKey: 'lobby.choice.paper', beats: 'rock', accent: 'var(--bd-sky)' },
+  { choice: 'scissors', icon: 'scissors', labelKey: 'lobby.choice.scissors', beats: 'paper', accent: 'var(--bd-coral)' },
 ]
 
-const CHOICE_LABEL_BY_VALUE: Record<RPSChoice, string> = {
+export const CHOICE_LABEL_KEY: Record<RPSChoice, TranslationKeys> = {
   rock: 'lobby.choice.rock',
   paper: 'lobby.choice.paper',
   scissors: 'lobby.choice.scissors',
 }
 
-function getChoiceEmoji(choice: RPSChoice | null | undefined): string {
-  if (!choice) return '❔'
-  return CHOICES.find((e) => e.choice === choice)?.emoji || '❔'
+export function getChoiceIcon(choice: RPSChoice | null | undefined): IconName {
+  if (!choice) return 'question'
+  return CHOICES.find((entry) => entry.choice === choice)?.icon ?? 'question'
 }
 
-function WinPips({ filled, total }: { filled: number; total: number }) {
+export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { filled: number; total: number; color?: string }) {
   return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: total }).map((_, i) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} aria-label={`${filled}/${total}`}>
+      {Array.from({ length: total }).map((_, index) => (
         <span
-          key={i}
-          className={`h-3 w-3 rounded-full border-2 transition-all ${
-            i < filled
-              ? 'border-emerald-500 bg-emerald-500'
-              : 'border-slate-300 bg-transparent dark:border-slate-600'
-          }`}
+          key={index}
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: '50%',
+            border: `2px solid ${index < filled ? color : 'var(--bd-line)'}`,
+            background: index < filled ? color : 'transparent',
+            transition: 'background 0.2s, border-color 0.2s',
+          }}
         />
       ))}
-    </div>
+    </span>
   )
 }
+
+type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
 
 export default function RockPaperScissorsGameBoard({
   gameData,
   playerId,
-  playerName,
   players,
   onSubmitChoice,
-  isLoading = false,
+  disabled = false,
+  isSubmitting = false,
+  isSpectator = false,
+  testId,
 }: RockPaperScissorsGameBoardProps) {
   const { t } = useTranslation()
 
-  const myPlayer = players.find((p) => p.id === playerId) || { id: playerId, name: playerName }
-  const opponent = players.find((p) => p.id !== playerId) || null
+  // Seat the viewer on the left; a spectator sees the roster order.
+  const me = players.find((player) => player.id === playerId) ?? null
+  const leftPlayer = me ?? players[0] ?? null
+  const rightPlayer = players.find((player) => player.id !== leftPlayer?.id) ?? null
+  const leftAccent = leftPlayer?.accent ?? 'var(--bd-coral)'
+  const rightAccent = rightPlayer?.accent ?? 'var(--bd-lav)'
 
-  const myScore = gameData.scores[playerId] || 0
-  const opponentScore = opponent ? gameData.scores[opponent.id] || 0 : 0
-  const winsNeeded = gameData.mode === 'best-of-5' ? 3 : 2
-  const maxRounds = gameData.mode === 'best-of-5' ? 5 : 3
-  const currentRoundNumber = Math.min(gameData.rounds.length + 1, maxRounds)
-
-  const mySubmitted = gameData.playersReady.includes(playerId)
-  const opponentSubmitted = opponent ? gameData.playersReady.includes(opponent.id) : false
-  const myCurrentChoice = (gameData.playerChoices[playerId] as RPSChoice | null | undefined) ?? null
-
-  const latestRound = gameData.rounds[gameData.rounds.length - 1] || null
-  const myLatestChoice =
-    latestRound?.choices ? ((latestRound.choices[playerId] as RPSChoice | undefined) || null) : null
-  const opponentLatestChoice =
-    latestRound?.choices && opponent
-      ? ((latestRound.choices[opponent.id] as RPSChoice | undefined) || null)
-      : null
-
-  const canChoose = !isLoading && !mySubmitted && !gameData.gameWinner && !!opponent
   const isGameOver = !!gameData.gameWinner
-  const iWon = gameData.gameWinner === playerId
+  const latestRound = gameData.rounds[gameData.rounds.length - 1] ?? null
+  const readyIds = gameData.playersReady
+  const roundInProgress = readyIds.length > 0
+  const mySubmitted = !!playerId && readyIds.includes(playerId)
+  const myCurrentChoice = playerId ? ((gameData.playerChoices[playerId] as RPSChoice | null | undefined) ?? null) : null
+  const canChoose = !isSpectator && !disabled && !isSubmitting && !mySubmitted && !isGameOver && players.length >= 2
+  // Between rounds the stage replays the reveal; once anyone picks again it
+  // turns back into two hands choosing.
+  const showReveal = !!latestRound && (!roundInProgress || isGameOver)
+  const winsNeeded = gameData.mode === 'best-of-5' ? 3 : 2
+  const leftScore = leftPlayer ? gameData.scores[leftPlayer.id] ?? 0 : 0
+  const rightScore = rightPlayer ? gameData.scores[rightPlayer.id] ?? 0 : 0
+  const roundNumber = gameData.rounds.length + (isGameOver ? 0 : 1)
 
-  // Determine status message
-  let statusText: string
-  let statusVariant: 'neutral' | 'waiting' | 'success' | 'danger' | 'info' = 'neutral'
-
-  if (!opponent) {
-    statusText = t('lobby.game.waitingForPlayers')
-    statusVariant = 'waiting'
-  } else if (isGameOver) {
-    statusText = iWon ? t('lobby.game.you_won') : t('lobby.game.opponent_won')
-    statusVariant = iWon ? 'success' : 'danger'
-  } else if (mySubmitted && opponentSubmitted) {
-    statusText = 'Revealing…'
-    statusVariant = 'info'
-  } else if (mySubmitted) {
-    statusText = t('lobby.game.waitingForOpponent')
-    statusVariant = 'waiting'
-  } else {
-    statusText = t('lobby.game.makeyourChoice')
-    statusVariant = 'neutral'
+  const handFor = (player: RPSPlayer | null): { icon: IconName; state: string; tone: HandTone } => {
+    if (!player) return { icon: 'question', state: '', tone: 'idle' }
+    const isMe = player.id === playerId
+    if (showReveal && latestRound) {
+      const choice = (latestRound.choices?.[player.id] as RPSChoice | undefined) ?? null
+      const won = latestRound.winner === player.id
+      const draw = latestRound.winner === 'draw'
+      return {
+        icon: getChoiceIcon(choice),
+        state: draw ? t('lobby.game.draw') : won ? t('lobby.game.win') : t('lobby.game.loss'),
+        tone: draw ? 'draw' : won ? 'win' : 'loss',
+      }
+    }
+    const locked = readyIds.includes(player.id)
+    if (isMe && locked) return { icon: getChoiceIcon(myCurrentChoice), state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
+    if (locked) return { icon: 'rock', state: t('games.rock_paper_scissors.lockedIn'), tone: 'locked' }
+    return { icon: 'rock', state: t('games.rock_paper_scissors.choosing'), tone: 'choosing' }
   }
 
-  const statusClasses: Record<typeof statusVariant, string> = {
-    neutral: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-    waiting: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
-    success: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
-    danger: 'bg-rose-50 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200',
-    info: 'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
-  }
+  const stageResult = showReveal && latestRound
+    ? latestRound.winner === 'draw'
+      ? t('games.rock_paper_scissors.roundDraw')
+      : t('games.rock_paper_scissors.roundWonBy', { player: players.find((p) => p.id === latestRound.winner)?.name ?? t('game.ui.playerFallback') })
+    : t('games.rock_paper_scissors.roundNum', { num: roundNumber })
+
+  // A new round result remounts the hands, which replays the shake-and-flip.
+  const revealKey = showReveal ? `reveal-${gameData.rounds.length}` : `live-${gameData.rounds.length}-${readyIds.length}`
 
   return (
-    <div className="space-y-4">
-      {/* Score board */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-        <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          <span>
-            {t('lobby.game.round')} {currentRoundNumber} / {maxRounds}
+    <div className="rps-board" data-testid={testId}>
+      <section className={`rps-stage${showReveal ? ' rps-stage--reveal' : ''}`} aria-live="polite">
+        <Hand key={`l-${revealKey}`} player={leftPlayer} accent={leftAccent} reveal={showReveal} {...handFor(leftPlayer)} />
+        <div className="rps-stage__center">
+          <span className="rps-stage__vs">vs</span>
+          <span key={`s-${leftScore}-${rightScore}`} className="rps-stage__score">
+            {leftScore}<span className="rps-stage__colon">:</span>{rightScore}
           </span>
-          <span>
-            {t('lobby.game.best_of')}: {maxRounds} · First to {winsNeeded}
+          <span className="rps-stage__pips" aria-hidden>
+            <WinPips filled={leftScore} total={winsNeeded} color={leftAccent} />
+            <span className="rps-stage__dot">·</span>
+            <WinPips filled={rightScore} total={winsNeeded} color={rightAccent} />
           </span>
+          <span key={`r-${revealKey}`} className={`rps-stage__result${showReveal ? ' rps-stage__result--reveal' : ''}`}>{stageResult}</span>
         </div>
+        <Hand key={`r-${revealKey}`} player={rightPlayer} accent={rightAccent} reveal={showReveal} {...handFor(rightPlayer)} />
+      </section>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          {/* You */}
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-              {t('lobby.game.you')}
-            </p>
-            <p className="mt-0.5 truncate text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-              {myPlayer.name}
-            </p>
-            <p className="mt-1.5 text-3xl font-black text-slate-900 dark:text-white sm:text-4xl">{myScore}</p>
-            <WinPips filled={myScore} total={winsNeeded} />
-          </div>
-
-          {/* VS */}
-          <div className="flex flex-col items-center">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              VS
-            </span>
-          </div>
-
-          {/* Opponent */}
-          <div className="min-w-0 text-right">
-            <p className="truncate text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              {t('lobby.game.opponent')}
-            </p>
-            <p className="mt-0.5 truncate text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-              {opponent?.name || '—'}
-            </p>
-            <p className="mt-1.5 text-3xl font-black text-slate-900 dark:text-white sm:text-4xl">{opponentScore}</p>
-            <div className="flex justify-end">
-              <WinPips filled={opponentScore} total={winsNeeded} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Status banner */}
-      <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${statusClasses[statusVariant]}`}>
-        <div className="flex items-center justify-between gap-3">
-          <span>{statusText}</span>
-          {!isGameOver && opponent && (
-            <div className="flex items-center gap-2 text-xs font-normal opacity-80">
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                  mySubmitted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-white/60 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                }`}
+      {!isGameOver && !isSpectator && (
+        <section className="rps-tiles" aria-label={t('games.rock_paper_scissors.pickPrompt')}>
+          {CHOICES.map(({ choice, icon, labelKey, beats, accent }, index) => {
+            const isSelected = myCurrentChoice === choice && mySubmitted
+            const dimmed = mySubmitted && !isSelected
+            return (
+              <button
+                key={choice}
+                type="button"
+                onClick={() => void onSubmitChoice(choice)}
+                disabled={!canChoose}
+                aria-pressed={isSelected}
+                aria-label={t(labelKey)}
+                className={`rps-tile${isSelected ? ' rps-tile--selected' : ''}${dimmed ? ' rps-tile--dimmed' : ''}`}
+                style={{ '--i': index, '--tile-accent': accent } as React.CSSProperties}
               >
-                {mySubmitted ? '✓' : '○'} {t('lobby.game.you')}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                  opponentSubmitted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-white/60 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                }`}
-              >
-                {opponentSubmitted ? '✓' : '○'} {opponent.name}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Choice cards */}
-      {!isGameOver && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            {t('lobby.game.makeyourChoice')}
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {CHOICES.map(({ choice, emoji, label, beats, color }) => {
-              const isSelected = myCurrentChoice === choice
-              return (
-                <LoadingButton
-                  key={choice}
-                  onClick={() => onSubmitChoice(choice)}
-                  loading={isLoading && isSelected}
-                  disabled={!canChoose}
-                  className={`group relative h-32 rounded-2xl border-2 bg-gradient-to-br transition-all duration-150 ${
-                    isSelected
-                      ? 'scale-[1.03] border-blue-500 from-blue-50 to-indigo-100 shadow-lg dark:from-blue-900/40 dark:to-indigo-900/40'
-                      : `${color} disabled:opacity-50`
-                  }`}
-                >
-                  <span className="flex flex-col items-center justify-center gap-1.5">
-                    <span
-                      className={`text-5xl transition-transform duration-150 ${!isSelected && !mySubmitted ? 'group-hover:scale-110' : ''}`}
-                    >
-                      {emoji}
-                    </span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{t(label)}</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      beats {beats}
-                    </span>
-                  </span>
-                  {isSelected && (
-                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white">
-                      ✓
-                    </span>
-                  )}
-                </LoadingButton>
-              )
-            })}
-          </div>
-        </div>
+                <span className="rps-tile__emoji"><Icon name={icon} size={40} /></span>
+                <span className="rps-tile__label">{t(labelKey)}</span>
+                <span className="rps-tile__beats">{t('games.rock_paper_scissors.beats', { target: t(CHOICE_LABEL_KEY[beats]) })}</span>
+              </button>
+            )
+          })}
+        </section>
       )}
+    </div>
+  )
+}
 
-      {/* Round reveal */}
-      {latestRound && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            {t('lobby.game.round')} {gameData.rounds.length} — {latestRound.winner === 'draw' ? t('lobby.game.draw') : latestRound.winner === playerId ? t('lobby.game.round_won') : t('lobby.game.round_lost')}
-          </p>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800">
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
-                {myPlayer.name}
-              </p>
-              <p className="text-4xl">{getChoiceEmoji(myLatestChoice)}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                {myLatestChoice ? t(CHOICE_LABEL_BY_VALUE[myLatestChoice]) : '—'}
-              </p>
-            </div>
-            <div className="text-center text-xl font-black text-slate-400 dark:text-slate-500">vs</div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-700 dark:bg-slate-800">
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
-                {opponent?.name || t('lobby.game.opponent')}
-              </p>
-              <p className="text-4xl">{getChoiceEmoji(opponentLatestChoice)}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                {opponentLatestChoice ? t(CHOICE_LABEL_BY_VALUE[opponentLatestChoice]) : '—'}
-              </p>
-            </div>
-          </div>
-          <div
-            className={`mt-3 rounded-xl px-3 py-2 text-center text-sm font-bold ${
-              latestRound.winner === 'draw'
-                ? 'bg-slate-800 text-white dark:bg-slate-700'
-                : latestRound.winner === playerId
-                ? 'bg-emerald-600 text-white'
-                : 'bg-rose-600 text-white'
-            }`}
-          >
-            {latestRound.winner === 'draw'
-              ? `${t('lobby.game.draw')} — No points`
-              : latestRound.winner === playerId
-              ? `${t('lobby.game.round_won')} +1`
-              : `${t('lobby.game.round_lost')}`}
-          </div>
-        </div>
-      )}
-
-      {/* Round history */}
-      {gameData.rounds.length > 1 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            {t('lobby.game.round_history')}
-          </p>
-          <div className="max-h-48 space-y-1.5 overflow-y-auto">
-            {[...gameData.rounds]
-              .reverse()
-              .slice(1) // skip the last round already shown above
-              .map((round, reverseIndex) => {
-                const roundNumber = gameData.rounds.length - reverseIndex - 1
-                const myRoundChoice = round.choices[playerId] as RPSChoice | undefined
-                const opponentRoundChoice = opponent
-                  ? (round.choices[opponent.id] as RPSChoice | undefined)
-                  : undefined
-                const outcome =
-                  round.winner === 'draw'
-                    ? t('lobby.game.draw')
-                    : round.winner === playerId
-                    ? t('lobby.game.win')
-                    : t('lobby.game.loss')
-                const outcomeColor =
-                  round.winner === 'draw'
-                    ? 'text-slate-600 dark:text-slate-400'
-                    : round.winner === playerId
-                    ? 'text-emerald-700 dark:text-emerald-400'
-                    : 'text-rose-700 dark:text-rose-400'
-
-                return (
-                  <div
-                    key={`round-${roundNumber}`}
-                    className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
-                  >
-                    <span className="text-slate-500 dark:text-slate-400">
-                      {t('lobby.game.round')} {roundNumber}: {getChoiceEmoji(myRoundChoice)} vs{' '}
-                      {getChoiceEmoji(opponentRoundChoice)}
-                    </span>
-                    <span className={`font-semibold ${outcomeColor}`}>{outcome}</span>
-                  </div>
-                )
-              })}
-          </div>
-        </div>
-      )}
+function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
+  const initial = (player?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
+  return (
+    <div className={`rps-hand rps-hand--${tone}${reveal ? ' rps-hand--reveal' : ''}`} style={{ '--hand-accent': accent } as React.CSSProperties}>
+      <span className="rps-hand__emoji" aria-hidden><Icon name={icon} size={44} /></span>
+      <span className="rps-hand__who">
+        {player?.avatarSrc
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={player.avatarSrc} alt="" className="rps-hand__avatar" />
+          : <span className="rps-hand__avatar rps-hand__avatar--initial">{initial}</span>}
+        <span className="rps-hand__name">{player?.name ?? '—'}</span>
+      </span>
+      <span className="rps-hand__state">{state}</span>
     </div>
   )
 }

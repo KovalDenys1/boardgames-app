@@ -33,7 +33,6 @@ export type LobbyCreateConfig = {
 type GameCatalogEntryBase = {
   id: string
   nameKey: string
-  emoji: string
   descriptionKey: string
   players: string
   difficultyKey: string
@@ -68,7 +67,6 @@ export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
 export interface GameMetadata {
   type: SupportedCatalogGameType
   name: string
-  icon: string
   svgId: string
   accentColor: string
   minPlayers: number
@@ -101,7 +99,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   yahtzee: {
     type: 'yahtzee',
     name: 'Yahtzee',
-    icon: '🎲',
     svgId: 'yahtzee',
     accentColor: 'var(--bd-sky)',
     minPlayers: 1,
@@ -116,7 +113,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   guess_the_spy: {
     type: 'guess_the_spy',
     name: 'Guess the Spy',
-    icon: '🕵️',
     svgId: 'spy',
     accentColor: 'var(--bd-lav)',
     minPlayers: 3,
@@ -133,7 +129,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   tic_tac_toe: {
     type: 'tic_tac_toe',
     name: 'Tic Tac Toe',
-    icon: '❌',
     svgId: 'tic-tac-toe',
     accentColor: 'var(--bd-coral)',
     minPlayers: 2,
@@ -147,7 +142,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   rock_paper_scissors: {
     type: 'rock_paper_scissors',
     name: 'Rock Paper Scissors',
-    icon: '✊',
     svgId: 'rps',
     accentColor: 'var(--bd-sun)',
     minPlayers: 2,
@@ -161,7 +155,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   memory: {
     type: 'memory',
     name: 'Memory',
-    icon: '🧠',
     svgId: 'memory',
     accentColor: 'var(--bd-mint)',
     minPlayers: 2,
@@ -176,7 +169,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   connect_four: {
     type: 'connect_four',
     name: 'Connect Four',
-    icon: '🔴',
     svgId: 'connect-four',
     accentColor: 'var(--bd-coral)',
     minPlayers: 2,
@@ -191,7 +183,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   alias: {
     type: 'alias',
     name: 'Alias',
-    icon: '🗣️',
     svgId: 'alias',
     accentColor: 'var(--bd-coral)',
     minPlayers: 3,
@@ -206,7 +197,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   liars_party: {
     type: 'liars_party',
     name: "Liar's Party",
-    icon: '🎭',
     svgId: 'liars-party',
     accentColor: 'var(--bd-lav)',
     minPlayers: 4,
@@ -222,7 +212,6 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
 const TELEPHONE_DOODLE_METADATA: GameMetadata = {
   type: 'telephone_doodle',
   name: 'Telephone Doodle',
-  icon: '📞',
   svgId: 'telephone-doodle',
   accentColor: 'var(--bd-sky)',
   minPlayers: 3,
@@ -237,7 +226,6 @@ const TELEPHONE_DOODLE_METADATA: GameMetadata = {
 const SKETCH_AND_GUESS_METADATA: GameMetadata = {
   type: 'sketch_and_guess',
   name: 'Sketch & Guess',
-  icon: '🎨',
   svgId: 'guess-my-drawing',
   accentColor: 'var(--bd-mint)',
   minPlayers: 3,
@@ -252,7 +240,6 @@ const SKETCH_AND_GUESS_METADATA: GameMetadata = {
 const FAKE_ARTIST_METADATA: GameMetadata = {
   type: 'fake_artist',
   name: 'Fake Artist',
-  icon: '🖌️',
   svgId: 'fake-artist',
   accentColor: 'var(--bd-lav)',
   minPlayers: 4,
@@ -269,7 +256,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'yahtzee',
     gameType: 'yahtzee',
     nameKey: 'games.yahtzee.name',
-    emoji: '🎲',
     descriptionKey: 'games.yahtzee.description',
     players: '1-4',
     difficultyKey: 'games.yahtzee.difficulty',
@@ -288,7 +274,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'spy',
     gameType: 'guess_the_spy',
     nameKey: 'games.spy.name',
-    emoji: '🕵️',
     descriptionKey: 'games.spy.description',
     players: '3-10',
     difficultyKey: 'games.spy.difficulty',
@@ -305,7 +290,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'tic-tac-toe',
     gameType: 'tic_tac_toe',
     nameKey: 'games.tictactoe.name',
-    emoji: '❌',
     descriptionKey: 'games.tictactoe.description',
     players: '1-2',
     difficultyKey: 'games.tictactoe.difficulty',
@@ -323,7 +307,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'memory',
     gameType: 'memory',
     nameKey: 'games.memory.name',
-    emoji: '🧠',
     descriptionKey: 'games.memory.description',
     players: '1-4',
     difficultyKey: 'games.memory.difficulty',
@@ -342,7 +325,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'connect-four',
     gameType: 'connect_four',
     nameKey: 'games.connect_four.name',
-    emoji: '🔴',
     descriptionKey: 'games.connect_four.description',
     players: '1-2',
     difficultyKey: 'games.connect_four.difficulty',
@@ -360,7 +342,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'alias',
     gameType: 'alias',
     nameKey: 'games.alias.name',
-    emoji: '🗣️',
     descriptionKey: 'games.alias.description',
     players: '4-16',
     difficultyKey: 'games.alias.difficulty',
@@ -378,7 +359,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'liars-party',
     gameType: 'liars_party',
     nameKey: 'games.liars_party.name',
-    emoji: '🎭',
     descriptionKey: 'games.liars_party.description',
     players: '4-12',
     difficultyKey: 'games.liars_party.difficulty',
@@ -395,11 +375,10 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'rps',
     gameType: 'rock_paper_scissors',
     nameKey: 'games.rock_paper_scissors.name',
-    emoji: '✊',
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '1-2',
     difficultyKey: 'games.rock_paper_scissors.difficulty',
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
     lobbyCreateConfig: {
@@ -412,7 +391,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'guess-my-drawing',
     gameType: 'sketch_and_guess',
     nameKey: 'games.guess_my_drawing.name',
-    emoji: '🎨',
     descriptionKey: 'games.guess_my_drawing.description',
     players: '3-10',
     difficultyKey: 'games.guess_my_drawing.difficulty',
@@ -424,7 +402,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'fake-artist',
     gameType: 'fake_artist',
     nameKey: 'games.fake_artist.name',
-    emoji: '🖌️',
     descriptionKey: 'games.fake_artist.description',
     players: '4-10',
     difficultyKey: 'games.fake_artist.difficulty',
@@ -436,7 +413,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     id: 'telephone-doodle',
     gameType: 'telephone_doodle',
     nameKey: 'games.telephone_doodle.name',
-    emoji: '📞',
     descriptionKey: 'games.telephone_doodle.description',
     players: '3-12',
     difficultyKey: 'games.telephone_doodle.difficulty',
@@ -447,7 +423,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
   {
     id: 'words-mines',
     nameKey: 'games.wordsmines.name',
-    emoji: '💣',
     descriptionKey: 'games.wordsmines.description',
     players: '2-8',
     difficultyKey: 'games.wordsmines.difficulty',
@@ -457,7 +432,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
   {
     id: 'anagrams',
     nameKey: 'games.anagrams.name',
-    emoji: '🔀',
     descriptionKey: 'games.anagrams.description',
     players: '2-8',
     difficultyKey: 'games.anagrams.difficulty',
@@ -467,7 +441,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
   {
     id: 'crocodile',
     nameKey: 'games.crocodile.name',
-    emoji: '🐊',
     descriptionKey: 'games.crocodile.description',
     players: '3-12',
     difficultyKey: 'games.crocodile.difficulty',
@@ -477,7 +450,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
   {
     id: 'alibi-night',
     nameKey: 'games.alibi_night.name',
-    emoji: '🕶️',
     descriptionKey: 'games.alibi_night.description',
     players: '4-12',
     difficultyKey: 'games.alibi_night.difficulty',

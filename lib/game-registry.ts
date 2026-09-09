@@ -49,7 +49,6 @@ export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
 export interface GameMetadata {
   type: SupportedGameType
   name: string
-  icon: string
   minPlayers: number
   maxPlayers: number
   supportsBots: boolean
@@ -72,7 +71,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'yahtzee',
       name: 'Yahtzee',
-      icon: '🎲',
       minPlayers: 1,
       maxPlayers: 4,
       supportsBots: true,
@@ -86,7 +84,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'guess_the_spy',
       name: 'Guess the Spy',
-      icon: '🕵️',
       minPlayers: 3,
       maxPlayers: 10,
       supportsBots: false,
@@ -99,7 +96,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'tic_tac_toe',
       name: 'Tic Tac Toe',
-      icon: '❌',
       minPlayers: 2,
       maxPlayers: 2,
       supportsBots: true,
@@ -113,7 +109,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'rock_paper_scissors',
       name: 'Rock Paper Scissors',
-      icon: '✊',
       minPlayers: 2,
       maxPlayers: 2,
       supportsBots: true,
@@ -127,7 +122,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'memory',
       name: 'Memory',
-      icon: '🧠',
       minPlayers: 2,
       maxPlayers: 4,
       supportsBots: true,
@@ -141,7 +135,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'connect_four',
       name: 'Connect Four',
-      icon: '🔴',
       minPlayers: 2,
       maxPlayers: 2,
       supportsBots: true,
@@ -155,7 +148,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'alias',
       name: 'Alias',
-      icon: '🗣️',
       minPlayers: 3,
       maxPlayers: 16,
       supportsBots: false,
@@ -169,7 +161,6 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     metadata: {
       type: 'liars_party',
       name: "Liar's Party",
-      icon: '🎭',
       minPlayers: 4,
       maxPlayers: 12,
       supportsBots: false,
@@ -184,7 +175,6 @@ const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
   metadata: {
     type: 'telephone_doodle',
     name: 'Telephone Doodle',
-    icon: '📞',
     minPlayers: 3,
     maxPlayers: 12,
     supportsBots: false,
@@ -198,7 +188,6 @@ const SKETCH_AND_GUESS_ENTRY: GameRegistryEntry = {
   metadata: {
     type: 'sketch_and_guess',
     name: 'Sketch & Guess',
-    icon: '🎨',
     minPlayers: 3,
     maxPlayers: 10,
     supportsBots: false,
@@ -212,7 +201,6 @@ const FAKE_ARTIST_ENTRY: GameRegistryEntry = {
   metadata: {
     type: 'fake_artist',
     name: 'Fake Artist',
-    icon: '🖌️',
     minPlayers: 4,
     maxPlayers: 10,
     supportsBots: false,

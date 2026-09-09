@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { Icon } from '@/components/icons'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -112,7 +113,7 @@ export default function Header() {
                 className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full"
                 style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: 'var(--bd-ink-soft)', fontSize: 13, fontWeight: 600 }}
               >
-                👤 {guestName}
+                <Icon name="user" size={14} /> {guestName}
               </div>
             )}
 

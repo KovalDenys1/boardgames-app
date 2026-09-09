@@ -4,6 +4,8 @@ import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { YahtzeeScorecard, YahtzeeCategory, YahtzeeMode, calculateScore } from '@/lib/yahtzee'
 import { sounds } from '@/lib/sounds'
+import { Icon, type IconName } from '@/components/icons'
+import Die from '@/components/ui/Die'
 
 interface ScorecardProps {
   scorecard: YahtzeeScorecard
@@ -22,22 +24,31 @@ interface ScorecardProps {
   showCurrentTurnButton?: boolean
 }
 
-const categoryIcons: Record<YahtzeeCategory, string> = {
-  ones: '⚀',
-  twos: '⚁',
-  threes: '⚂',
-  fours: '⚃',
-  fives: '⚄',
-  sixes: '⚅',
-  onePair: '🎭',
-  twoPairs: '🃏',
-  threeOfKind: '🔺',
-  fourOfKind: '💎',
-  fullHouse: '🏠',
-  smallStraight: '📈',
-  largeStraight: '🚀',
-  yahtzee: '🎯',
-  chance: '🌀',
+/**
+ * The upper section counts a face, so it shows that face - Boardly's own die,
+ * not the Unicode die characters, which render in the platform's symbol font.
+ * The lower section is scored by shape, so each hand gets a chrome icon.
+ */
+const upperFace: Partial<Record<YahtzeeCategory, number>> = {
+  ones: 1, twos: 2, threes: 3, fours: 4, fives: 5, sixes: 6,
+}
+
+const lowerIcons: Partial<Record<YahtzeeCategory, IconName>> = {
+  onePair: 'copy',          // two of the same shape
+  twoPairs: 'cards',
+  threeOfKind: 'star',
+  fourOfKind: 'gem',
+  fullHouse: 'home',
+  smallStraight: 'chart',   // a rising run
+  largeStraight: 'rocket',
+  yahtzee: 'target',
+  chance: 'dice',           // the slot that takes any roll
+}
+
+function CategoryGlyph({ category }: { category: YahtzeeCategory }) {
+  const face = upperFace[category]
+  if (face !== undefined) return <Die value={face} size={22} />
+  return <Icon name={lowerIcons[category] ?? 'dice'} size={20} />
 }
 
 const upperSection: YahtzeeCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
@@ -189,7 +200,6 @@ const Scorecard = React.memo(function Scorecard({
     )
     const filledScore = scorecard[category]
     const label = t(`yahtzee.categories.${category}`)
-    const icon = categoryIcons[category]
     const isYahtzeePerfect = category === 'yahtzee' && potentialScore === 50
     const isBestOption =
       shouldShowScoringGuidance &&
@@ -227,7 +237,7 @@ const Scorecard = React.memo(function Scorecard({
         className={`${rowBase} ${rowVariants[state]} ${isBestOption ? 'ring-1 ring-emerald-300 dark:ring-emerald-700' : ''} ${isLoading ? 'opacity-50 cursor-wait' : ''} ${category === justScoredCategory ? 'scorecard-row-flash' : ''}`}
       >
         {/* Icon */}
-        <span className="text-base sm:text-lg shrink-0 leading-none">{icon}</span>
+        <span className="flex shrink-0 items-center leading-none"><CategoryGlyph category={category} /></span>
 
         {/* Label */}
         <div className="min-w-0 flex-1 text-left">
@@ -254,7 +264,7 @@ const Scorecard = React.memo(function Scorecard({
             </span>
           ) : state === 'filled' ? (
             <span className="flex items-center gap-1">
-              <span className="text-xs text-emerald-500 font-bold">✓</span>
+              <Icon name="check" size={13} className="text-emerald-500" />
               <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 min-w-[1.5rem] text-right">
                 {filledScore}
               </span>
@@ -265,7 +275,7 @@ const Scorecard = React.memo(function Scorecard({
                 isYahtzeePerfect ? 'animate-pulse bg-gradient-to-r from-emerald-500 to-cyan-500' : ''
               }`}
             >
-              {isYahtzeePerfect && <span className="mr-0.5">🎯</span>}
+              {isYahtzeePerfect && <Icon name="target" size={13} className="mr-0.5" />}
               +{potentialScore}
             </span>
           ) : state === 'low-value' ? (
@@ -361,7 +371,7 @@ const Scorecard = React.memo(function Scorecard({
             className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left"
           >
             <span className="min-w-0 truncate text-xs font-semibold text-bd-ink">
-              🏆 {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
+              <Icon name="trophy" size={14} /> {scoringInsights.bestPotentialScore === 0 ? 'Burn a slot' : `Best +${scoringInsights.bestPotentialScore}`}
               {' · '}{bestOptionPreview}
             </span>
             <span
@@ -405,7 +415,7 @@ const Scorecard = React.memo(function Scorecard({
           {/* Section header */}
           <div className="mb-1.5 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-            <span className="bd-chip bd-chip-sun text-[11px]">🎯</span>
+            <span className="bd-chip bd-chip-sun text-[11px]"><Icon name="target" size={12} /></span>
             <h3 className="bd-kicker" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('yahtzee.categories.upperSection')}
             </h3>
@@ -426,7 +436,7 @@ const Scorecard = React.memo(function Scorecard({
                     : 'text-amber-700'
                 }`}
               >
-                {bonus > 0 ? `+35 🎁` : `${63 - upperTotal} to go`}
+                {bonus > 0 ? <><Icon name="party" size={12} /> +35</> : `${63 - upperTotal} to go`}
               </span>
             </div>
             <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'var(--bd-bg2)' }}>
@@ -468,7 +478,7 @@ const Scorecard = React.memo(function Scorecard({
           {/* Section header */}
           <div className="mb-2 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-            <span className="bd-chip bd-chip-lav text-[11px]">🎲</span>
+            <span className="bd-chip bd-chip-lav text-[11px]"><Icon name="dice" size={12} /></span>
             <h3 className="bd-kicker" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('yahtzee.categories.lowerSection')}
             </h3>

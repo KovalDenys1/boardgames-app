@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import {
@@ -178,7 +179,7 @@ export default function FriendsListModal({
             className="transition-opacity hover:opacity-60"
             style={{ color: 'var(--bd-ink-muted)' }}
           >
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </div>
 
@@ -188,7 +189,7 @@ export default function FriendsListModal({
           </div>
         ) : loadError ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <span className="text-3xl">⚠️</span>
+            <Icon name="warning" size={30} />
             <p className="text-sm" style={{ color: 'var(--bd-ink-soft)' }}>{t('profile.friends.errors.loadFailed')}</p>
             <button onClick={loadFriends} className="bd-btn bd-btn-soft text-xs">
               {t('common.retry')}
@@ -196,7 +197,7 @@ export default function FriendsListModal({
           </div>
         ) : friends.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-lg mb-2">👥</p>
+            <p className="mb-2"><Icon name="users" size={22} /></p>
             <p style={{ color: 'var(--bd-ink-soft)' }}>{t('lobby.invite.noFriends')}</p>
             <p className="text-sm mt-2" style={{ color: 'var(--bd-ink-muted)' }}>{t('lobby.invite.addFriendsFirst')}</p>
           </div>
@@ -263,7 +264,7 @@ export default function FriendsListModal({
                       {avatarBlock}
                       {nameBlock}
                       {isSelected && (
-                        <span style={{ color: 'var(--bd-ink)' }}>✓</span>
+                        <span style={{ color: 'var(--bd-ink)' }}><Icon name="check" size={14} /></span>
                       )}
                     </button>
                   )
@@ -292,7 +293,7 @@ export default function FriendsListModal({
                       }}
                     >
                       {isInvited
-                        ? `✓ ${t('lobby.invite.invited')}`
+                        ? <><Icon name="check" size={13} /> {t('lobby.invite.invited')}</>
                         : isInvitingThisRow
                           ? '…'
                           : t('lobby.invite.inviteButton')}

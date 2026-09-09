@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import Modal from './Modal'
 import { sounds } from '@/lib/sounds'
@@ -130,7 +131,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
           }}
           className="mb-3 flex w-full flex-shrink-0 items-center gap-2 text-left text-sm font-bold transition-opacity hover:opacity-70 cursor-pointer"
         >
-          <span className="text-lg">👥</span>
+          <Icon name="users" size={18} />
           <span className="truncate">{t('lobby.players.title', 'Players')}</span>
           {onPlayerClick && (
             <span className="text-xs font-normal text-bd-ink-muted ml-auto shrink-0">
@@ -204,7 +205,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
                     ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
                   `} style={{ width: 'clamp(24px, 2.4vw, 30px)', height: 'clamp(24px, 2.4vw, 30px)', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                      {index + 1}
                     </div>
 
                     {/* Player Info */}
@@ -217,7 +218,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           <span className="bd-chip shrink-0 text-bd-ink-muted" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>left</span>
                         )}
                         {!isDeparted && isPremium && (
-                          <span className="shrink-0" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }} title="Premium">👑</span>
+                          <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />
                         )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
@@ -235,9 +236,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           </span>
                         )}
                         {isCurrentTurn && (
-                          <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
-                            🎲
-                          </span>
+                          <Icon name="dice" size={15} className="animate-bounce shrink-0" />
                         )}
                       </div>
                       <div className="flex items-center" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
@@ -248,7 +247,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           }`} style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {player.score}
                           {animatingScores[player.id] && (
-                            <span className="text-green-500" style={{ marginLeft: 'clamp(2px, 0.2vw, 4px)', fontSize: 'clamp(10px, 0.78vw, 12px)' }}>✨</span>
+                            <Icon name="sparkle" size={12} className="text-green-500" style={{ marginLeft: 'clamp(2px, 0.2vw, 4px)' }} />
                           )}
                         </span>
                       </div>
@@ -257,8 +256,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
                   {/* Ready Status */}
                   {player.isReady && (
-                    <div className="text-green-500 font-bold text-sm ml-1 shrink-0">
-                      ✓
+                    <div className="text-green-500 ml-1 shrink-0">
+                      <Icon name="check" size={16} />
                     </div>
                   )}
 
@@ -335,7 +334,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
                     ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
                   `}>
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                      {index + 1}
                     </div>
 
                     {/* Player Details */}
@@ -345,7 +344,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           {playerName}
                         </span>
                         {isPremium && (
-                          <span className="shrink-0 text-sm" title="Premium">👑</span>
+                          <Icon name="crown" size={16} tone="premium" label="Premium" className="shrink-0" />
                         )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
@@ -363,9 +362,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           </span>
                         )}
                         {isCurrentTurn && (
-                          <span className="text-lg animate-bounce shrink-0">
-                            🎲
-                          </span>
+                          <Icon name="dice" size={18} className="animate-bounce shrink-0" />
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
@@ -375,7 +372,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         </div>
                         {player.isReady && (
                           <div className="flex items-center gap-1 text-green-600">
-                            <span>✓</span>
+                            <Icon name="check" size={14} />
                             <span className="font-semibold">{t('lobby.players.ready')}</span>
                           </div>
                         )}
@@ -403,7 +400,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         className="px-4 py-2 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
                         style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink)', border: '1.5px solid var(--bd-line)' }}
                       >
-                        👤 Profile
+                        <Icon name="user" size={16} /> Profile
                       </button>
                     )}
 

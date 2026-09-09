@@ -11,7 +11,6 @@ export default function AliasLobbiesPage() {
     <GameLobbiesPage
       gameType="alias"
       pagePath="/games/alias/lobbies"
-      titleEmoji="🗣️"
       gameId="alias"
       accentColor="var(--bd-coral)"
       gameNameKey="games.alias.name"

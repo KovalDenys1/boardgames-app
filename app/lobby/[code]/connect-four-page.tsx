@@ -38,6 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -259,6 +260,7 @@ interface Lobby {
     isActive?: boolean
     turnTimer?: number
     theme?: string
+    allowSpectators?: boolean
 }
 
 interface ConnectFourLobbyPageProps {
@@ -1010,13 +1012,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         </div>
     )
 
-    const actionsSection = isSpectator ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                {t('game.ui.backToLobby')}
-            </a>
-        </div>
-    ) : (
+    // Leave and the spectator's way back live in the header (layout DoD).
+    const actionsSection = isSpectator ? null : (
         <div className="flex flex-col md:flex-row gap-2">
             <button
                 onClick={() => void handleRequestUndo()}
@@ -1025,9 +1022,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
-            </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} className="w-full md:w-auto" style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {t('games.connect_four.game.leave')}
             </button>
         </div>
     )
@@ -1068,13 +1062,29 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
+    // The room card sits to the right of the scoreboard, in the same grid row
+    // and at the same height (layout DoD, scheme A): game, room code, invite
+    // link, and Leave. Phones get the compact form beside the scoreboard.
+    const roomCardProps = {
+        gameId: 'connect-four',
+        title: t('games.connect_four.name'),
+        code,
+        isSpectator,
+        leaveLabel: t('game.ui.leave'),
+        allowSpectators: !!lobby.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
+    const roomSection = <GameRoomCard {...roomCardProps} />
+    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
+
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
+                    {headerSection}
+                    {roomSection}
                     <div className="ttt-center-col">
-                        {headerSection}
                         {statusSection}
                         {requestSection}
                         {renderBoardSection()}
@@ -1093,7 +1103,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     {renderBoardSection()}
                 </div>
                 <div className="ttt-landscape-side">
-                    {headerSection}
+                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
                     {chatSection}
@@ -1103,7 +1113,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                {headerSection}
+                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                 {statusSection}
                 {requestSection}
                 <GameTabs

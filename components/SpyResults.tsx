@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { Player } from '@/lib/game-engine'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
 
@@ -118,7 +119,7 @@ export default function SpyResults({
                       <div className="min-w-0">
                         <p className="flex items-center gap-1 truncate font-bold text-[var(--bd-ink)]">
                           {player.name}
-                          {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                          {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                         </p>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {wasSpy && <span className="bd-chip bd-chip-coral py-1 text-[11px]">{t('spy.roles.spy')}</span>}
@@ -146,7 +147,7 @@ export default function SpyResults({
                     </span>
                     <span className="flex items-center gap-1 truncate font-bold text-[var(--bd-ink)]">
                       {player.name}
-                      {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                      {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                     </span>
                   </div>
                   <span className="text-lg font-black text-[var(--bd-mint-deep)]">

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import GameIcon, { GAME_SVG_PATHS } from '@/components/GameIcon'
+import GameIcon from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { AuthGateModal } from '@/components/AuthGateModal'
 import AdminWatchModal from '@/components/AdminWatchModal'
@@ -12,6 +12,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { getSupabaseClient } from '@/lib/supabase-client'
@@ -41,103 +42,48 @@ type GameLobbiesPageProps = {
   gameType: string
   gameId?: string
   accentColor?: string
-  iconVariant?: 'tic-tac-toe'
   pagePath: string
-  titleEmoji: string
   gameNameKey: TranslationKeys
   lobbiesNamespace: string
 }
 
 function GameLobbyIcon({
-  titleEmoji,
   usage,
-  variant,
-  gameId,
+  gameId = 'yahtzee',
   accentColor = 'var(--bd-coral)',
 }: {
-  titleEmoji: string
-  usage: 'breadcrumb' | 'title' | 'card' | 'empty'
-  variant?: GameLobbiesPageProps['iconVariant']
+  usage: 'breadcrumb' | 'card' | 'empty'
   gameId?: string
   accentColor?: string
 }) {
-  if (variant === 'tic-tac-toe') {
-    if (usage === 'breadcrumb') {
-      const path = GAME_SVG_PATHS['tic-tac-toe']
-      return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-          width={16}
-          height={16}
-          style={{ color: accentColor, display: 'inline', verticalAlign: 'middle' }}
-          dangerouslySetInnerHTML={{ __html: path }}
-        />
-      )
-    }
-
-    if (usage === 'title') {
-      return null
-    }
-
-    if (usage === 'empty') {
-      return null
-    }
-
-    return <GameIcon gameId="tic-tac-toe" accentColor={accentColor ?? 'var(--bd-sun)'} size={40} />
-  }
-
   if (usage === 'breadcrumb') {
-    if (gameId && GAME_SVG_PATHS[gameId]) {
-      return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 512 512"
-          width={16}
-          height={16}
-          style={{ color: accentColor, display: 'inline', verticalAlign: 'middle' }}
-          dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[gameId] }}
-        />
-      )
-    }
-    return <span>{titleEmoji}</span>
-  }
-
-  if (usage === 'title') {
-    if (gameId) return null
-    return <span className="ml-3 text-[0.75em]">{titleEmoji}</span>
-  }
-
-  if (gameId) {
-    if (usage === 'empty') {
-      return <div className="flex justify-center mb-4"><GameIcon gameId={gameId} accentColor={accentColor} size={40} /></div>
-    }
-
-    return <GameIcon gameId={gameId} accentColor={accentColor} size={40} />
+    return (
+      <GameIcon
+        gameId={gameId}
+        accentColor={accentColor}
+        size={16}
+        variant="bare"
+        className="inline-block align-middle"
+      />
+    )
   }
 
   if (usage === 'empty') {
     return (
-      <span className="mx-auto mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-2xl shadow-bd-ink-4">
-        {titleEmoji}
-      </span>
+      <div className="mb-4 flex justify-center">
+        <GameIcon gameId={gameId} accentColor={accentColor} size={40} />
+      </div>
     )
   }
 
-  return (
-    <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-sun text-2xl shadow-[3px_3px_0_#1F1B16]">
-      {titleEmoji}
-    </span>
-  )
+  return <GameIcon gameId={gameId} accentColor={accentColor} size={40} />
 }
 
 export default function GameLobbiesPage({
   gameType,
   gameId,
   accentColor,
-  iconVariant,
   pagePath,
-  titleEmoji,
   gameNameKey,
   lobbiesNamespace,
 }: GameLobbiesPageProps) {
@@ -260,15 +206,15 @@ export default function GameLobbiesPage({
           {/* Breadcrumb */}
           <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-bd-ink-muted sm:text-sm">
             <button onClick={() => router.push('/')} className="hover:text-bd-ink transition-colors">
-              🏠 <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
+              <Icon name="home" size={14} /> <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
             </button>
             <span>›</span>
             <button onClick={() => router.push('/games')} className="hover:text-bd-ink transition-colors">
-              🎮 <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
+              <Icon name="gamepad" size={14} /> <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
             </button>
             <span>›</span>
             <span className="inline-flex items-center gap-2 text-bd-ink">
-              <GameLobbyIcon titleEmoji={titleEmoji} usage="breadcrumb" variant={iconVariant} gameId={gameId} accentColor={accentColor} />
+              <GameLobbyIcon usage="breadcrumb" gameId={gameId} accentColor={accentColor} />
               <span className="hidden xs:inline">{t(gameNameKey)}</span>
             </span>
           </div>
@@ -282,7 +228,6 @@ export default function GameLobbiesPage({
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
                 {tx('title')}
-                <GameLobbyIcon titleEmoji={titleEmoji} usage="title" variant={iconVariant} gameId={gameId} accentColor={accentColor} />
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-bd-ink-soft">
                 {isAuthenticated ? tx('subtitle') : tx('subtitleGuest')}
@@ -323,7 +268,7 @@ export default function GameLobbiesPage({
               />
               <div className="relative">
                 <div className="mb-4 flex items-center justify-between">
-                  <GameLobbyIcon titleEmoji={titleEmoji} usage="card" variant={iconVariant} gameId={gameId} accentColor={accentColor} />
+                  <GameLobbyIcon usage="card" gameId={gameId} accentColor={accentColor} />
                   <span className="bd-chip border-bd-ink bg-bd-ink px-3 py-1 text-xs font-bold text-bd-bg">
                     {canCreateLobby ? tx('newGame') : 'Unavailable'}
                   </span>
@@ -356,7 +301,7 @@ export default function GameLobbiesPage({
                 className="mb-1 text-xl font-extrabold text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
-                🔍 {tx('quickJoin')}
+                <Icon name="search" size={15} /> {tx('quickJoin')}
               </h2>
               <p className="mb-5 text-sm text-bd-ink-soft">{tx('quickJoinDesc')}</p>
               <div className="flex gap-3">
@@ -383,13 +328,13 @@ export default function GameLobbiesPage({
           {/* Active lobbies */}
           <div className="bd-card overflow-hidden">
             <div className="flex items-center justify-between border-b border-bd-line bg-bd-card-warm px-5 py-4">
-              <h2 className="font-bold text-bd-ink">🎮 {tx('activeLobbies')}</h2>
+              <h2 className="flex items-center gap-2 font-bold text-bd-ink"><Icon name="gamepad" size={16} /> {tx('activeLobbies')}</h2>
               <span className="bd-kicker">{lobbies.length}</span>
             </div>
 
             {lobbies.length === 0 ? (
               <div className="py-16 text-center">
-                <GameLobbyIcon titleEmoji={titleEmoji} usage="empty" variant={iconVariant} gameId={gameId} accentColor={accentColor} />
+                <GameLobbyIcon usage="empty" gameId={gameId} accentColor={accentColor} />
                 <p className="font-bold text-bd-ink">{tx('noLobbiesTitle')}</p>
                 <button
                   onClick={() => {
@@ -432,13 +377,13 @@ export default function GameLobbiesPage({
                       </div>
 
                       <p className="mb-3 truncate text-sm text-bd-ink-muted">
-                        👤 {tx('host')}: {hostName}
+                        <Icon name="user" size={13} /> {tx('host')}: {hostName}
                       </p>
 
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
-                            👥 {playerCount}/{lobby.maxPlayers}
+                            <Icon name="users" size={13} /> {playerCount}/{lobby.maxPlayers}
                           </span>
                           {isWaiting && (
                             <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-[#9b6b00]">
@@ -471,7 +416,7 @@ export default function GameLobbiesPage({
                               }}
                               className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
                             >
-                              👁 {t('lobby.watch')}
+                              <Icon name="eye" size={13} /> {t('lobby.watch')}
                             </button>
                           )}
                           {!canSpectate && isPlaying && isAdmin && (
@@ -483,7 +428,7 @@ export default function GameLobbiesPage({
                               className="bd-btn bd-btn-soft text-xs px-3 py-1.5 whitespace-nowrap"
                               style={{ background: 'rgba(124,58,237,0.12)', color: 'var(--bd-ink)' }}
                             >
-                              {t('admin.watchButton')}
+                              <Icon name="shield" size={13} /> {t('admin.watchButton')}
                             </button>
                           )}
                           {!canSpectate && (

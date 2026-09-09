@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { type APIRequestContext, type BrowserContext, type Browser } from '@playwright/test'
-import { E2E_LOBBY_MARKER } from './marker'
+import { E2E_GUEST_PREFIX, E2E_LOBBY_MARKER } from './marker'
 
 /**
  * Setup helpers for the end-to-end tests.
@@ -37,29 +37,59 @@ export interface E2ELobby {
  * so it is minted once and reused; if it has expired the create below gets a
  * 401 and mints a fresh one.
  */
-const HOST_CACHE = path.join(__dirname, '..', '.auth', 'host.json')
+function cachePath(role: string): string {
+  return path.join(__dirname, '..', '.auth', `${role}.json`)
+}
 
-function readCachedHost(): Guest | null {
+function readCachedGuest(role: string): Guest | null {
   try {
-    if (!existsSync(HOST_CACHE)) return null
-    const parsed = JSON.parse(readFileSync(HOST_CACHE, 'utf8'))
+    const file = cachePath(role)
+    if (!existsSync(file)) return null
+    const parsed = JSON.parse(readFileSync(file, 'utf8'))
     return typeof parsed?.guestToken === 'string' ? (parsed as Guest) : null
   } catch {
     return null
   }
 }
 
-function cacheHost(guest: Guest): void {
-  mkdirSync(path.dirname(HOST_CACHE), { recursive: true })
-  writeFileSync(HOST_CACHE, JSON.stringify(guest, null, 2))
+function cacheGuest(role: string, guest: Guest): void {
+  const file = cachePath(role)
+  mkdirSync(path.dirname(file), { recursive: true })
+  writeFileSync(file, JSON.stringify(guest, null, 2))
 }
 
-function forgetCachedHost(): void {
+function forgetCachedGuest(role: string): void {
   try {
-    rmSync(HOST_CACHE, { force: true })
+    rmSync(cachePath(role), { force: true })
   } catch {
     // Nothing to forget.
   }
+}
+
+/**
+ * A guest identity reused across runs, one per role.
+ *
+ * Every call to /api/auth/guest-session spends one of five requests per fifteen
+ * minutes, and that limit is keyed on the client IP — which the per-test
+ * clearing cannot touch when the suite runs against a deployment rather than
+ * localhost. Minting a guest per run made the spectator tests unrunnable
+ * against production after a couple of attempts. Tokens last 12h, so they are
+ * minted once and kept in e2e/.auth (gitignored).
+ *
+ * Reuse is safe for a spectator: they are never added to a lobby as a player,
+ * which is the only thing that would make a stale identity wrong.
+ */
+export async function getCachedGuest(
+  request: APIRequestContext,
+  baseURL: string,
+  role: string
+): Promise<Guest> {
+  const cached = readCachedGuest(role)
+  if (cached) return cached
+
+  const guest = await createGuest(request, baseURL)
+  cacheGuest(role, guest)
+  return guest
 }
 
 function uniqueName(prefix: string): string {
@@ -79,7 +109,7 @@ export async function createGuestLobby(
   baseURL: string,
   maxPlayers = 4
 ): Promise<E2ELobby> {
-  let host = readCachedHost() ?? (await createGuest(request, baseURL))
+  let host = readCachedGuest('host') ?? (await createGuest(request, baseURL))
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const res = await request.post(`${baseURL}/api/lobby`, {
@@ -96,7 +126,7 @@ export async function createGuestLobby(
 
     if (res.status() === 401 && attempt === 0) {
       // The cached token has expired. Mint one and try again.
-      forgetCachedHost()
+      forgetCachedGuest('host')
       host = await createGuest(request, baseURL)
       continue
     }
@@ -111,7 +141,7 @@ export async function createGuestLobby(
       throw new Error(`Lobby create returned no code: ${JSON.stringify(body)}`)
     }
 
-    cacheHost(host)
+    cacheGuest('host', host)
     return { code, host }
   }
 
@@ -125,7 +155,7 @@ export async function createGuestLobby(
  * guest-session route the client itself uses.
  */
 export async function createGuest(request: APIRequestContext, baseURL: string): Promise<Guest> {
-  const guestName = uniqueName('E2E')
+  const guestName = uniqueName(E2E_GUEST_PREFIX)
   const res = await request.post(`${baseURL}/api/auth/guest-session`, {
     headers: { Origin: baseURL },
     data: { guestName },
@@ -151,7 +181,7 @@ export async function joinAsGuest(
   code: string,
   baseURL: string
 ): Promise<Guest> {
-  const guestName = uniqueName('E2E')
+  const guestName = uniqueName(E2E_GUEST_PREFIX)
   const res = await request.post(`${baseURL}/api/lobby/${code}/join-guest`, {
     headers: { Origin: baseURL },
     data: { guestName },

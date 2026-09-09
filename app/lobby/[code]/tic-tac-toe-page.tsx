@@ -19,6 +19,7 @@ import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConne
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
 import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -39,6 +40,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
+import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
@@ -151,6 +153,7 @@ interface Lobby {
     isActive?: boolean
     turnTimer?: number
     theme?: string
+    allowSpectators?: boolean
 }
 
 interface TicTacToeLobbyPageProps {
@@ -1001,13 +1004,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    const actionsSection = isSpectator ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                {t('game.ui.backToLobby')}
-            </a>
-        </div>
-    ) : (
+    // Leave and the spectator's way back live in the header (layout DoD); this
+    // row keeps only the move requests.
+    const actionsSection = isSpectator ? null : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
                 onClick={() => void handleRequestUndo()}
@@ -1043,10 +1042,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     opacity: canRequestDraw ? 1 : 0.5,
                 }}
             >
-                🤝 {t('games.tictactoe.game.drawBtn')}
-            </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {t('games.tictactoe.game.leaveLobby')}
+                <Icon name="handshake" size={16} /> {t('games.tictactoe.game.drawBtn')}
             </button>
         </div>
     )
@@ -1117,14 +1113,30 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
+    // The room card sits to the right of the scoreboard, in the same grid row
+    // and at the same height (layout DoD, scheme A): game, room code, invite
+    // link, and Leave. Phones get the compact form beside the scoreboard.
+    const roomCardProps = {
+        gameId: 'tic-tac-toe',
+        title: t('games.tictactoe.name'),
+        code,
+        isSpectator,
+        leaveLabel: t('game.ui.leave'),
+        allowSpectators: !!lobby.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
+    const roomSection = <GameRoomCard {...roomCardProps} />
+    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
+
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
+                    {headerSection}
+                    {roomSection}
                     <div className="ttt-center-col">
-                        {headerSection}
                         {statusSection}
                         {requestSection}
                         {renderBoardSection('ttt-board')}
@@ -1143,7 +1155,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     {renderBoardSection('ttt-board-landscape')}
                 </div>
                 <div className="ttt-landscape-side">
-                    {headerSection}
+                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
                     {chatSection}
@@ -1153,7 +1165,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                {headerSection}
+                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                 {statusSection}
                 {requestSection}
                 <GameTabs
